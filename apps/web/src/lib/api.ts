@@ -1,0 +1,85 @@
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+
+export function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('mercadopleis_jwt');
+}
+
+export function setAuthToken(token: string) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('mercadopleis_jwt', token);
+}
+
+export function clearAuthToken() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('mercadopleis_jwt');
+}
+
+/**
+ * Fetch services from PostgreSQL backend API
+ */
+export async function fetchServices(category?: string | null, search?: string) {
+  try {
+    const url = new URL(`${API_URL}/services`);
+    if (category) url.searchParams.append('category', category);
+    if (search) url.searchParams.append('search', search);
+
+    const res = await fetch(url.toString(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch services');
+    const data = await res.json();
+    return data.services || [];
+  } catch (error) {
+    console.warn('[API] Could not fetch services from backend, using fallback:', error);
+    return null;
+  }
+}
+
+/**
+ * Request nonce from backend for SIWE
+ */
+export async function getNonce(address: string): Promise<string> {
+  const res = await fetch(`${API_URL}/auth/nonce?address=${address}`);
+  if (!res.ok) throw new Error('Failed to obtain SIWE nonce');
+  const data = await res.json();
+  return data.nonce;
+}
+
+/**
+ * Verify SIWE signature and store JWT
+ */
+export async function verifySignature(address: string, signature: string, message: string) {
+  const res = await fetch(`${API_URL}/auth/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ address, signature, message }),
+  });
+  if (!res.ok) throw new Error('Signature verification failed');
+  const data = await res.json();
+  if (data.token) {
+    setAuthToken(data.token);
+  }
+  return data;
+}
+
+/**
+ * Create a new service in PostgreSQL
+ */
+export async function createService(serviceData: {
+  title: string;
+  description: string;
+  category: string;
+  priceUsdc: number;
+  deliveryDays: number;
+}) {
+  const token = getAuthToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_URL}/services`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(serviceData),
+  });
+  if (!res.ok) throw new Error('Failed to create service in database');
+  return await res.json();
+}

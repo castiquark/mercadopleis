@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CategoryPills } from '@/components/CategoryPills';
 import { ServiceCard } from '@/components/ServiceCard';
 import { CheckoutModal } from '@/components/CheckoutModal';
@@ -95,17 +95,27 @@ export default function HomePage() {
   const [selectedServiceForBooking, setSelectedServiceForBooking] = useState<Service | null>(null);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('mercadopleis_custom_services');
-      if (stored) {
-        const custom = JSON.parse(stored);
-        if (Array.isArray(custom) && custom.length > 0) {
-          setServicesList([...custom, ...INITIAL_SERVICES]);
+    async function loadData() {
+      try {
+        const { fetchServices } = await import('@/lib/api');
+        const apiServices = await fetchServices();
+        if (apiServices && apiServices.length > 0) {
+          setServicesList(apiServices);
+          return;
         }
+
+        const stored = localStorage.getItem('mercadopleis_custom_services');
+        if (stored) {
+          const custom = JSON.parse(stored);
+          if (Array.isArray(custom) && custom.length > 0) {
+            setServicesList([...custom, ...INITIAL_SERVICES]);
+          }
+        }
+      } catch (e) {
+        console.error(e);
       }
-    } catch (e) {
-      console.error(e);
     }
+    loadData();
   }, []);
 
   const filteredServices = servicesList.filter((service) => {

@@ -7,11 +7,13 @@
   "scripts": {
     "build": "tsc --noEmit",
     "generate": "drizzle-kit generate",
-    "migrate": "drizzle-kit migrate",
+    "migrate": "tsx src/migrate.ts",
+    "seed": "tsx src/seed.ts",
     "push": "drizzle-kit push",
     "studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@mercadopleis/types": "workspace:*",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.39.3",
@@ -22,6 +24,7 @@
     "@types/node": "^22.13.9",
     "@types/pg": "^8.11.11",
     "drizzle-kit": "^0.30.5",
+    "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }
 }

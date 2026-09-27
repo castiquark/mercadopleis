@@ -24,7 +24,7 @@ export default function NewServicePage() {
   const fee = (priceNum * 0.03).toFixed(2);
   const netEarnings = (priceNum * 0.97).toFixed(2);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !description || priceNum <= 0) return;
 
@@ -46,6 +46,15 @@ export default function NewServicePage() {
     };
 
     try {
+      const { createService } = await import('@/lib/api');
+      await createService({
+        title,
+        description,
+        category,
+        priceUsdc: priceNum,
+        deliveryDays: parseInt(deliveryDays, 10) || 3,
+      }).catch((e) => console.warn('[API] Could not save to remote backend, saving to local fallback:', e));
+
       const existing = JSON.parse(localStorage.getItem('mercadopleis_custom_services') || '[]');
       localStorage.setItem('mercadopleis_custom_services', JSON.stringify([newService, ...existing]));
       setSuccess(true);
