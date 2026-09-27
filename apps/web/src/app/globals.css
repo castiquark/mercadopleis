@@ -32,3 +32,15 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #3375ff;
 }
+
+/* Ocultar Netlify HUD / Drawer / Powered by Netlify badge */
+iframe[src*="netlify"],
+[data-netlify-site-id],
+[data-nf-variant],
+#netlify-hud,
+.netlify-badge {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
