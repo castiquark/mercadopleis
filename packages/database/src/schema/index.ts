@@ -5,6 +5,7 @@ import { orders } from './orders';
 import { disputes } from './disputes';
 import { reviews } from './reviews';
 import { blockchainTransactions } from './blockchainTransactions';
+import { orderMessages } from './orderMessages';
 
 export * from './users';
 export * from './services';
@@ -12,6 +13,7 @@ export * from './orders';
 export * from './disputes';
 export * from './reviews';
 export * from './blockchainTransactions';
+export * from './orderMessages';
 
 export const usersRelations = relations(users, ({ many }) => ({
   services: many(services),
@@ -53,6 +55,18 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
     references: [reviews.orderId],
   }),
   transactions: many(blockchainTransactions),
+  messages: many(orderMessages),
+}));
+
+export const orderMessagesRelations = relations(orderMessages, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderMessages.orderId],
+    references: [orders.id],
+  }),
+  sender: one(users, {
+    fields: [orderMessages.senderId],
+    references: [users.id],
+  }),
 }));
 
 export const disputesRelations = relations(disputes, ({ one }) => ({
