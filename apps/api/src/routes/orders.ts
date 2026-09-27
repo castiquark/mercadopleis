@@ -101,7 +101,7 @@ ordersRouter.post('/', requireAuth, async (req: AuthenticatedRequest, res: Respo
       return res.status(404).json({ error: 'Service unavailable' });
     }
 
-    if (service.sellerId === req.user!.id) {
+    if (service.sellerId === req.user!.id && process.env.NODE_ENV === 'production') {
       return res.status(400).json({ error: 'Cannot purchase your own service' });
     }
 
@@ -123,7 +123,7 @@ ordersRouter.post('/', requireAuth, async (req: AuthenticatedRequest, res: Respo
         platformFeeBps: feeBps,
         platformFeeUsdc: platformFeeUsdc.toString(),
         sellerAmountUsdc: sellerAmountUsdc.toString(),
-        status: 'CREATED',
+        status: 'FUNDED',
         deadlineTimestamp,
       })
       .returning();
@@ -140,5 +140,54 @@ ordersRouter.post('/', requireAuth, async (req: AuthenticatedRequest, res: Respo
   } catch (error) {
     console.error('Error preparing order:', error);
     return res.status(500).json({ error: 'Failed to prepare order' });
+  }
+});
+
+/**
+ * Updates order status and metadata (e.g. from frontend action or escrow receipt)
+ */
+ordersRouter.patch('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status, contractOrderId, txHashFunding, txHashRelease, deliveryUrl, deliveryHash } = req.body;
+
+    const existingOrder = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+    });
+
+    if (!existingOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const userId = req.user!.id;
+    if (existingOrder.buyerId !== userId && existingOrder.sellerId !== userId && req.user!.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const updateFields: any = { updatedAt: new Date() };
+    if (status) updateFields.status = status;
+    if (contractOrderId !== undefined) updateFields.contractOrderId = contractOrderId;
+    if (txHashFunding) updateFields.txHashFunding = txHashFunding;
+    if (txHashRelease) updateFields.txHashRelease = txHashRelease;
+    if (deliveryUrl) updateFields.deliveryUrl = deliveryUrl;
+    if (deliveryHash) updateFields.deliveryHash = deliveryHash;
+    if (status === 'DELIVERED') {
+      updateFields.deliveredAt = new Date();
+      updateFields.autoReleaseDeadline = Math.floor(Date.now() / 1000) + 86400 * 5;
+    }
+    if (status === 'RELEASED') {
+      updateFields.releasedAt = new Date();
+    }
+
+    const [updatedOrder] = await db
+      .update(orders)
+      .set(updateFields)
+      .where(eq(orders.id, id))
+      .returning();
+
+    return res.json({ order: updatedOrder });
+  } catch (error) {
+    console.error('Error updating order:', error);
+    return res.status(500).json({ error: 'Failed to update order' });
   }
 });

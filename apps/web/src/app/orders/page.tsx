@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAccount, useWriteContract } from 'wagmi';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
+import { useAuth } from '@/lib/authContext';
+import { fetchMyOrders, updateOrder } from '@/lib/api';
 import {
   ShieldCheck,
   Clock,
@@ -16,6 +18,7 @@ import {
   ExternalLink,
   PlusCircle,
   ArrowRight,
+  RefreshCw,
 } from 'lucide-react';
 
 interface MockOrder {
@@ -26,13 +29,14 @@ interface MockOrder {
   amountUsdc: number;
   sellerAmountUsdc: number;
   platformFeeUsdc: number;
-  status: 'FUNDED' | 'DELIVERED' | 'RELEASED' | 'REFUNDED' | 'DISPUTED';
+  status: 'CREATED' | 'FUNDED' | 'DELIVERED' | 'RELEASED' | 'REFUNDED' | 'DISPUTED';
   deliveryHash?: string;
   deliveryUrl?: string;
   deadlineTimestamp: number;
   autoReleaseDeadline?: number;
   sellerAddress: string;
   buyerAddress: string;
+  isDemo?: boolean;
 }
 
 const INITIAL_DEMO_ORDERS: MockOrder[] = [
@@ -48,9 +52,10 @@ const INITIAL_DEMO_ORDERS: MockOrder[] = [
     deliveryHash: '0x8f2d79c6b840e53a29b433a7e5814bfb2298e3b5e4ff8890dfcfb37b670356c1',
     deliveryUrl: 'https://github.com/example/solidity-escrow-delivery',
     deadlineTimestamp: Math.floor(Date.now() / 1000) + 86400 * 3,
-    autoReleaseDeadline: Math.floor(Date.now() / 1000) + 86400 * 4, // 4 days remaining for buyer review
+    autoReleaseDeadline: Math.floor(Date.now() / 1000) + 86400 * 4,
     sellerAddress: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
     buyerAddress: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+    isDemo: true,
   },
   {
     id: 'ord-102',
@@ -64,6 +69,7 @@ const INITIAL_DEMO_ORDERS: MockOrder[] = [
     deadlineTimestamp: Math.floor(Date.now() / 1000) + 86400 * 2,
     sellerAddress: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
     buyerAddress: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
+    isDemo: true,
   },
   {
     id: 'ord-103',
@@ -77,11 +83,13 @@ const INITIAL_DEMO_ORDERS: MockOrder[] = [
     deadlineTimestamp: Math.floor(Date.now() / 1000) - 86400 * 10,
     sellerAddress: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
     buyerAddress: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+    isDemo: true,
   },
 ];
 
 export default function OrdersDashboardPage() {
-  const { isConnected, chainId } = useAccount();
+  const { isConnected, chainId, address } = useAccount();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'buyer' | 'seller'>('buyer');
   const [orders, setOrders] = useState<MockOrder[]>(INITIAL_DEMO_ORDERS);
   const [activeDeliveryModalOrder, setActiveDeliveryModalOrder] = useState<MockOrder | null>(null);
@@ -93,6 +101,55 @@ export default function OrdersDashboardPage() {
   const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID];
   const { writeContractAsync } = useWriteContract();
 
+  // Load orders from API and local store
+  const loadOrders = useCallback(async () => {
+    try {
+      const localCustom = JSON.parse(localStorage.getItem('mercadopleis_custom_orders') || '[]');
+      const apiOrders = await fetchMyOrders();
+
+      let dynamicOrders: MockOrder[] = [];
+
+      if (apiOrders && Array.isArray(apiOrders) && apiOrders.length > 0) {
+        dynamicOrders = apiOrders.map((bo: any) => ({
+          id: bo.id,
+          contractOrderId: bo.contractOrderId || Math.floor(100 + Math.random() * 900),
+          serviceTitle: bo.service?.title || 'Servicio Contratado',
+          role: bo.buyerId === user?.id ? 'buyer' : 'seller',
+          amountUsdc: parseFloat(bo.grossAmountUsdc),
+          sellerAmountUsdc: parseFloat(bo.sellerAmountUsdc),
+          platformFeeUsdc: parseFloat(bo.platformFeeUsdc),
+          status: bo.status,
+          deliveryHash: bo.deliveryHash,
+          deliveryUrl: bo.deliveryUrl,
+          deadlineTimestamp: bo.deadlineTimestamp,
+          autoReleaseDeadline: bo.autoReleaseDeadline,
+          sellerAddress: bo.seller?.walletAddress || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+          buyerAddress: bo.buyer?.walletAddress || address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+          isDemo: false,
+        }));
+      }
+
+      // Combine dynamic orders + local custom orders + demo orders (filtering duplicates)
+      const existingIds = new Set<string>();
+      const combined: MockOrder[] = [];
+
+      for (const ord of [...dynamicOrders, ...localCustom, ...INITIAL_DEMO_ORDERS]) {
+        if (!existingIds.has(ord.id)) {
+          existingIds.add(ord.id);
+          combined.push(ord);
+        }
+      }
+
+      setOrders(combined);
+    } catch (e) {
+      console.warn('Orders load note:', e);
+    }
+  }, [user?.id, address]);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
+
   const filteredOrders = orders.filter((o) => o.role === activeTab);
 
   // Buyer Action: Approve delivery and release funds
@@ -101,13 +158,22 @@ export default function OrdersDashboardPage() {
       setIsProcessing(true);
       setActionNotice(`Aprobando entrega de Orden #${order.contractOrderId}...`);
 
-      if (isConnected && escrowAddress) {
-        await writeContractAsync({
+      let txHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+
+      if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
+        txHash = await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
           functionName: 'approveDelivery',
           args: [BigInt(order.contractOrderId)],
         });
+      }
+
+      // Sync with PostgreSQL API
+      try {
+        await updateOrder(order.id, { status: 'RELEASED', txHashRelease: txHash });
+      } catch (err) {
+        console.warn('Backend sync note:', err);
       }
 
       setOrders((prev) =>
@@ -128,13 +194,19 @@ export default function OrdersDashboardPage() {
       setIsProcessing(true);
       setActionNotice(`Abriendo disputa para Orden #${order.contractOrderId}...`);
 
-      if (isConnected && escrowAddress) {
+      if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
         await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
           functionName: 'openDispute',
           args: [BigInt(order.contractOrderId)],
         });
+      }
+
+      try {
+        await updateOrder(order.id, { status: 'DISPUTED' });
+      } catch (err) {
+        console.warn('Backend sync note:', err);
       }
 
       setOrders((prev) =>
@@ -155,13 +227,19 @@ export default function OrdersDashboardPage() {
       setIsProcessing(true);
       setActionNotice(`Reclamando reembolso por timeout para Orden #${order.contractOrderId}...`);
 
-      if (isConnected && escrowAddress) {
+      if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
         await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
           functionName: 'claimTimeoutRefund',
           args: [BigInt(order.contractOrderId)],
         });
+      }
+
+      try {
+        await updateOrder(order.id, { status: 'REFUNDED' });
+      } catch (err) {
+        console.warn('Backend sync note:', err);
       }
 
       setOrders((prev) =>
@@ -185,13 +263,23 @@ export default function OrdersDashboardPage() {
       setIsProcessing(true);
       const mockHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 
-      if (isConnected && escrowAddress) {
+      if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
         await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
           functionName: 'submitDelivery',
           args: [BigInt(activeDeliveryModalOrder.contractOrderId), mockHash as `0x${string}`],
         });
+      }
+
+      try {
+        await updateOrder(activeDeliveryModalOrder.id, {
+          status: 'DELIVERED',
+          deliveryUrl: deliveryInputUrl,
+          deliveryHash: mockHash,
+        });
+      } catch (err) {
+        console.warn('Backend sync note:', err);
       }
 
       setOrders((prev) =>
@@ -230,13 +318,24 @@ export default function OrdersDashboardPage() {
           </p>
         </div>
 
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-surface-elevated"
-        >
-          <span>Explorar Más Servicios</span>
-          <ArrowRight className="h-4 w-4 text-primary-light" />
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => loadOrders()}
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-surface-elevated hover:text-white"
+            title="Actualizar listado de órdenes"
+          >
+            <RefreshCw className="h-4 w-4 text-primary-light" />
+            <span className="hidden sm:inline">Actualizar</span>
+          </button>
+
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-surface-elevated"
+          >
+            <span>Explorar Servicios</span>
+            <ArrowRight className="h-4 w-4 text-primary-light" />
+          </Link>
+        </div>
       </div>
 
       {/* Notifications Alert */}

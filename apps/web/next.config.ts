@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
       '@x402/svm/exact/client': false,
       '@x402/evm': false,
       '@x402/core': false,
+      '@react-native-async-storage/async-storage': false,
       fs: false,
       net: false,
       tls: false,

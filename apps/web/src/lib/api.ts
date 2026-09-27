@@ -83,3 +83,86 @@ export async function createService(serviceData: {
   if (!res.ok) throw new Error('Failed to create service in database');
   return await res.json();
 }
+
+/**
+ * Fetch orders for current authenticated user from PostgreSQL
+ */
+export async function fetchMyOrders(role?: 'buyer' | 'seller') {
+  const token = getAuthToken();
+  if (!token) return null;
+
+  try {
+    const url = new URL(`${API_URL}/orders/my`);
+    if (role) url.searchParams.append('role', role);
+
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    });
+
+    if (!res.ok) throw new Error('Failed to fetch user orders');
+    const data = await res.json();
+    return data.orders || [];
+  } catch (err) {
+    console.warn('[API] Could not fetch orders from backend:', err);
+    return null;
+  }
+}
+
+/**
+ * Creates an order record in PostgreSQL
+ */
+export async function createOrder(serviceId: string) {
+  const token = getAuthToken();
+  if (!token) return null;
+
+  const res = await fetch(`${API_URL}/orders`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ serviceId }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to create order in database');
+  }
+
+  return await res.json();
+}
+
+/**
+ * Updates order status or delivery details in PostgreSQL
+ */
+export async function updateOrder(
+  orderId: string,
+  updates: {
+    status?: string;
+    contractOrderId?: number;
+    txHashFunding?: string;
+    txHashRelease?: string;
+    deliveryUrl?: string;
+    deliveryHash?: string;
+  }
+) {
+  const token = getAuthToken();
+  if (!token) return null;
+
+  const res = await fetch(`${API_URL}/orders/${orderId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(updates),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update order');
+  }
+
+  return await res.json();
+}
