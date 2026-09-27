@@ -456,6 +456,21 @@ export default function OrdersDashboardPage() {
             <span className="hidden sm:inline">Actualizar</span>
           </button>
 
+          <button
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('mercadopleis_custom_orders');
+                loadOrders();
+                setActionNotice('Caché local de órdenes de prueba eliminada.');
+              }
+            }}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-slate-400 transition hover:bg-surface-elevated hover:text-white"
+            title="Limpiar datos temporales de prueba en tu navegador"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-slate-400" />
+            <span className="hidden sm:inline">Limpiar Caché</span>
+          </button>
+
           <Link
             href="/"
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-surface-elevated"
