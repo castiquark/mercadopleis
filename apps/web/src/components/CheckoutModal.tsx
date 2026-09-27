@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import { Service } from '@mercadopleis/types';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
-import { parseUnits } from 'viem';
+import { parseUnits, formatUnits } from 'viem';
 import { Erc20Abi, MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
-import { Shield, Clock, CheckCircle2, AlertCircle, X, ExternalLink } from 'lucide-react';
+import { Shield, Clock, CheckCircle2, AlertCircle, X, ExternalLink, Droplet } from 'lucide-react';
+import { FaucetButton } from './FaucetButton';
 
 interface CheckoutModalProps {
   service: Service | null;
@@ -35,12 +36,21 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
     args: address && escrowAddress ? [address, escrowAddress] : undefined,
   });
 
+  // Read current USDC balance
+  const { data: currentBalance, refetch: refetchBalance } = useReadContract({
+    address: usdcAddress,
+    abi: Erc20Abi,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+  });
+
   const { writeContractAsync: writeApprove } = useWriteContract();
   const { writeContractAsync: writeFund } = useWriteContract();
 
   if (!service) return null;
 
   const needsApproval = currentAllowance !== undefined && currentAllowance < rawAmount;
+  const hasInsufficientBalance = currentBalance !== undefined && currentBalance < rawAmount;
 
   const handleConfirmOrder = async () => {
     try {
@@ -180,6 +190,38 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
             <span>Reembolso 100% automático si el vendedor no entrega antes del deadline.</span>
           </div>
         </div>
+
+        {/* User Balance & Faucet Assist */}
+        {isConnected && (
+          <div className="mt-4 flex items-center justify-between rounded-xl border border-border/70 bg-surface-elevated/40 px-3.5 py-2.5 text-xs">
+            <span className="text-slate-400">
+              Tu saldo de USDC:{' '}
+              <strong className="text-white">
+                {currentBalance !== undefined
+                  ? `${Number(formatUnits(currentBalance, 6)).toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC`
+                  : 'Cargando...'}
+              </strong>
+            </span>
+
+            {hasInsufficientBalance && (
+              <FaucetButton
+                variant="compact"
+                amount={service.priceUsdc.toString()}
+                onMintSuccess={refetchBalance}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Insufficient balance warning */}
+        {hasInsufficientBalance && isConnected && (
+          <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-300">
+            <Droplet className="h-4 w-4 shrink-0 text-amber-400" />
+            <span>
+              Saldo insuficiente para esta orden. Reclama fondos de prueba arriba con 1 clic.
+            </span>
+          </div>
+        )}
 
         {/* Error message */}
         {errorMessage && (
