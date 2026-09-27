@@ -4,9 +4,9 @@ import { PGlite } from '@electric-sql/pglite';
 import postgres from 'postgres';
 import path from 'path';
 import fs from 'fs';
-import * as schema from './schema';
+import * as schema from './schema/index';
 
-export * from './schema';
+export * from './schema/index';
 
 let pgClient: postgres.Sql | null = null;
 let pgliteClient: PGlite | null = null;

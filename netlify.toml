@@ -1,0 +1,21 @@
+# Netlify Configuration for mercadopleis (Next.js Monorepo)
+
+[build]
+  base = "."
+  publish = "apps/web/.next"
+  command = "pnpm --filter @mercadopleis/types build && pnpm --filter @mercadopleis/contracts-abi build && pnpm --filter @mercadopleis/web build"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--version"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Headers for Web3 / Cross-Origin Security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

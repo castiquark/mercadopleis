@@ -51,7 +51,8 @@ export default function ProfilePage() {
 
     try {
       setIsSaving(true);
-      const res = await fetch('http://localhost:4000/api/auth/me', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+      const res = await fetch(`${apiUrl}/auth/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

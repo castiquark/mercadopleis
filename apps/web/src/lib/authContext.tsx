@@ -56,9 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isConnected]);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+
   const fetchUserProfile = async (authToken: string) => {
     try {
-      const res = await fetch('http://localhost:4000/api/auth/me', {
+      const res = await fetch(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${authToken}` },
       });
       if (res.ok) {

@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -20,7 +20,9 @@ export function clearAuthToken() {
  */
 export async function fetchServices(category?: string | null, search?: string) {
   try {
-    const url = new URL(`${API_URL}/services`);
+    const base = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    const endpoint = API_URL.startsWith('http') ? `${API_URL}/services` : `${base}${API_URL}/services`;
+    const url = new URL(endpoint);
     if (category) url.searchParams.append('category', category);
     if (search) url.searchParams.append('search', search);
 
