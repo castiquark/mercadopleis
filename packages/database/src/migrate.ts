@@ -1,7 +1,11 @@
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
 import { PGlite } from '@electric-sql/pglite';
 import postgres from 'postgres';
+
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config();
 
 export async function runMigrations() {
   const databaseUrl = process.env.DATABASE_URL;
