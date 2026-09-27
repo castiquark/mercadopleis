@@ -1,0 +1,26 @@
+{
+  "name": "mercadopleis",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Non-custodial crypto service marketplace on Base with USDC escrow",
+  "packageManager": "pnpm@11.22.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,sol}\"",
+    "contracts:build": "pnpm --filter @mercadopleis/contracts-abi build",
+    "db:generate": "pnpm --filter @mercadopleis/database generate",
+    "db:migrate": "pnpm --filter @mercadopleis/database migrate",
+    "db:studio": "pnpm --filter @mercadopleis/database studio"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "turbo": "^2.4.4",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

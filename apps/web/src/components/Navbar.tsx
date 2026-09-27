@@ -1,0 +1,59 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { ShieldCheck, PlusCircle, ShoppingBag } from 'lucide-react';
+
+export function Navbar() {
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        {/* Brand */}
+        <div className="flex items-center gap-6">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary font-bold text-white shadow-lg shadow-primary/30">
+              M
+            </div>
+            <span className="text-xl font-bold tracking-tight text-white">
+              mercado<span className="text-primary-light">pleis</span>
+            </span>
+          </Link>
+
+          <div className="hidden items-center gap-1 rounded-full border border-border/80 bg-surface px-3 py-1 text-xs text-slate-300 md:flex">
+            <ShieldCheck className="h-3.5 w-3.5 text-accent" />
+            <span>Escrow Non-Custodial en Base</span>
+          </div>
+        </div>
+
+        {/* Action Links & Connect Wallet */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/services/new"
+            className="hidden items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white sm:flex"
+          >
+            <PlusCircle className="h-4 w-4 text-primary-light" />
+            <span>Publicar Servicio</span>
+          </Link>
+
+          <Link
+            href="/orders"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white"
+          >
+            <ShoppingBag className="h-4 w-4 text-slate-400" />
+            <span className="hidden sm:inline">Mis Órdenes</span>
+          </Link>
+
+          <ConnectButton
+            chainStatus="icon"
+            showBalance={false}
+            accountStatus={{
+              smallScreen: 'avatar',
+              largeScreen: 'full',
+            }}
+          />
+        </div>
+      </div>
+    </header>
+  );
+}
