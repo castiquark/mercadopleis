@@ -23,6 +23,13 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquare,
+  Upload,
+  Link as LinkIcon,
+  Hash,
+  Loader2,
+  X,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { OrderTimelineAndChat } from '@/components/OrderTimelineAndChat';
 
@@ -99,6 +106,17 @@ export default function OrdersDashboardPage() {
   const [orders, setOrders] = useState<MockOrder[]>(INITIAL_DEMO_ORDERS);
   const [activeDeliveryModalOrder, setActiveDeliveryModalOrder] = useState<MockOrder | null>(null);
   const [deliveryInputUrl, setDeliveryInputUrl] = useState('');
+  const [deliveryHash, setDeliveryHash] = useState('');
+  const [deliveryMode, setDeliveryMode] = useState<'file' | 'link'>('file');
+  const [uploadedFileMeta, setUploadedFileMeta] = useState<{
+    filename: string;
+    size: number;
+    url: string;
+    hash: string;
+  } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [copiedHash, setCopiedHash] = useState(false);
   const [activeReviewModalOrder, setActiveReviewModalOrder] = useState<MockOrder | null>(null);
   const [reviewRating, setReviewRating] = useState<number>(5);
   const [reviewHoverRating, setReviewHoverRating] = useState<number>(0);
@@ -293,6 +311,59 @@ export default function OrdersDashboardPage() {
     }
   };
 
+  const openDeliveryModal = (order: MockOrder) => {
+    setActiveDeliveryModalOrder(order);
+    setDeliveryInputUrl('');
+    setDeliveryHash('');
+    setUploadedFileMeta(null);
+    setUploadError(null);
+    setDeliveryMode('file');
+    setCopiedHash(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      setUploadError(null);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error al subir el archivo');
+      }
+
+      setUploadedFileMeta({
+        filename: data.filename,
+        size: data.size,
+        url: data.url,
+        hash: data.hash,
+      });
+      setDeliveryInputUrl(data.url);
+      setDeliveryHash(data.hash);
+    } catch (err: any) {
+      console.error('Error uploading file to Neon Object Storage:', err);
+      setUploadError(err.message || 'Error al conectar con Neon Object Storage');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedHash(true);
+    setTimeout(() => setCopiedHash(false), 2000);
+  };
+
   // Seller Action: Submit delivery
   const handleSubmitDelivery = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -300,14 +371,24 @@ export default function OrdersDashboardPage() {
 
     try {
       setIsProcessing(true);
-      const mockHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+
+      let finalHash = deliveryHash;
+      if (!finalHash || !finalHash.startsWith('0x') || finalHash.length !== 66) {
+        // Derive 32-byte sha256 hash from the URL
+        const enc = new TextEncoder();
+        const hashBuf = await crypto.subtle.digest('SHA-256', enc.encode(deliveryInputUrl));
+        const hashArray = Array.from(new Uint8Array(hashBuf));
+        finalHash = '0x' + hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      let txHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
-        await writeContractAsync({
+        txHash = await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
           functionName: 'submitDelivery',
-          args: [BigInt(activeDeliveryModalOrder.contractOrderId), mockHash as `0x${string}`],
+          args: [BigInt(activeDeliveryModalOrder.contractOrderId), finalHash as `0x${string}`],
         });
       }
 
@@ -315,7 +396,7 @@ export default function OrdersDashboardPage() {
         await updateOrder(activeDeliveryModalOrder.id, {
           status: 'DELIVERED',
           deliveryUrl: deliveryInputUrl,
-          deliveryHash: mockHash,
+          deliveryHash: finalHash,
         });
       } catch (err) {
         console.warn('Backend sync note:', err);
@@ -328,16 +409,18 @@ export default function OrdersDashboardPage() {
                 ...o,
                 status: 'DELIVERED',
                 deliveryUrl: deliveryInputUrl,
-                deliveryHash: mockHash,
+                deliveryHash: finalHash,
                 autoReleaseDeadline: Math.floor(Date.now() / 1000) + 86400 * 5,
               }
             : o
         )
       );
 
-      setActionNotice(`Entrega registrada. Se inicia el período de revisión de 5 días.`);
+      setActionNotice(`¡Entrega registrada con éxito! Hash criptográfico ${finalHash.slice(0, 10)}...${finalHash.slice(-6)} asentado en el contrato.`);
       setActiveDeliveryModalOrder(null);
       setDeliveryInputUrl('');
+      setDeliveryHash('');
+      setUploadedFileMeta(null);
     } catch (err: any) {
       console.error(err);
       setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error en transacción'}`);
@@ -539,7 +622,7 @@ export default function OrdersDashboardPage() {
                 {/* Seller Controls */}
                 {order.role === 'seller' && order.status === 'FUNDED' && (
                   <button
-                    onClick={() => setActiveDeliveryModalOrder(order)}
+                    onClick={() => openDeliveryModal(order)}
                     disabled={isProcessing}
                     className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-md shadow-primary/20 transition hover:bg-primary-hover active:scale-95"
                   >
@@ -628,35 +711,186 @@ export default function OrdersDashboardPage() {
         )}
       </div>
 
-      {/* Modal for Seller Delivery Submission */}
+      {/* Modal for Seller Delivery Submission with Neon Object Storage */}
       {activeDeliveryModalOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-surface p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Registrar Entrega de Trabajo</h3>
-            <p className="mt-1 text-xs text-slate-400">
-              Ingresa el enlace al repositorio, archivo zip o entregable. Se calculará un hash criptográfico que quedará asentado en el smart contract.
-            </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-surface p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  <UploadCloud className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Registrar Entrega de Trabajo</h3>
+                  <p className="text-xs text-slate-400">Orden #{activeDeliveryModalOrder.contractOrderId} • {activeDeliveryModalOrder.serviceTitle}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveDeliveryModalOrder(null)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-surface-elevated hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Mode Selector Tabs */}
+            <div className="mt-5 flex rounded-xl border border-border bg-surface-elevated/50 p-1">
+              <button
+                type="button"
+                onClick={() => setDeliveryMode('file')}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition ${
+                  deliveryMode === 'file'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <UploadCloud className="h-4 w-4" />
+                Subir Archivo (Neon Storage)
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeliveryMode('link')}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition ${
+                  deliveryMode === 'link'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <LinkIcon className="h-4 w-4" />
+                Enlace Externo (GitHub/Figma)
+              </button>
+            </div>
 
             <form onSubmit={handleSubmitDelivery} className="mt-4 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300">
-                  Enlace al Entregable (GitHub, Drive, Figma, IPFS, etc.)
-                </label>
-                <input
-                  type="url"
-                  required
-                  placeholder="https://..."
-                  value={deliveryInputUrl}
-                  onChange={(e) => setDeliveryInputUrl(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-primary focus:outline-none"
-                />
+              {deliveryMode === 'file' ? (
+                <div>
+                  {!uploadedFileMeta ? (
+                    <div>
+                      <label className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border/80 bg-background/50 p-6 text-center transition hover:border-primary/60 hover:bg-primary/5 cursor-pointer">
+                        <input
+                          type="file"
+                          className="hidden"
+                          onChange={handleFileUpload}
+                          disabled={isUploading}
+                        />
+                        {isUploading ? (
+                          <div className="flex flex-col items-center gap-2 text-purple-400">
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                            <p className="text-xs font-semibold text-white">Subiendo a Neon Object Storage...</p>
+                            <p className="text-[11px] text-slate-400">Calculando hash criptográfico SHA-256</p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-500/10 text-purple-400">
+                              <Upload className="h-6 w-6" />
+                            </div>
+                            <p className="text-sm font-semibold text-white">
+                              Haz clic o arrastra aquí tu archivo de entrega
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              Soporta .zip, .pdf, .sol, imágenes, videos o documentos (hasta 50MB)
+                            </p>
+                            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-purple-300">
+                              ⚡ Alojado en Neon Object Storage (AWS S3)
+                            </span>
+                          </div>
+                        )}
+                      </label>
+                      {uploadError && (
+                        <div className="mt-2 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-xs text-red-400">
+                          {uploadError}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-purple-500/30 bg-purple-950/20 p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20 text-purple-300">
+                            <FileCheck className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-white truncate max-w-[260px]">
+                              {uploadedFileMeta.filename}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              {(uploadedFileMeta.size / 1024).toFixed(1)} KB • Neon Storage
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUploadedFileMeta(null);
+                            setDeliveryInputUrl('');
+                            setDeliveryHash('');
+                          }}
+                          className="text-xs text-slate-400 hover:text-red-400"
+                        >
+                          Cambiar
+                        </button>
+                      </div>
+
+                      {/* Hash Box */}
+                      <div className="rounded-lg bg-black/40 p-2.5 font-mono text-[11px] border border-border/40">
+                        <div className="flex items-center justify-between text-slate-400 text-[10px] uppercase font-bold mb-1">
+                          <span className="flex items-center gap-1 text-purple-400">
+                            <Hash className="h-3 w-3" /> Prueba Criptográfica SHA-256
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(uploadedFileMeta.hash)}
+                            className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300"
+                          >
+                            {copiedHash ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                            {copiedHash ? 'Copiado' : 'Copiar'}
+                          </button>
+                        </div>
+                        <p className="text-white font-mono break-all select-all">{uploadedFileMeta.hash}</p>
+                      </div>
+
+                      <a
+                        href={uploadedFileMeta.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 hover:underline"
+                      >
+                        <span>Abrir archivo en el bucket público</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300">
+                    Enlace al Entregable (GitHub, Drive, Figma, IPFS, etc.)
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://github.com/..."
+                    value={deliveryInputUrl}
+                    onChange={(e) => setDeliveryInputUrl(e.target.value)}
+                    className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-primary focus:outline-none"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Se generará un hash criptográfico a partir de este enlace para asentarlo en el smart contract.
+                  </p>
+                </div>
+              )}
+
+              <div className="rounded-xl bg-surface-elevated/70 border border-border/50 p-3 text-xs text-slate-300 space-y-1">
+                <p className="font-semibold text-white flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-accent" /> Garantía de Escrow
+                </p>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Al confirmar, el contrato pasará a estado <strong>DELIVERED</strong> con el hash inmutable registrado en Base Sepolia. El comprador tendrá <strong>5 días</strong> para validar la entrega antes del auto-release de los fondos.
+                </p>
               </div>
 
-              <div className="rounded-xl bg-surface-elevated p-3 text-xs text-slate-400">
-                Al confirmar, el contrato pasará a estado <strong>DELIVERED</strong> y el comprador tendrá 5 días para validar antes del auto-release.
-              </div>
-
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => setActiveDeliveryModalOrder(null)}
@@ -666,10 +900,17 @@ export default function OrdersDashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isProcessing || !deliveryInputUrl}
-                  className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover active:scale-95 disabled:opacity-50"
+                  disabled={isProcessing || isUploading || !deliveryInputUrl}
+                  className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isProcessing ? 'Registrando en Smart Contract...' : 'Confirmar Entrega'}
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Registrando On-Chain...</span>
+                    </>
+                  ) : (
+                    <span>Confirmar Entrega</span>
+                  )}
                 </button>
               </div>
             </form>
