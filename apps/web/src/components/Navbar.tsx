@@ -3,9 +3,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { ShieldCheck, PlusCircle, ShoppingBag } from 'lucide-react';
+import { useAccount } from 'wagmi';
+import { useAuth } from '@/lib/authContext';
+import { ShieldCheck, PlusCircle, ShoppingBag, KeyRound, UserCheck, User } from 'lucide-react';
 
 export function Navbar() {
+  const { isConnected } = useAccount();
+  const { user, isAuthenticated, isLoading, signIn, signOut } = useAuth();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -43,6 +48,28 @@ export function Navbar() {
             <ShoppingBag className="h-4 w-4 text-slate-400" />
             <span className="hidden sm:inline">Mis Órdenes</span>
           </Link>
+
+          {/* SIWE Authenticated user pill or Sign button */}
+          {isConnected && !isAuthenticated && (
+            <button
+              onClick={() => signIn()}
+              disabled={isLoading}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary/20 border border-primary/40 px-3 py-2 text-xs font-semibold text-primary-light transition hover:bg-primary/30 active:scale-95 animate-pulse"
+            >
+              <KeyRound className="h-3.5 w-3.5" />
+              <span>{isLoading ? 'Firmando...' : 'Firmar Sesión (SIWE)'}</span>
+            </button>
+          )}
+
+          {isConnected && isAuthenticated && user && (
+            <Link
+              href="/profile"
+              className="flex items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-semibold text-accent transition hover:bg-accent/20"
+            >
+              <UserCheck className="h-3.5 w-3.5" />
+              <span>{user.displayName || user.username}</span>
+            </Link>
+          )}
 
           <ConnectButton
             chainStatus="icon"

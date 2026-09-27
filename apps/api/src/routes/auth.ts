@@ -160,3 +160,28 @@ authRouter.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Respon
     return res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
+
+/**
+ * Updates authenticated profile
+ */
+authRouter.patch('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { displayName, bio, country, avatarUrl } = req.body;
+    const [updated] = await db
+      .update(users)
+      .set({
+        ...(displayName ? { displayName } : {}),
+        ...(bio !== undefined ? { bio } : {}),
+        ...(country !== undefined ? { country } : {}),
+        ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, req.user!.id))
+      .returning();
+
+    return res.json({ user: updated });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
