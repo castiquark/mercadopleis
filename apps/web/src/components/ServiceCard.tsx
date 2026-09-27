@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Service } from '@mercadopleis/types';
 import { Clock, Shield, Star } from 'lucide-react';
 
@@ -25,9 +26,11 @@ export function ServiceCard({ service, onBook }: ServiceCardProps) {
         </div>
 
         {/* Title */}
-        <h3 className="mt-3 text-lg font-semibold text-white transition group-hover:text-primary-light">
-          {service.title}
-        </h3>
+        <Link href={`/services/${service.slug}`}>
+          <h3 className="mt-3 text-lg font-semibold text-white transition group-hover:text-primary-light cursor-pointer">
+            {service.title}
+          </h3>
+        </Link>
 
         {/* Description snippet */}
         <p className="mt-2 line-clamp-2 text-sm text-slate-400">

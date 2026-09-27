@@ -89,11 +89,26 @@ const INITIAL_SERVICES: Service[] = [
 ];
 
 export default function HomePage() {
+  const [servicesList, setServicesList] = useState<Service[]>(INITIAL_SERVICES);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedServiceForBooking, setSelectedServiceForBooking] = useState<Service | null>(null);
 
-  const filteredServices = INITIAL_SERVICES.filter((service) => {
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('mercadopleis_custom_services');
+      if (stored) {
+        const custom = JSON.parse(stored);
+        if (Array.isArray(custom) && custom.length > 0) {
+          setServicesList([...custom, ...INITIAL_SERVICES]);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const filteredServices = servicesList.filter((service) => {
     const matchesCategory = !selectedCategory || service.category === selectedCategory;
     const matchesSearch =
       !searchQuery ||
