@@ -4,6 +4,8 @@ import { config } from './config';
 import { authRouter } from './routes/auth';
 import { servicesRouter } from './routes/services';
 import { ordersRouter } from './routes/orders';
+import { disputesRouter } from './routes/disputes';
+import { reviewsRouter } from './routes/reviews';
 import { baseIndexer } from './indexer/baseIndexer';
 
 const app = express();
@@ -25,6 +27,8 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/services', servicesRouter);
 app.use('/api/orders', ordersRouter);
+app.use('/api/disputes', disputesRouter);
+app.use('/api/reviews', reviewsRouter);
 
 // Start server
 app.listen(config.port, () => {

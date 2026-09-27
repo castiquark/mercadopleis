@@ -166,3 +166,90 @@ export async function updateOrder(
 
   return await res.json();
 }
+
+/**
+ * Fetch all disputes
+ */
+export async function fetchDisputes() {
+  try {
+    const res = await fetch(`${API_URL}/disputes`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch disputes');
+    const data = await res.json();
+    return data.disputes || [];
+  } catch (err) {
+    console.warn('[API] Could not fetch disputes:', err);
+    return [];
+  }
+}
+
+/**
+ * Resolve dispute on backend
+ */
+export async function resolveDisputeApi(
+  disputeId: string,
+  resolution: {
+    sellerAwardUsdc: number;
+    buyerRefundUsdc: number;
+    resolutionNotes?: string;
+  }
+) {
+  const token = getAuthToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_URL}/disputes/${disputeId}/resolve`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(resolution),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to resolve dispute on backend');
+  }
+
+  return await res.json();
+}
+
+/**
+ * Submit review for completed order
+ */
+export async function submitReview(reviewData: {
+  orderId: string;
+  rating: number;
+  comment: string;
+}) {
+  const token = getAuthToken();
+  if (!token) throw new Error('Debes iniciar sesión con SIWE para calificar');
+
+  const res = await fetch(`${API_URL}/reviews`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(reviewData),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to submit review');
+  }
+
+  return await res.json();
+}
+
+/**
+ * Fetch reviews for a service
+ */
+export async function fetchServiceReviews(serviceId: string) {
+  try {
+    const res = await fetch(`${API_URL}/reviews/service/${serviceId}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch service reviews');
+    const data = await res.json();
+    return data.reviews || [];
+  } catch (err) {
+    console.warn('[API] Could not fetch service reviews:', err);
+    return [];
+  }
+}

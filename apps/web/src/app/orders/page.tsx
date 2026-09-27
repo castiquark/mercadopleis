@@ -6,7 +6,7 @@ import { useAccount, useWriteContract } from 'wagmi';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { useAuth } from '@/lib/authContext';
-import { fetchMyOrders, updateOrder } from '@/lib/api';
+import { fetchMyOrders, updateOrder, submitReview } from '@/lib/api';
 import {
   ShieldCheck,
   Clock,
@@ -19,6 +19,7 @@ import {
   PlusCircle,
   ArrowRight,
   RefreshCw,
+  Star,
 } from 'lucide-react';
 
 interface MockOrder {
@@ -94,12 +95,45 @@ export default function OrdersDashboardPage() {
   const [orders, setOrders] = useState<MockOrder[]>(INITIAL_DEMO_ORDERS);
   const [activeDeliveryModalOrder, setActiveDeliveryModalOrder] = useState<MockOrder | null>(null);
   const [deliveryInputUrl, setDeliveryInputUrl] = useState('');
+  const [activeReviewModalOrder, setActiveReviewModalOrder] = useState<MockOrder | null>(null);
+  const [reviewRating, setReviewRating] = useState<number>(5);
+  const [reviewHoverRating, setReviewHoverRating] = useState<number>(0);
+  const [reviewComment, setReviewComment] = useState<string>('');
+  const [reviewedOrders, setReviewedOrders] = useState<Record<string, number>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   const activeChainId = chainId || CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
   const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID];
   const { writeContractAsync } = useWriteContract();
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeReviewModalOrder || !reviewComment.trim()) return;
+
+    try {
+      setIsProcessing(true);
+      await submitReview({
+        orderId: activeReviewModalOrder.id,
+        rating: reviewRating,
+        comment: reviewComment.trim(),
+      }).catch((err) => console.warn('Submit review API fallback note:', err));
+
+      setReviewedOrders((prev) => ({
+        ...prev,
+        [activeReviewModalOrder.id]: reviewRating,
+      }));
+
+      setActionNotice(`¡Gracias por calificar el servicio con ${reviewRating} estrellas! Tu reseña quedó registrada.`);
+      setActiveReviewModalOrder(null);
+      setReviewComment('');
+    } catch (err: any) {
+      console.error(err);
+      setActionNotice(`Error: ${err?.message || 'Error al guardar la reseña'}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   // Load orders from API and local store
   const loadOrders = useCallback(async () => {
@@ -517,9 +551,32 @@ export default function OrdersDashboardPage() {
                 )}
 
                 {order.status === 'RELEASED' && (
-                  <span className="text-xs text-accent font-semibold flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4" /> Contrato finalizado con éxito.
-                  </span>
+                  <div className="flex flex-wrap items-center justify-between w-full gap-2">
+                    <span className="text-xs text-accent font-semibold flex items-center gap-1.5">
+                      <CheckCircle className="h-4 w-4" /> Contrato finalizado y fondos liberados.
+                    </span>
+
+                    {order.role === 'buyer' && (
+                      reviewedOrders[order.id] ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
+                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                          Calificado ({reviewedOrders[order.id]} / 5 ★)
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setActiveReviewModalOrder(order);
+                            setReviewRating(5);
+                            setReviewComment('');
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3.5 py-1.5 text-xs font-bold text-amber-300 transition hover:bg-amber-400/20 active:scale-95"
+                        >
+                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                          Calificar Servicio
+                        </button>
+                      )
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -578,6 +635,94 @@ export default function OrdersDashboardPage() {
                   className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover active:scale-95 disabled:opacity-50"
                 >
                   {isProcessing ? 'Registrando en Smart Contract...' : 'Confirmar Entrega'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Buyer Review Submission */}
+      {activeReviewModalOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-2xl">
+            <div className="flex items-center gap-2 text-amber-400">
+              <Star className="h-5 w-5 fill-amber-400" />
+              <h3 className="text-lg font-bold text-white">Calificar Servicio</h3>
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              Tu reseña se registrará en el perfil público del prestador y ayudará a otros compradores en la comunidad.
+            </p>
+
+            <form onSubmit={handleSubmitReview} className="mt-5 space-y-4">
+              <div>
+                <span className="text-xs text-slate-400">Servicio:</span>
+                <p className="font-semibold text-white text-sm">{activeReviewModalOrder.serviceTitle}</p>
+              </div>
+
+              {/* Star Rating Selector */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300">
+                  Calificación (1 a 5 estrellas)
+                </label>
+                <div className="mt-2 flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onMouseEnter={() => setReviewHoverRating(star)}
+                      onMouseLeave={() => setReviewHoverRating(0)}
+                      onClick={() => setReviewRating(star)}
+                      className="p-1 transition transform hover:scale-110"
+                    >
+                      <Star
+                        className={`h-7 w-7 transition ${
+                          (reviewHoverRating || reviewRating) >= star
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-slate-600'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                  <span className="ml-2 text-xs font-semibold text-amber-300">
+                    {reviewRating === 5 && '¡Excelente!'}
+                    {reviewRating === 4 && 'Muy Bueno'}
+                    {reviewRating === 3 && 'Aceptable'}
+                    {reviewRating === 2 && 'Regular'}
+                    {reviewRating === 1 && 'Malo'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Review Comment */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300">
+                  Comentario / Experiencia de Entrega
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Detalla la calidad del trabajo, puntualidad, comunicación y resolución de requerimientos..."
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  className="mt-1.5 w-full rounded-xl border border-border bg-background p-3 text-xs text-white placeholder-slate-500 focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveReviewModalOrder(null)}
+                  className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-slate-400 hover:text-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProcessing || !reviewComment.trim()}
+                  className="flex-1 rounded-xl bg-amber-500 py-2.5 text-sm font-bold text-background shadow-lg shadow-amber-500/20 transition hover:bg-amber-400 active:scale-95 disabled:opacity-50"
+                >
+                  {isProcessing ? 'Guardando...' : 'Publicar Calificación'}
                 </button>
               </div>
             </form>

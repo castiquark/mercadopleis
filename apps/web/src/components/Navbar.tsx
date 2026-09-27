@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { useAuth } from '@/lib/authContext';
-import { ShieldCheck, PlusCircle, ShoppingBag, KeyRound, UserCheck, User } from 'lucide-react';
+import { ShieldCheck, PlusCircle, ShoppingBag, KeyRound, UserCheck, User, Scale } from 'lucide-react';
 
 export function Navbar() {
   const { isConnected } = useAccount();
@@ -47,6 +47,15 @@ export function Navbar() {
           >
             <ShoppingBag className="h-4 w-4 text-slate-400" />
             <span className="hidden sm:inline">Mis Órdenes</span>
+          </Link>
+
+          <Link
+            href="/admin/disputes"
+            className="hidden items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-slate-300 transition hover:bg-surface-elevated hover:text-white lg:flex"
+            title="Panel de Árbitro de Disputas"
+          >
+            <Scale className="h-4 w-4 text-amber-400" />
+            <span>Disputas</span>
           </Link>
 
           {/* SIWE Authenticated user pill or Sign button */}
