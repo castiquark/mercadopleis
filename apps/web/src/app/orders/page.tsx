@@ -30,6 +30,8 @@ import {
   X,
   Copy,
   Check,
+  ShoppingBag,
+  Trash2,
 } from 'lucide-react';
 import { OrderTimelineAndChat } from '@/components/OrderTimelineAndChat';
 
@@ -103,7 +105,8 @@ export default function OrdersDashboardPage() {
   const { isConnected, chainId, address } = useAccount();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'buyer' | 'seller'>('buyer');
-  const [orders, setOrders] = useState<MockOrder[]>(INITIAL_DEMO_ORDERS);
+  const [showDemoOrders, setShowDemoOrders] = useState(false);
+  const [orders, setOrders] = useState<MockOrder[]>([]);
   const [activeDeliveryModalOrder, setActiveDeliveryModalOrder] = useState<MockOrder | null>(null);
   const [deliveryInputUrl, setDeliveryInputUrl] = useState('');
   const [deliveryHash, setDeliveryHash] = useState('');
@@ -186,11 +189,14 @@ export default function OrdersDashboardPage() {
         }));
       }
 
-      // Combine dynamic orders + local custom orders + demo orders (filtering duplicates)
+      // Combine dynamic orders + local custom orders (+ demo orders only if toggled)
+      const baseList = [...dynamicOrders, ...localCustom];
+      const ordersToDisplay = showDemoOrders ? [...baseList, ...INITIAL_DEMO_ORDERS] : baseList;
+
       const existingIds = new Set<string>();
       const combined: MockOrder[] = [];
 
-      for (const ord of [...dynamicOrders, ...localCustom, ...INITIAL_DEMO_ORDERS]) {
+      for (const ord of ordersToDisplay) {
         if (!existingIds.has(ord.id)) {
           existingIds.add(ord.id);
           combined.push(ord);
@@ -201,7 +207,7 @@ export default function OrdersDashboardPage() {
     } catch (e) {
       console.warn('Orders load note:', e);
     }
-  }, [user?.id, address]);
+  }, [user?.id, address, showDemoOrders]);
 
   useEffect(() => {
     loadOrders();
@@ -702,11 +708,44 @@ export default function OrdersDashboardPage() {
         })}
 
         {filteredOrders.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-border p-12 text-center text-slate-400">
-            <p className="text-base font-semibold">No tienes órdenes activas en este rol</p>
-            <p className="mt-1 text-xs text-slate-500">
-              Explora el catálogo para contratar o publica tu primer servicio.
+          <div className="rounded-2xl border border-dashed border-border/80 bg-surface-elevated/20 p-12 text-center text-slate-400">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-surface border border-border text-slate-400 mb-4">
+              <ShoppingBag className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-bold text-white">
+              {activeTab === 'buyer' ? 'Aún no has contratado servicios' : 'Aún no has recibido órdenes'}
+            </h3>
+            <p className="mt-1 text-sm text-slate-400 max-w-md mx-auto">
+              {activeTab === 'buyer'
+                ? 'Explora el catálogo de servicios verificados y contrata con la seguridad de smart contracts en Base Sepolia con USDC.'
+                : 'Publica tus habilidades en el catálogo internacional y comienza a recibir pagos asegurados en escrow.'}
             </p>
+
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              {activeTab === 'buyer' ? (
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover active:scale-95"
+                >
+                  Explorar Catálogo <ArrowRight className="h-4 w-4" />
+                </Link>
+              ) : (
+                <Link
+                  href="/services/new"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover active:scale-95"
+                >
+                  Publicar Servicio <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowDemoOrders((prev) => !prev)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-surface px-4 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition"
+              >
+                <span>{showDemoOrders ? 'Ocultar datos de prueba' : 'Ver órdenes demo de prueba'}</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
