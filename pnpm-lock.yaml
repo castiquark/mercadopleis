@@ -143,12 +143,18 @@ importers:
       '@types/react-dom':
         specifier: ^19.0.4
         version: 19.3.0(@types/react@19.3.0)
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.6.1
       postcss:
         specifier: ^8.5.3
         version: 8.5.28
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.19(tsx@4.23.15)
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
       typescript:
         specifier: ^5.8.2
         version: 5.9.3

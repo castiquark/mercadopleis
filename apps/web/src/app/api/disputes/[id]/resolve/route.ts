@@ -41,7 +41,7 @@ export async function POST(
         sellerAwardUsdc: sellerAward.toFixed(2),
         buyerRefundUsdc: buyerRefund.toFixed(2),
         resolutionNotes,
-        resolvedAt: new Date().toISOString(),
+        resolvedAt: new Date(),
       })
       .where(eq(disputes.id, id))
       .returning();
@@ -51,7 +51,7 @@ export async function POST(
       .update(orders)
       .set({
         status: finalOrderStatus,
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
       })
       .where(eq(orders.id, dispute.orderId));
 

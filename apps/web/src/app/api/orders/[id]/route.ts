@@ -50,7 +50,17 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { status, txHash, onChainOrderId, deliverableUrl, deliverableHash } = body;
+    const {
+      status,
+      txHash,
+      txHashRelease,
+      txHashFunding,
+      onChainOrderId,
+      deliverableUrl,
+      deliveryUrl,
+      deliverableHash,
+      deliveryHash,
+    } = body;
 
     const existingOrder = await db.query.orders.findFirst({
       where: eq(orders.id, id),
@@ -60,20 +70,28 @@ export async function PATCH(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    const resolvedDeliveryUrl = deliverableUrl ?? deliveryUrl;
+    const resolvedDeliveryHash = deliverableHash ?? deliveryHash;
+    const resolvedTxHashRelease = txHashRelease ?? (status === 'RELEASED' ? txHash : undefined);
+
     const [updatedOrder] = await db
       .update(orders)
       .set({
         status: status || existingOrder.status,
         contractOrderId: onChainOrderId !== undefined ? Number(onChainOrderId) : existingOrder.contractOrderId,
-        deliveryReferenceUrl: deliverableUrl !== undefined ? deliverableUrl : existingOrder.deliveryReferenceUrl,
-        deliveryHash: deliverableHash !== undefined ? deliverableHash : existingOrder.deliveryHash,
-        updatedAt: new Date().toISOString(),
+        deliveryReferenceUrl: resolvedDeliveryUrl !== undefined ? resolvedDeliveryUrl : existingOrder.deliveryReferenceUrl,
+        deliveryHash: resolvedDeliveryHash !== undefined ? resolvedDeliveryHash : existingOrder.deliveryHash,
+        txHashRelease: resolvedTxHashRelease !== undefined ? resolvedTxHashRelease : existingOrder.txHashRelease,
+        deliveredAt: status === 'DELIVERED' ? new Date() : existingOrder.deliveredAt,
+        releasedAt: status === 'RELEASED' ? new Date() : existingOrder.releasedAt,
+        updatedAt: new Date(),
       })
       .where(eq(orders.id, id))
       .returning();
 
     return NextResponse.json({ order: updatedOrder });
   } catch (err: any) {
-    return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
+    console.error('Error in PATCH /api/orders/[id]:', err);
+    return NextResponse.json({ error: 'Failed to update order', details: err?.message }, { status: 500 });
   }
 }

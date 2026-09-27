@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     await db
       .update(orders)
-      .set({ status: 'DISPUTED', updatedAt: new Date().toISOString() })
+      .set({ status: 'DISPUTED', updatedAt: new Date() })
       .where(eq(orders.id, orderId));
 
     return NextResponse.json({ dispute: newDispute }, { status: 201 });

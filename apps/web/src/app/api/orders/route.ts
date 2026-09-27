@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { serviceId } = body;
+    const { serviceId, contractOrderId, txHashFunding } = body;
 
     if (!serviceId) {
       return NextResponse.json({ error: 'serviceId is required' }, { status: 400 });
@@ -41,6 +41,8 @@ export async function POST(request: NextRequest) {
         serviceId: service.id,
         buyerId: authUser.id,
         sellerId: service.sellerId,
+        contractOrderId: contractOrderId !== undefined && contractOrderId !== null ? Number(contractOrderId) : null,
+        txHashFunding: txHashFunding || null,
         grossAmountUsdc: grossAmount.toString(),
         platformFeeBps: feeBps,
         platformFeeUsdc: platformFeeUsdc.toString(),

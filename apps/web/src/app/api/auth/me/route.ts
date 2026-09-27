@@ -37,7 +37,7 @@ export async function PATCH(request: NextRequest) {
         bio: bio !== undefined ? bio : undefined,
         country: country || undefined,
         avatarUrl: avatarUrl !== undefined ? avatarUrl : undefined,
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
       })
       .where(eq(users.id, authUser.id))
       .returning();

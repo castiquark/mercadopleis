@@ -3,8 +3,14 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'mercadopleis_super_secret_jwt_key_change_in_production';
 
-// In-memory nonce cache with expiration
-const nonceMap = new Map<string, { nonce: string; expiresAt: number }>();
+// In-memory nonce cache with expiration (persisted on globalThis to survive HMR/route re-evaluations)
+const globalForAuth = globalThis as unknown as {
+  nonceMap?: Map<string, { nonce: string; expiresAt: number }>;
+};
+
+const nonceMap =
+  globalForAuth.nonceMap ?? new Map<string, { nonce: string; expiresAt: number }>();
+globalForAuth.nonceMap = nonceMap;
 
 export interface TokenPayload {
   id: string;

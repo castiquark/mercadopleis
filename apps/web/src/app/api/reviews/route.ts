@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       .update(users)
       .set({
         rating: avgRating,
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
       })
       .where(eq(users.id, order.sellerId));
 
