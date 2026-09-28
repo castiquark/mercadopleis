@@ -6,8 +6,8 @@ export { MarketplaceEscrowAbi };
 export const ESCROW_ADDRESSES: Record<number, `0x${string}`> = {
   // Base Sepolia Testnet (Deployed on Base Sepolia)
   [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
-  // Base Mainnet
-  [CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID]: '0x0000000000000000000000000000000000000000',
+  // Base Mainnet (Deployed & Verified on Base Mainnet)
+  [CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID]: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
 };
 
 /**

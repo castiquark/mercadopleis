@@ -11,7 +11,7 @@ import { FaucetButton } from './FaucetButton';
 import { LanguageSwitch } from './LanguageSwitch';
 
 export function Navbar() {
-  const { isConnected } = useAccount();
+  const { isConnected, chainId } = useAccount();
   const { user, isAuthenticated, isAdmin, isLoading, signIn } = useAuth();
   const { t } = useLanguage();
 
@@ -64,17 +64,20 @@ export function Navbar() {
             </Link>
           )}
 
-          <Link
-            href="/faucet"
-            className="flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/20 hover:border-cyan-400"
-            title="Faucet de Test USDC en Base Sepolia"
-          >
-            <Droplet className="h-3.5 w-3.5 fill-cyan-400/20 text-cyan-400" />
-            <span className="hidden sm:inline">{t('faucet')}</span>
-          </Link>
+          {/* Faucet only on Base Sepolia (chainId 84532) */}
+          {(!chainId || chainId === 84532) && (
+            <Link
+              href="/faucet"
+              className="flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/20 hover:border-cyan-400"
+              title="Faucet de Test USDC en Base Sepolia"
+            >
+              <Droplet className="h-3.5 w-3.5 fill-cyan-400/20 text-cyan-400" />
+              <span className="hidden sm:inline">{t('faucet')}</span>
+            </Link>
+          )}
 
-          {/* Quick Faucet Mint Button if connected */}
-          {isConnected && <FaucetButton variant="navbar" amount="1000" />}
+          {/* Quick Faucet Mint Button if connected to Base Sepolia */}
+          {isConnected && chainId === 84532 && <FaucetButton variant="navbar" amount="1000" />}
 
           {/* Language Switcher */}
           <LanguageSwitch />

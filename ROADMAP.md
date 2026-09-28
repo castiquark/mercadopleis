@@ -49,22 +49,23 @@
 
 **Objetivo:** Llevar `mercadopleis` de la red de pruebas (Base Sepolia) a producción con dinero real en [mercadopleis.club](https://mercadopleis.club).
 
-* **1.1. Script de Despliegue en Foundry (`contracts/script/DeployMainnet.s.sol`):**
+* **1.1. Script de Despliegue en Foundry (`contracts/script/DeployMainnet.s.sol`):** ✅ Completado
   * Despliegue del smart contract `MarketplaceEscrow.sol` en **Base Mainnet** (Chain ID: `8453`).
+  * Dirección del Contrato en Mainnet: [`0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48`](https://basescan.org/address/0x9e5b4c1112f026568233dc571dd4120dbe9fbf48)
+  * Tx de Despliegue: `0xc5513a6927977c46ccbef8df2082dd87121b26cd6cba96579a41203954953412`
   * Parámetros inmutables:
     * `feeRecipient`: `0xF6d48E6EFa40Ac16B2A71fa89c81D93da171cA00`
     * `arbitrator`: `0xF6d48E6EFa40Ac16B2A71fa89c81D93da171cA00`
     * `initialFeeBps`: `300` (3.0%)
-* **1.2. Habilitación de USDC Oficial de Circle:**
-  * Ejecutar `setAcceptedToken(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, true)`.
-  * Validación de 6 decimales.
-* **1.3. Verificación de Código Fuente en BaseScan:**
-  * Verificación pública del contrato con Foundry (`forge verify-contract --chain-id 8453`).
-* **1.4. Configuración de Entorno en Producción:**
-  * Variables de entorno en Netlify:
-    * `NEXT_PUBLIC_CHAIN_ID=8453`
-    * `NEXT_PUBLIC_USDC_ADDRESS=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
-    * `NEXT_PUBLIC_ESCROW_ADDRESS=<dirección_desplegada_mainnet>`
+* **1.2. Habilitación de USDC Oficial de Circle:** ✅ Completado
+  * Tx de Habilitación: `0x07d81f80f1aa60ef65886ea89058ed1bccab8e7c4fce67ad16bcb7f0fa30eac4`
+  * Token: [`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`](https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913) (USDC oficial nativo de Circle en Base, 6 decimales).
+* **1.3. Verificación de Código Fuente en BaseScan:** ✅ Completado
+  * Verificado y público en [BaseScan](https://basescan.org/address/0x9e5b4c1112f026568233dc571dd4120dbe9fbf48#code) y [Sourcify](https://sourcify.dev/server/verify-ui/jobs/2f44398c-92ad-42a5-955f-a5f60cb23cfb).
+* **1.4. Configuración de Entorno en Frontend:** ✅ Completado
+  * Contrato configurado en `ESCROW_ADDRESSES[8453]` en `@mercadopleis/contracts-abi`.
+  * Cadena principal por defecto en RainbowKit / Wagmi establecida en `base` (Base Mainnet).
+  * USDC oficial vinculado automáticamente al operar en Base Mainnet.
 * **1.5. Ajustes de Navegación:**
   * Desactivar o condicionar el enlace `/faucet` únicamente para entornos de prueba.
 * **1.6. Smoke Test con Dinero Real:**
