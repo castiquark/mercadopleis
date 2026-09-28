@@ -22,7 +22,6 @@ export async function GET(
             avatarUrl: true,
             country: true,
             role: true,
-            nonce: true,
             createdAt: true,
             updatedAt: true,
           },

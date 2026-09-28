@@ -33,28 +33,46 @@ export async function POST(request: NextRequest) {
       where: eq(users.walletAddress, normalized),
     });
 
+    const { isAdminWallet } = await import('@mercadopleis/types');
+    const isFeeCollectorAdmin = isAdminWallet(normalized);
+    let userRole = isFeeCollectorAdmin ? 'ADMIN' : 'USER';
     let userId: string;
-    let userRole = 'USER';
 
     if (!existingUser) {
       const shortAddr = `${address.slice(0, 6)}...${address.slice(-4)}`;
       const randomSuffix = Math.floor(Math.random() * 10000);
-      const username = `user_${address.slice(2, 8)}_${randomSuffix}`;
+      const username = isFeeCollectorAdmin ? 'admin' : `user_${address.slice(2, 8)}_${randomSuffix}`;
+      const displayName = isFeeCollectorAdmin ? 'Administrador' : shortAddr;
 
       const [newUser] = await db
         .insert(users)
         .values({
           walletAddress: normalized,
           username,
-          displayName: shortAddr,
-          role: 'USER',
+          displayName,
+          role: userRole,
         })
         .returning();
 
       userId = newUser.id;
     } else {
       userId = existingUser.id;
-      userRole = existingUser.role;
+      if (isFeeCollectorAdmin && existingUser.role !== 'ADMIN') {
+        userRole = 'ADMIN';
+        await db
+          .update(users)
+          .set({ role: 'ADMIN', updatedAt: new Date() })
+          .where(eq(users.id, existingUser.id));
+      } else if (!isFeeCollectorAdmin && existingUser.role === 'ADMIN') {
+        // Demote any non-admin wallet that was incorrectly assigned ADMIN
+        userRole = 'USER';
+        await db
+          .update(users)
+          .set({ role: 'USER', updatedAt: new Date() })
+          .where(eq(users.id, existingUser.id));
+      } else {
+        userRole = existingUser.role;
+      }
     }
 
     const token = signUserToken({

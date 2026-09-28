@@ -151,3 +151,11 @@ export const CONTRACT_CONFIG = {
   USDC_BASE_SEPOLIA_OFFICIAL: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as `0x${string}`,
   USDC_BASE_MAINNET: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as `0x${string}`,
 } as const;
+
+export const ADMIN_WALLET_ADDRESS = '0xF6d48E6EFa40Ac16B2A71fa89c81D93da171cA00'.toLowerCase();
+
+export function isAdminWallet(address?: string | null): boolean {
+  if (!address) return false;
+  return address.toLowerCase() === ADMIN_WALLET_ADDRESS;
+}
+

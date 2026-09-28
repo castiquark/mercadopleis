@@ -12,6 +12,13 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  if (authUser.role !== 'ADMIN') {
+    return NextResponse.json(
+      { error: 'Forbidden: Solo el administrador / árbitro autorizado puede resolver disputas' },
+      { status: 403 }
+    );
+  }
+
   try {
     const { id } = await params;
     const body = await request.json();

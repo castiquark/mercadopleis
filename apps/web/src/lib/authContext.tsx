@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAccount, useSignMessage } from 'wagmi';
 import { getNonce, verifySignature, getAuthToken, clearAuthToken } from './api';
 
+import { isAdminWallet } from '@mercadopleis/types';
+
 interface AuthUser {
   id: string;
   walletAddress: string;
@@ -19,6 +21,7 @@ interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   isLoading: boolean;
   signIn: () => Promise<boolean>;
   signOut: () => void;
@@ -28,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   token: null,
   isAuthenticated: false,
+  isAdmin: false,
   isLoading: false,
   signIn: async () => false,
   signOut: () => {},
@@ -117,12 +121,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
+  const isAdmin = (user?.role === 'ADMIN') || (!!address && isAdminWallet(address));
+
   return (
     <AuthContext.Provider
       value={{
         user,
         token,
         isAuthenticated: !!user && !!token,
+        isAdmin,
         isLoading,
         signIn,
         signOut,

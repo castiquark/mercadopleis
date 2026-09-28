@@ -1,22 +1,28 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAccount, useWriteContract } from 'wagmi';
 import { parseUnits } from 'viem';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES, calculateOrderAmounts } from '@mercadopleis/contracts-abi';
-import { CONTRACT_CONFIG } from '@mercadopleis/types';
+import { CONTRACT_CONFIG, isAdminWallet, ADMIN_WALLET_ADDRESS } from '@mercadopleis/types';
 import { fetchDisputes, resolveDisputeApi } from '@/lib/api';
+import { useAuth } from '@/lib/authContext';
 import {
   Gavel,
   ShieldAlert,
+  ShieldCheck,
   CheckCircle2,
   AlertTriangle,
   Scale,
   ArrowRight,
   RefreshCw,
   ExternalLink,
-  Percent,
+  Lock,
+  Loader2,
+  LogIn,
+  ShoppingBag,
+  Sparkles,
 } from 'lucide-react';
 
 interface DisputeItem {
@@ -35,37 +41,11 @@ interface DisputeItem {
   createdAt: string;
 }
 
-const DEMO_DISPUTES: DisputeItem[] = [
-  {
-    id: 'disp-demo-1',
-    contractOrderId: 104,
-    serviceTitle: 'Desarrollo de Smart Contract Escrow o ERC20 en Solidity',
-    grossAmountUsdc: 250,
-    reason: 'El entregable entregado tiene errores de compilación y no incluye los tests unitarios prometidos.',
-    evidenceUrl: 'https://github.com/client-test/dispute-evidence-sample',
-    buyerAddress: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
-    sellerAddress: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-    status: 'OPEN',
-    createdAt: '2026-09-27T14:30:00Z',
-  },
-  {
-    id: 'disp-demo-2',
-    contractOrderId: 102,
-    serviceTitle: 'Diseño UI/UX de Landing Page Web3 en Figma',
-    grossAmountUsdc: 180,
-    reason: 'Faltó entregar el prototipo mobile responsivo y los componentes de diseño en Figma.',
-    buyerAddress: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
-    sellerAddress: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
-    status: 'RESOLVED',
-    sellerAwardUsdc: 120,
-    buyerRefundUsdc: 60,
-    createdAt: '2026-09-25T11:15:00Z',
-  },
-];
-
 export default function AdminDisputesPage() {
   const { address, isConnected, chainId } = useAccount();
-  const [disputesList, setDisputesList] = useState<DisputeItem[]>(DEMO_DISPUTES);
+  const { user, isAdmin, isLoading: isAuthLoading, signIn } = useAuth();
+  const [disputesList, setDisputesList] = useState<DisputeItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedDispute, setSelectedDispute] = useState<DisputeItem | null>(null);
   const [sellerSplitPct, setSellerSplitPct] = useState<number>(50); // percentage to seller (0 to 100)
   const [resolutionNotes, setResolutionNotes] = useState('');
@@ -76,19 +56,20 @@ export default function AdminDisputesPage() {
   const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID];
   const { writeContractAsync } = useWriteContract();
 
-  const ARBITRATOR_WALLET = '0xF6d48E6EFa40Ac16B2A71fa89c81D93da171cA00'.toLowerCase();
-  const isArbitrator = address?.toLowerCase() === ARBITRATOR_WALLET;
+  const isArbitrator = !!address && isAdminWallet(address);
+  const isAuthorized = isArbitrator || isAdmin;
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
+      setIsLoading(true);
       const apiDisputes = await fetchDisputes();
-      if (apiDisputes && apiDisputes.length > 0) {
+      if (apiDisputes && Array.isArray(apiDisputes)) {
         const mapped: DisputeItem[] = apiDisputes.map((d: any) => ({
           id: d.id,
-          contractOrderId: d.order?.contractOrderId || 101,
+          contractOrderId: d.order?.contractOrderId || 0,
           orderId: d.orderId,
           serviceTitle: d.order?.service?.title || 'Servicio de Marketplace',
-          grossAmountUsdc: parseFloat(d.order?.grossAmountUsdc || '100'),
+          grossAmountUsdc: parseFloat(d.order?.grossAmountUsdc || '0'),
           reason: d.reason,
           evidenceUrl: d.evidenceUrl,
           buyerAddress: d.order?.buyer?.walletAddress || '0x...',
@@ -98,16 +79,25 @@ export default function AdminDisputesPage() {
           buyerRefundUsdc: d.buyerRefundUsdc ? parseFloat(d.buyerRefundUsdc) : undefined,
           createdAt: d.createdAt,
         }));
-        setDisputesList([...mapped, ...DEMO_DISPUTES.filter(d => !mapped.some(m => m.id === d.id))]);
+        setDisputesList(mapped);
+      } else {
+        setDisputesList([]);
       }
     } catch (e) {
       console.warn('Disputes fetch note:', e);
+      setDisputesList([]);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (isAuthorized) {
+      loadData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [isAuthorized, loadData]);
 
   // Compute breakdown for selected dispute
   const totalAmount = selectedDispute ? selectedDispute.grossAmountUsdc : 0;
@@ -170,6 +160,86 @@ export default function AdminDisputesPage() {
     }
   };
 
+  // State 1: Wallet not connected
+  if (!isConnected) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
+        <div className="rounded-3xl border border-border/80 bg-surface/90 p-8 sm:p-12 text-center backdrop-blur-md shadow-2xl">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20">
+            <Lock className="h-8 w-8" />
+          </div>
+          <h1 className="mt-6 text-2xl font-bold text-white sm:text-3xl">Acceso Restringido</h1>
+          <p className="mt-3 text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
+            El Panel de Arbitraje y Administración está reservado exclusivamente para la billetera del administrador y árbitro oficial de la plataforma:
+          </p>
+          <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-background/80 px-4 py-2 font-mono text-xs text-primary-light">
+            <span>{ADMIN_WALLET_ADDRESS}</span>
+          </div>
+          <p className="mt-4 text-xs text-slate-500">
+            Por favor, conecta la wallet correspondiente desde la barra superior para continuar.
+          </p>
+          <div className="mt-8 flex justify-center gap-4">
+            <Link
+              href="/orders"
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-surface-elevated hover:text-white transition"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <span>Mis Órdenes</span>
+            </Link>
+            <Link
+              href="/services"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover transition"
+            >
+              <span>Explorar Servicios</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // State 2: Wallet connected but not authorized admin
+  if (!isAuthorized) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
+        <div className="rounded-3xl border border-red-500/30 bg-surface/90 p-8 sm:p-12 text-center backdrop-blur-md shadow-2xl">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10 text-red-400 ring-1 ring-red-500/20">
+            <ShieldAlert className="h-8 w-8" />
+          </div>
+          <span className="mt-6 inline-block rounded-full bg-red-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-red-400">
+            Error 403 • Acceso Denegado
+          </span>
+          <h1 className="mt-3 text-2xl font-bold text-white sm:text-3xl">Zona Exclusiva de Administración</h1>
+          <p className="mt-3 text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
+            Tu wallet conectada (<code className="font-mono text-slate-300">{address?.slice(0, 10)}...{address?.slice(-6)}</code>) no cuenta con privilegios administrativos ni facultades de arbitraje.
+          </p>
+          <div className="mt-4 rounded-xl border border-border/80 bg-background/60 p-4 text-xs text-slate-400 max-w-md mx-auto">
+            <div className="text-slate-500 uppercase tracking-wider text-[10px] font-semibold mb-1">Wallet Administradora Requerida</div>
+            <span className="font-mono text-primary-light">{ADMIN_WALLET_ADDRESS}</span>
+          </div>
+          <div className="mt-8 flex justify-center gap-4">
+            <Link
+              href="/orders"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover transition"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <span>Ver Mis Órdenes</span>
+            </Link>
+            <Link
+              href="/services"
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-surface-elevated hover:text-white transition"
+            >
+              <span>Servicios Disponibles</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // State 3: Authorized Administrator view
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
@@ -203,6 +273,27 @@ export default function AdminDisputesPage() {
         </div>
       </div>
 
+      {/* SIWE Authenticate prompt if wallet matches admin but session is not established */}
+      {!user && (
+        <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-primary/40 bg-primary/10 p-5">
+          <div className="flex items-center gap-3">
+            <Sparkles className="h-5 w-5 text-primary-light shrink-0" />
+            <div>
+              <div className="text-sm font-bold text-white">Sesión SIWE de Administrador Pendiente</div>
+              <div className="text-xs text-slate-300">Firma el mensaje criptográfico para activar permisos administrativos en el backend.</div>
+            </div>
+          </div>
+          <button
+            onClick={() => signIn()}
+            disabled={isAuthLoading}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary-hover disabled:opacity-50 transition"
+          >
+            <LogIn className="h-3.5 w-3.5" />
+            <span>{isAuthLoading ? 'Firmando...' : 'Iniciar Sesión Admin'}</span>
+          </button>
+        </div>
+      )}
+
       {/* Contract & Role Banner */}
       <div className="mt-6 rounded-2xl border border-border bg-surface p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between text-xs">
@@ -221,15 +312,9 @@ export default function AdminDisputesPage() {
 
           <div className="flex items-center gap-2">
             <span className="text-slate-400">Tu Estado:</span>
-            {isArbitrator ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-1 font-bold text-accent">
-                <Gavel className="h-3.5 w-3.5" /> Árbitro Autorizado On-Chain
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-elevated px-3 py-1 text-slate-400">
-                Visualización (Solo el árbitro puede resolver)
-              </span>
-            )}
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-1 font-bold text-accent">
+              <Gavel className="h-3.5 w-3.5" /> Árbitro Autorizado On-Chain
+            </span>
           </div>
         </div>
       </div>
@@ -247,91 +332,108 @@ export default function AdminDisputesPage() {
         </div>
       )}
 
-      {/* Disputes Grid */}
-      <div className="mt-8 space-y-4">
-        {disputesList.map((dispute) => (
-          <div
-            key={dispute.id}
-            className="rounded-2xl border border-border bg-surface p-6 transition hover:border-slate-600"
-          >
-            <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-              <div className="max-w-2xl">
-                <div className="flex items-center gap-3">
-                  <span className="rounded bg-surface-elevated px-2 py-0.5 text-xs font-mono text-slate-300">
-                    Smart Contract ID #{dispute.contractOrderId}
-                  </span>
-
-                  {dispute.status === 'OPEN' ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-medium text-red-400">
-                      <AlertTriangle className="h-3 w-3" /> Disputa Abierta
+      {/* Loading state */}
+      {isLoading ? (
+        <div className="mt-12 flex flex-col items-center justify-center py-16 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="mt-4 text-sm text-slate-400">Cargando disputas desde la base de datos y contratos...</p>
+        </div>
+      ) : disputesList.length === 0 ? (
+        /* Empty state */
+        <div className="mt-8 rounded-2xl border border-border/80 bg-surface/60 p-12 text-center">
+          <ShieldCheck className="mx-auto h-12 w-12 text-accent/80" />
+          <h3 className="mt-4 text-base font-bold text-white">Sin Disputas Activas</h3>
+          <p className="mt-2 text-xs text-slate-400 max-w-sm mx-auto">
+            No existen disputas abiertas en la plataforma en este momento. Todos los contratos se encuentran en estado normal.
+          </p>
+        </div>
+      ) : (
+        /* Disputes Grid */
+        <div className="mt-8 space-y-4">
+          {disputesList.map((dispute) => (
+            <div
+              key={dispute.id}
+              className="rounded-2xl border border-border bg-surface p-6 transition hover:border-slate-600"
+            >
+              <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+                <div className="max-w-2xl">
+                  <div className="flex items-center gap-3">
+                    <span className="rounded bg-surface-elevated px-2 py-0.5 text-xs font-mono text-slate-300">
+                      Smart Contract ID #{dispute.contractOrderId}
                     </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
-                      <CheckCircle2 className="h-3 w-3" /> Resuelta
-                    </span>
-                  )}
-                </div>
 
-                <h3 className="mt-2 text-lg font-bold text-white">{dispute.serviceTitle}</h3>
-
-                {/* Reason description */}
-                <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 p-3.5 text-xs text-red-200">
-                  <strong className="block text-red-400 mb-1">Motivo del reclamo:</strong>
-                  {dispute.reason}
-                </div>
-
-                {dispute.evidenceUrl && (
-                  <div className="mt-2 text-xs text-slate-400">
-                    <span>Pruebas aportadas: </span>
-                    <a
-                      href={dispute.evidenceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-mono text-primary-light hover:underline inline-flex items-center gap-1"
-                    >
-                      {dispute.evidenceUrl}
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
+                    {dispute.status === 'OPEN' ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-medium text-red-400">
+                        <AlertTriangle className="h-3 w-3" /> Disputa Abierta
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
+                        <CheckCircle2 className="h-3 w-3" /> Resuelta
+                      </span>
+                    )}
                   </div>
-                )}
 
-                {/* Wallets involved */}
-                <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-400">
-                  <span>Comprador: <code className="text-slate-300">{dispute.buyerAddress.slice(0, 10)}...</code></span>
-                  <span>Prestador: <code className="text-slate-300">{dispute.sellerAddress.slice(0, 10)}...</code></span>
-                </div>
-              </div>
+                  <h3 className="mt-2 text-lg font-bold text-white">{dispute.serviceTitle}</h3>
 
-              {/* Amounts and Actions */}
-              <div className="flex flex-col lg:items-end justify-between self-stretch">
-                <div>
-                  <div className="flex items-baseline gap-1 lg:justify-end">
-                    <span className="text-2xl font-extrabold text-white">{dispute.grossAmountUsdc}</span>
-                    <span className="text-xs font-semibold text-usdc">USDC en Escrow</span>
+                  {/* Reason description */}
+                  <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 p-3.5 text-xs text-red-200">
+                    <strong className="block text-red-400 mb-1">Motivo del reclamo:</strong>
+                    {dispute.reason}
                   </div>
-                  {dispute.status === 'RESOLVED' && (
-                    <div className="mt-2 text-xs text-accent lg:text-right">
-                      <p>Fallo: {dispute.sellerAwardUsdc} USDC prestador / {dispute.buyerRefundUsdc} USDC reembolso</p>
+
+                  {dispute.evidenceUrl && (
+                    <div className="mt-2 text-xs text-slate-400">
+                      <span>Pruebas aportadas: </span>
+                      <a
+                        href={dispute.evidenceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-primary-light hover:underline inline-flex items-center gap-1"
+                      >
+                        {dispute.evidenceUrl}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
                     </div>
                   )}
+
+                  {/* Wallets involved */}
+                  <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-400">
+                    <span>Comprador: <code className="text-slate-300">{dispute.buyerAddress.slice(0, 10)}...</code></span>
+                    <span>Prestador: <code className="text-slate-300">{dispute.sellerAddress.slice(0, 10)}...</code></span>
+                  </div>
                 </div>
 
-                {dispute.status === 'OPEN' && (
-                  <button
-                    onClick={() => {
-                      setSelectedDispute(dispute);
-                      setSellerSplitPct(50);
-                    }}
-                    className="mt-4 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/20 transition hover:bg-primary-hover active:scale-95"
-                  >
-                    Evaluar y Emitir Fallo
-                  </button>
-                )}
+                {/* Amounts and Actions */}
+                <div className="flex flex-col lg:items-end justify-between self-stretch">
+                  <div>
+                    <div className="flex items-baseline gap-1 lg:justify-end">
+                      <span className="text-2xl font-extrabold text-white">{dispute.grossAmountUsdc}</span>
+                      <span className="text-xs font-semibold text-usdc">USDC en Escrow</span>
+                    </div>
+                    {dispute.status === 'RESOLVED' && (
+                      <div className="mt-2 text-xs text-accent lg:text-right">
+                        <p>Fallo: {dispute.sellerAwardUsdc} USDC prestador / {dispute.buyerRefundUsdc} USDC reembolso</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {dispute.status === 'OPEN' && (
+                    <button
+                      onClick={() => {
+                        setSelectedDispute(dispute);
+                        setSellerSplitPct(50);
+                      }}
+                      className="mt-4 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/20 transition hover:bg-primary-hover active:scale-95"
+                    >
+                      Evaluar y Emitir Fallo
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Resolution Modal */}
       {selectedDispute && (

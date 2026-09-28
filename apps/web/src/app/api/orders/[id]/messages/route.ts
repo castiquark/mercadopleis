@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, orders, orderMessages, users } from '@mercadopleis/database';
+import { db, orders, orderMessages } from '@mercadopleis/database';
 import { eq, asc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 
@@ -7,16 +7,28 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authUser = getAuthUserFromRequest(request);
+  if (!authUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { id } = await params;
-    
-    // Check if order exists
+
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, id),
     });
 
     if (!order) {
-      return NextResponse.json({ messages: [] });
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // RBAC: Only buyer, seller, or admin can read messages
+    if (order.buyerId !== authUser.id && order.sellerId !== authUser.id && authUser.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Forbidden: No tienes acceso a los mensajes de esta orden' },
+        { status: 403 }
+      );
     }
 
     const messages = await db.query.orderMessages.findMany({
@@ -37,7 +49,7 @@ export async function GET(
     return NextResponse.json({ messages });
   } catch (err: any) {
     console.warn('Error fetching order messages:', err);
-    return NextResponse.json({ messages: [] });
+    return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 });
   }
 }
 
@@ -46,8 +58,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const authUser = getAuthUserFromRequest(request);
+  if (!authUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const body = await request.json();
-  const { content, senderWallet } = body;
+  const { content } = body;
 
   if (!content || typeof content !== 'string' || !content.trim()) {
     return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
@@ -56,29 +72,27 @@ export async function POST(
   try {
     const { id } = await params;
 
-    // Resolve sender
-    let senderId = authUser?.id;
-    if (!senderId && senderWallet) {
-      const user = await db.query.users.findFirst({
-        where: eq(users.walletAddress, senderWallet.toLowerCase()),
-      });
-      if (user) senderId = user.id;
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, id),
+    });
+
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    if (!senderId) {
-      const defaultUser = await db.query.users.findFirst();
-      senderId = defaultUser?.id;
-    }
-
-    if (!senderId) {
-      return NextResponse.json({ error: 'User could not be identified' }, { status: 401 });
+    // RBAC: Only buyer, seller, or admin can send messages for this order
+    if (order.buyerId !== authUser.id && order.sellerId !== authUser.id && authUser.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Forbidden: No tienes autorización para enviar mensajes en esta orden' },
+        { status: 403 }
+      );
     }
 
     const [newMessage] = await db
       .insert(orderMessages)
       .values({
         orderId: id,
-        senderId,
+        senderId: authUser.id,
         content: content.trim(),
       })
       .returning();

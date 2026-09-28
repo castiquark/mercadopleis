@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { getAuthToken } from '@/lib/api';
 import { 
   CheckCircle2, 
   Clock, 
@@ -96,7 +97,11 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const res = await fetch(`/api/orders/${order.id}/messages`);
+        const token = getAuthToken();
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`/api/orders/${order.id}/messages`, { headers });
         if (res.ok) {
           const data = await res.json();
           if (data.messages && data.messages.length > 0) {
@@ -144,12 +149,15 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
     setIsSending(true);
 
     try {
+      const token = getAuthToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`/api/orders/${order.id}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           content: messageText,
-          senderWallet: address,
         }),
       });
 

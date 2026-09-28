@@ -170,11 +170,18 @@ export async function updateOrder(
 }
 
 /**
- * Fetch all disputes
+ * Fetch disputes (all disputes if admin, user-specific disputes otherwise)
  */
 export async function fetchDisputes() {
   try {
-    const res = await fetch(`${API_URL}/disputes`, { cache: 'no-store' });
+    const token = getAuthToken();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${API_URL}/disputes`, {
+      headers,
+      cache: 'no-store',
+    });
     if (!res.ok) throw new Error('Failed to fetch disputes');
     const data = await res.json();
     return data.disputes || [];

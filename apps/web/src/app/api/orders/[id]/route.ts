@@ -70,6 +70,22 @@ export async function PATCH(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    const isBuyer = existingOrder.buyerId === authUser.id;
+    const isSeller = existingOrder.sellerId === authUser.id;
+    const isAdmin = authUser.role === 'ADMIN';
+
+    if (!isBuyer && !isSeller && !isAdmin) {
+      return NextResponse.json({ error: 'Forbidden: No tienes autorización para modificar esta orden' }, { status: 403 });
+    }
+
+    if (status === 'DELIVERED' && !isSeller && !isAdmin) {
+      return NextResponse.json({ error: 'Forbidden: Solo el prestador puede marcar la orden como entregada' }, { status: 403 });
+    }
+
+    if (status === 'RELEASED' && !isBuyer && !isAdmin) {
+      return NextResponse.json({ error: 'Forbidden: Solo el comprador puede aprobar la entrega y liberar fondos' }, { status: 403 });
+    }
+
     const resolvedDeliveryUrl = deliverableUrl ?? deliveryUrl;
     const resolvedDeliveryHash = deliverableHash ?? deliveryHash;
     const resolvedTxHashRelease = txHashRelease ?? (status === 'RELEASED' ? txHash : undefined);

@@ -3,7 +3,12 @@ import { db, disputes, orders } from '@mercadopleis/database';
 import { eq, desc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authUser = getAuthUserFromRequest(request);
+  if (!authUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const list = await db.query.disputes.findMany({
       orderBy: [desc(disputes.createdAt)],
@@ -37,7 +42,20 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json({ disputes: list });
+    // Administrators / Arbitrators see all disputes across the platform
+    if (authUser.role === 'ADMIN') {
+      return NextResponse.json({ disputes: list });
+    }
+
+    // Regular users ONLY see disputes pertaining to their own orders
+    const userDisputes = list.filter(
+      (d: any) =>
+        d.order?.buyerId === authUser.id ||
+        d.order?.sellerId === authUser.id ||
+        d.openedById === authUser.id
+    );
+
+    return NextResponse.json({ disputes: userDisputes });
   } catch (error: any) {
     console.error('Error fetching disputes:', error);
     return NextResponse.json({ error: 'Failed to fetch disputes' }, { status: 500 });

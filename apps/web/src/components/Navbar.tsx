@@ -10,7 +10,7 @@ import { FaucetButton } from './FaucetButton';
 
 export function Navbar() {
   const { isConnected } = useAccount();
-  const { user, isAuthenticated, isLoading, signIn, signOut } = useAuth();
+  const { user, isAuthenticated, isAdmin, isLoading, signIn, signOut } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
@@ -50,14 +50,16 @@ export function Navbar() {
             <span className="hidden sm:inline">Mis Órdenes</span>
           </Link>
 
-          <Link
-            href="/admin/disputes"
-            className="hidden items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-slate-300 transition hover:bg-surface-elevated hover:text-white lg:flex"
-            title="Panel de Árbitro de Disputas"
-          >
-            <Scale className="h-4 w-4 text-amber-400" />
-            <span>Disputas</span>
-          </Link>
+          {isAdmin && (
+            <Link
+              href="/admin/disputes"
+              className="hidden items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-300 transition hover:bg-amber-500/20 hover:text-white lg:flex"
+              title="Panel de Árbitro de Disputas (Solo Administrador)"
+            >
+              <Scale className="h-3.5 w-3.5 text-amber-400" />
+              <span>Panel Admin</span>
+            </Link>
+          )}
 
           <Link
             href="/faucet"
