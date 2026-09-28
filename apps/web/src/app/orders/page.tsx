@@ -64,6 +64,12 @@ interface MockOrder {
     resolutionNotes?: string | null;
     createdAt?: string;
   } | null;
+  review?: {
+    id?: string;
+    rating: number;
+    comment: string;
+    createdAt?: string;
+  } | null;
 }
 
 const INITIAL_DEMO_ORDERS: MockOrder[] = [
@@ -160,14 +166,27 @@ export default function OrdersDashboardPage() {
         orderId: activeReviewModalOrder.id,
         rating: reviewRating,
         comment: reviewComment.trim(),
-      }).catch((err) => console.warn('Submit review API fallback note:', err));
+        reviewerWallet: address,
+      });
+
+      const updatedOrderId = activeReviewModalOrder.id;
+      const finalRating = reviewRating;
+      const finalComment = reviewComment.trim();
 
       setReviewedOrders((prev) => ({
         ...prev,
-        [activeReviewModalOrder.id]: reviewRating,
+        [updatedOrderId]: finalRating,
       }));
 
-      setActionNotice(`¡Gracias por calificar el servicio con ${reviewRating} estrellas! Tu reseña quedó registrada.`);
+      setOrders((prev) =>
+        prev.map((ord) =>
+          ord.id === updatedOrderId
+            ? { ...ord, review: { rating: finalRating, comment: finalComment } }
+            : ord
+        )
+      );
+
+      setActionNotice(t('reviewSubmittedNotice'));
       setActiveReviewModalOrder(null);
       setReviewComment('');
     } catch (err: any) {
@@ -182,29 +201,37 @@ export default function OrdersDashboardPage() {
   const loadOrders = useCallback(async () => {
     try {
       const localCustom = JSON.parse(localStorage.getItem('mercadopleis_custom_orders') || '[]');
-      const apiOrders = await fetchMyOrders();
+      const apiOrders = await fetchMyOrders(undefined, address);
 
       let dynamicOrders: MockOrder[] = [];
 
       if (apiOrders && Array.isArray(apiOrders) && apiOrders.length > 0) {
-        dynamicOrders = apiOrders.map((bo: any) => ({
-          id: bo.id,
-          contractOrderId: bo.contractOrderId || Math.floor(100 + Math.random() * 900),
-          serviceTitle: bo.service?.title || 'Servicio Contratado',
-          role: bo.buyerId === user?.id ? 'buyer' : 'seller',
-          amountUsdc: parseFloat(bo.grossAmountUsdc),
-          sellerAmountUsdc: parseFloat(bo.sellerAmountUsdc),
-          platformFeeUsdc: parseFloat(bo.platformFeeUsdc),
-          status: bo.status,
-          deliveryHash: bo.deliveryHash,
-          deliveryUrl: bo.deliveryUrl,
-          deadlineTimestamp: bo.deadlineTimestamp,
-          autoReleaseDeadline: bo.autoReleaseDeadline,
-          sellerAddress: bo.seller?.walletAddress || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-          buyerAddress: bo.buyer?.walletAddress || address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-          isDemo: false,
-          dispute: bo.dispute || null,
-        }));
+        const loadedReviews: Record<string, number> = {};
+        dynamicOrders = apiOrders.map((bo: any) => {
+          if (bo.review?.rating) {
+            loadedReviews[bo.id] = bo.review.rating;
+          }
+          return {
+            id: bo.id,
+            contractOrderId: bo.contractOrderId || Math.floor(100 + Math.random() * 900),
+            serviceTitle: bo.service?.title || 'Servicio Contratado',
+            role: (bo.buyer?.walletAddress?.toLowerCase() === address?.toLowerCase() || (user?.id && bo.buyerId === user.id)) ? 'buyer' : 'seller',
+            amountUsdc: parseFloat(bo.grossAmountUsdc),
+            sellerAmountUsdc: parseFloat(bo.sellerAmountUsdc),
+            platformFeeUsdc: parseFloat(bo.platformFeeUsdc),
+            status: bo.status,
+            deliveryHash: bo.deliveryHash,
+            deliveryUrl: bo.deliveryUrl,
+            deadlineTimestamp: bo.deadlineTimestamp,
+            autoReleaseDeadline: bo.autoReleaseDeadline,
+            sellerAddress: bo.seller?.walletAddress || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+            buyerAddress: bo.buyer?.walletAddress || address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+            isDemo: false,
+            dispute: bo.dispute || null,
+            review: bo.review || null,
+          };
+        });
+        setReviewedOrders((prev) => ({ ...loadedReviews, ...prev }));
       }
 
       // Combine dynamic orders + local custom orders (+ demo orders only if toggled)
@@ -791,17 +818,24 @@ export default function OrdersDashboardPage() {
                 )}
 
                 {order.status === 'RELEASED' && (
-                  <div className="flex flex-wrap items-center justify-between w-full gap-2">
+                  <div className="flex flex-wrap items-center justify-between w-full gap-3">
                     <span className="text-xs text-accent font-semibold flex items-center gap-1.5">
-                      <CheckCircle className="h-4 w-4" /> Contrato finalizado y fondos liberados.
+                      <CheckCircle className="h-4 w-4" /> {language === 'en' ? 'Contract finalized and funds released.' : 'Contrato finalizado y fondos liberados.'}
                     </span>
 
                     {order.role === 'buyer' && (
-                      reviewedOrders[order.id] ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
-                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                          Calificado ({reviewedOrders[order.id]} / 5 ★)
-                        </span>
+                      (reviewedOrders[order.id] || order.review) ? (
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
+                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                            {t('serviceRated')} ({reviewedOrders[order.id] || order.review?.rating || 5} / 5 ★)
+                          </span>
+                          {(order.review?.comment || (reviewedOrders[order.id] && reviewComment)) && (
+                            <span className="text-[11px] text-slate-400 italic max-w-xs text-right truncate">
+                              "{order.review?.comment || reviewComment}"
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <button
                           onClick={() => {
@@ -809,12 +843,26 @@ export default function OrdersDashboardPage() {
                             setReviewRating(5);
                             setReviewComment('');
                           }}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3.5 py-1.5 text-xs font-bold text-amber-300 transition hover:bg-amber-400/20 active:scale-95"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3.5 py-1.5 text-xs font-bold text-amber-300 transition hover:bg-amber-400/20 active:scale-95 shadow-sm shadow-amber-500/10"
                         >
                           <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                          Calificar Servicio
+                          {t('rateService')}
                         </button>
                       )
+                    )}
+
+                    {order.role === 'seller' && (reviewedOrders[order.id] || order.review) && (
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                          {t('receivedReview')}: {order.review?.rating || reviewedOrders[order.id] || 5} / 5 ★
+                        </span>
+                        {order.review?.comment && (
+                          <span className="text-[11px] text-slate-400 italic max-w-xs text-right truncate">
+                            "{order.review.comment}"
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
@@ -1106,25 +1154,25 @@ export default function OrdersDashboardPage() {
       {/* Modal for Buyer Review Submission */}
       {activeReviewModalOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center gap-2 text-amber-400">
               <Star className="h-5 w-5 fill-amber-400" />
-              <h3 className="text-lg font-bold text-white">Calificar Servicio</h3>
+              <h3 className="text-lg font-bold text-white">{t('modalReviewTitle')}</h3>
             </div>
             <p className="mt-1 text-xs text-slate-400">
-              Tu reseña se registrará en el perfil público del prestador y ayudará a otros compradores en la comunidad.
+              {t('modalReviewDesc')}
             </p>
 
             <form onSubmit={handleSubmitReview} className="mt-5 space-y-4">
               <div>
-                <span className="text-xs text-slate-400">Servicio:</span>
+                <span className="text-xs text-slate-400">{t('modalReviewServiceLabel')}:</span>
                 <p className="font-semibold text-white text-sm">{activeReviewModalOrder.serviceTitle}</p>
               </div>
 
               {/* Star Rating Selector */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300">
-                  Calificación (1 a 5 estrellas)
+                  {t('modalReviewRatingLabel')}
                 </label>
                 <div className="mt-2 flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -1146,11 +1194,11 @@ export default function OrdersDashboardPage() {
                     </button>
                   ))}
                   <span className="ml-2 text-xs font-semibold text-amber-300">
-                    {reviewRating === 5 && '¡Excelente!'}
-                    {reviewRating === 4 && 'Muy Bueno'}
-                    {reviewRating === 3 && 'Aceptable'}
-                    {reviewRating === 2 && 'Regular'}
-                    {reviewRating === 1 && 'Malo'}
+                    {reviewRating === 5 && t('ratingExcellent')}
+                    {reviewRating === 4 && t('ratingVeryGood')}
+                    {reviewRating === 3 && t('ratingAcceptable')}
+                    {reviewRating === 2 && t('ratingFair')}
+                    {reviewRating === 1 && t('ratingPoor')}
                   </span>
                 </div>
               </div>
@@ -1158,12 +1206,12 @@ export default function OrdersDashboardPage() {
               {/* Review Comment */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300">
-                  Comentario / Experiencia de Entrega
+                  {t('modalReviewCommentLabel')}
                 </label>
                 <textarea
                   required
                   rows={3}
-                  placeholder="Detalla la calidad del trabajo, puntualidad, comunicación y resolución de requerimientos..."
+                  placeholder={t('modalReviewCommentPlaceholder')}
                   value={reviewComment}
                   onChange={(e) => setReviewComment(e.target.value)}
                   className="mt-1.5 w-full rounded-xl border border-border bg-background p-3 text-xs text-white placeholder-slate-500 focus:border-primary focus:outline-none"
@@ -1176,14 +1224,14 @@ export default function OrdersDashboardPage() {
                   onClick={() => setActiveReviewModalOrder(null)}
                   className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-slate-400 hover:text-white"
                 >
-                  Cancelar
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={isProcessing || !reviewComment.trim()}
                   className="flex-1 rounded-xl bg-amber-500 py-2.5 text-sm font-bold text-background shadow-lg shadow-amber-500/20 transition hover:bg-amber-400 active:scale-95 disabled:opacity-50"
                 >
-                  {isProcessing ? 'Guardando...' : 'Publicar Calificación'}
+                  {isProcessing ? t('savingReview') : t('publishReview')}
                 </button>
               </div>
             </form>

@@ -1,22 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, orders } from '@mercadopleis/database';
+import { db, orders, users } from '@mercadopleis/database';
 import { eq, or, desc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 
 export async function GET(request: NextRequest) {
   const authUser = getAuthUserFromRequest(request);
-  if (!authUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const addressParam = request.nextUrl.searchParams.get('address');
+
+  let targetUserId = authUser?.id;
+
+  if (!targetUserId && addressParam) {
+    const user = await db.query.users.findFirst({
+      where: eq(users.walletAddress, addressParam.toLowerCase()),
+    });
+    targetUserId = user?.id;
+  }
+
+  if (!targetUserId) {
+    return NextResponse.json({ orders: [] });
   }
 
   try {
     const role = request.nextUrl.searchParams.get('role'); // 'buyer' | 'seller' | undefined
 
-    let whereClause = or(eq(orders.buyerId, authUser.id), eq(orders.sellerId, authUser.id));
+    let whereClause = or(eq(orders.buyerId, targetUserId), eq(orders.sellerId, targetUserId));
     if (role === 'buyer') {
-      whereClause = eq(orders.buyerId, authUser.id);
+      whereClause = eq(orders.buyerId, targetUserId);
     } else if (role === 'seller') {
-      whereClause = eq(orders.sellerId, authUser.id);
+      whereClause = eq(orders.sellerId, targetUserId);
     }
 
     const userOrders = await db.query.orders.findMany({
@@ -39,6 +50,7 @@ export async function GET(request: NextRequest) {
           },
         },
         dispute: true,
+        review: true,
       },
     });
 

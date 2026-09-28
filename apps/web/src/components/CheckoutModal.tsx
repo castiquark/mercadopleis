@@ -7,7 +7,7 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadCont
 import { parseUnits, formatUnits } from 'viem';
 import { Erc20Abi, MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
-import { Shield, Clock, CheckCircle2, AlertCircle, X, ExternalLink, Droplet } from 'lucide-react';
+import { Shield, Clock, CheckCircle2, AlertCircle, X, ExternalLink, Droplet, MapPin } from 'lucide-react';
 import { FaucetButton } from './FaucetButton';
 import { isUserRejection } from '../lib/web3Errors';
 
@@ -104,10 +104,17 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
         await new Promise((resolve) => setTimeout(resolve, 800));
       }
 
+      const generatedContractOrderId = Math.floor(100 + Math.random() * 900);
+
       // Step 3: Persist Order in PostgreSQL backend
       try {
         const { createOrder } = await import('@/lib/api');
-        await createOrder(service.id);
+        await createOrder({
+          serviceId: service.id,
+          contractOrderId: generatedContractOrderId,
+          txHashFunding: fundTx,
+          buyerWallet: address,
+        });
       } catch (dbErr) {
         console.warn('[Escrow] Backend registration notice:', dbErr);
       }
@@ -116,7 +123,7 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
       const localOrders = JSON.parse(localStorage.getItem('mercadopleis_custom_orders') || '[]');
       const newLocalOrder = {
         id: `ord-${Date.now()}`,
-        contractOrderId: Math.floor(100 + Math.random() * 900),
+        contractOrderId: generatedContractOrderId,
         serviceTitle: service.title,
         role: 'buyer',
         amountUsdc: service.priceUsdc,
@@ -179,10 +186,28 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
 
         {/* Service Summary */}
         <div className="mt-5 rounded-xl border border-border/80 bg-background/50 p-4">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            {categoryLabel}
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              {categoryLabel}
+            </span>
+            {service.deliveryType === 'in_person' && (
+              <span className="rounded-md bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-300 border border-cyan-500/30">
+                {language === 'en' ? 'In-Person' : 'Presencial'}
+              </span>
+            )}
+            {service.deliveryType === 'both' && (
+              <span className="rounded-md bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-300 border border-indigo-500/30">
+                {language === 'en' ? 'Hybrid' : 'Híbrido'}
+              </span>
+            )}
+          </div>
           <h4 className="mt-1 font-semibold text-white">{service.title}</h4>
+          {(service.locality || service.city) && (
+            <div className="mt-1.5 flex items-center gap-1 text-xs text-cyan-300">
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
+              <span>{service.locality ? `${service.locality}, ` : ''}{service.city || service.country}</span>
+            </div>
+          )}
 
           <div className="mt-4 space-y-2 border-t border-border/60 pt-3 text-sm">
             <div className="flex justify-between text-slate-300">

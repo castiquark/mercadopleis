@@ -3,18 +3,23 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
-import { MARKETPLACE_CATEGORIES, ServiceCategory } from '@mercadopleis/types';
+import { MARKETPLACE_CATEGORIES, ServiceCategory, ServiceDeliveryType } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
-import { ArrowLeft, Clock, DollarSign, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Clock, DollarSign, Sparkles, CheckCircle2, AlertCircle, MapPin, Globe, Compass } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NewServicePage() {
   const router = useRouter();
   const { isConnected, address } = useAccount();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<ServiceCategory>('development');
+  const [deliveryType, setDeliveryType] = useState<ServiceDeliveryType>('digital');
+  const [country, setCountry] = useState('Uruguay');
+  const [city, setCity] = useState('');
+  const [locality, setLocality] = useState('');
+  const [addressOrReference, setAddressOrReference] = useState('');
   const [description, setDescription] = useState('');
   const [priceUsdc, setPriceUsdc] = useState<string>('150');
   const [deliveryDays, setDeliveryDays] = useState<string>('5');
@@ -32,7 +37,9 @@ export default function NewServicePage() {
 
     setIsSubmitting(true);
 
-    // In local demo / MVP without backend DB migration, store in localStorage so it appears immediately!
+    const isInPerson = deliveryType === 'in_person' || deliveryType === 'both';
+
+    // Store in localStorage so it appears immediately across all components!
     const newService = {
       id: `local-${Date.now()}`,
       sellerId: address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
@@ -40,6 +47,11 @@ export default function NewServicePage() {
       slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + `-${Date.now().toString().slice(-4)}`,
       description,
       category,
+      deliveryType,
+      country: isInPerson ? country.trim() : null,
+      city: isInPerson ? city.trim() : null,
+      locality: isInPerson ? locality.trim() : null,
+      addressOrReference: isInPerson ? addressOrReference.trim() : null,
       priceUsdc: priceNum,
       deliveryDays: parseInt(deliveryDays, 10) || 3,
       isActive: true,
@@ -53,11 +65,15 @@ export default function NewServicePage() {
         title,
         description,
         category,
+        deliveryType,
+        country: isInPerson ? country.trim() : undefined,
+        city: isInPerson ? city.trim() : undefined,
+        locality: isInPerson ? locality.trim() : undefined,
+        addressOrReference: isInPerson ? addressOrReference.trim() : undefined,
         priceUsdc: priceNum,
         deliveryDays: parseInt(deliveryDays, 10) || 3,
         sellerWallet: address || undefined,
       }).catch((e) => console.warn('[API] Could not save to remote backend, saving to local fallback:', e));
-
 
       const existing = JSON.parse(localStorage.getItem('mercadopleis_custom_services') || '[]');
       localStorage.setItem('mercadopleis_custom_services', JSON.stringify([newService, ...existing]));
@@ -167,6 +183,143 @@ export default function NewServicePage() {
                 ))}
               </select>
             </div>
+
+            {/* Delivery Mode: Digital vs In-Person vs Hybrid */}
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
+                  {t('deliveryModeLabel')}
+                </label>
+                <span className="text-[11px] text-slate-400">
+                  {t('deliveryModeHelp')}
+                </span>
+              </div>
+              <div className="mt-2 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                <button
+                  type="button"
+                  onClick={() => setDeliveryType('digital')}
+                  className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition ${
+                    deliveryType === 'digital'
+                      ? 'border-primary bg-primary/15 text-white shadow-md shadow-primary/20'
+                      : 'border-border bg-background text-slate-400 hover:border-slate-600 hover:text-slate-200'
+                  }`}
+                >
+                  <Globe className={`h-5 w-5 ${deliveryType === 'digital' ? 'text-primary-light' : 'text-slate-400'}`} />
+                  <span className="text-xs font-bold">{t('modeDigital')}</span>
+                  <span className="text-[10px] text-slate-400 leading-tight">
+                    {language === 'en' ? '100% Online / Remote' : '100% Online / Remoto'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDeliveryType('in_person')}
+                  className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition ${
+                    deliveryType === 'in_person'
+                      ? 'border-cyan-400 bg-cyan-500/15 text-white shadow-md shadow-cyan-500/20'
+                      : 'border-border bg-background text-slate-400 hover:border-slate-600 hover:text-slate-200'
+                  }`}
+                >
+                  <MapPin className={`h-5 w-5 ${deliveryType === 'in_person' ? 'text-cyan-400' : 'text-slate-400'}`} />
+                  <span className="text-xs font-bold">{t('modeInPerson')}</span>
+                  <span className="text-[10px] text-slate-400 leading-tight">
+                    {language === 'en' ? 'Physical / In-Person' : 'Físico / Presencial'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDeliveryType('both')}
+                  className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition ${
+                    deliveryType === 'both'
+                      ? 'border-indigo-400 bg-indigo-500/15 text-white shadow-md shadow-indigo-500/20'
+                      : 'border-border bg-background text-slate-400 hover:border-slate-600 hover:text-slate-200'
+                  }`}
+                >
+                  <Compass className={`h-5 w-5 ${deliveryType === 'both' ? 'text-indigo-400' : 'text-slate-400'}`} />
+                  <span className="text-xs font-bold">{t('modeBoth')}</span>
+                  <span className="text-[10px] text-slate-400 leading-tight">
+                    {language === 'en' ? 'Hybrid / Flexible' : 'Híbrido / Flexible'}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* In-Person Geographic Location Form */}
+            {(deliveryType === 'in_person' || deliveryType === 'both') && (
+              <div className="rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-4 sm:p-5">
+                <div className="flex items-center gap-2 text-cyan-300">
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider">
+                    {t('locationSectionTitle')}
+                  </h3>
+                </div>
+                <p className="mt-1 text-xs text-slate-300">
+                  {t('locationSectionSubtitle')}
+                </p>
+
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {/* Country */}
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300">
+                      {t('countryLabel')} *
+                    </label>
+                    <input
+                      type="text"
+                      required={true}
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      placeholder={language === 'en' ? 'e.g. Uruguay, Argentina, United States...' : 'ej. Uruguay, Argentina, España...'}
+                      className="mt-1.5 w-full rounded-xl border border-cyan-500/30 bg-background/80 px-3.5 py-2 text-sm text-white placeholder-slate-500 transition focus:border-cyan-400 focus:outline-none"
+                    />
+                  </div>
+
+                  {/* City */}
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300">
+                      {t('cityLabel')} *
+                    </label>
+                    <input
+                      type="text"
+                      required={true}
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder={language === 'en' ? 'e.g. Maldonado, Montevideo, Buenos Aires...' : 'ej. Maldonado, Montevideo, Buenos Aires...'}
+                      className="mt-1.5 w-full rounded-xl border border-cyan-500/30 bg-background/80 px-3.5 py-2 text-sm text-white placeholder-slate-500 transition focus:border-cyan-400 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Locality / Barrio / Balneario */}
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-slate-300">
+                    {t('localityLabel')} *
+                  </label>
+                  <input
+                    type="text"
+                    required={true}
+                    value={locality}
+                    onChange={(e) => setLocality(e.target.value)}
+                    placeholder={t('localityPlaceholder')}
+                    className="mt-1.5 w-full rounded-xl border border-cyan-500/30 bg-background/80 px-3.5 py-2 text-sm text-white placeholder-slate-500 transition focus:border-cyan-400 focus:outline-none"
+                  />
+                </div>
+
+                {/* Address or Meeting point */}
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-slate-300">
+                    {t('addressOrRefLabel')}
+                  </label>
+                  <input
+                    type="text"
+                    value={addressOrReference}
+                    onChange={(e) => setAddressOrReference(e.target.value)}
+                    placeholder={t('addressOrRefPlaceholder')}
+                    className="mt-1.5 w-full rounded-xl border border-cyan-500/30 bg-background/80 px-3.5 py-2 text-sm text-white placeholder-slate-500 transition focus:border-cyan-400 focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Description */}
             <div>
@@ -283,13 +436,34 @@ export default function NewServicePage() {
 
             <div className="mt-3 overflow-hidden rounded-xl border border-border bg-surface p-5 shadow-xl">
               <div className="flex items-center justify-between">
-                <span className="rounded-md bg-surface-elevated px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  {selectedCatLabel}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="rounded-md bg-surface-elevated px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    {selectedCatLabel}
+                  </span>
+                  {deliveryType === 'in_person' && (
+                    <span className="rounded-md bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-300 border border-cyan-500/30">
+                      {language === 'en' ? 'In-Person' : 'Presencial'}
+                    </span>
+                  )}
+                  {deliveryType === 'both' && (
+                    <span className="rounded-md bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-300 border border-indigo-500/30">
+                      {language === 'en' ? 'Hybrid' : 'Híbrido'}
+                    </span>
+                  )}
+                </div>
                 <span className="text-xs font-semibold text-accent">
                   {language === 'en' ? 'New' : 'Nuevo'}
                 </span>
               </div>
+
+              {(deliveryType === 'in_person' || deliveryType === 'both') && (
+                <div className="mt-2.5 flex items-center gap-1 text-xs text-cyan-300">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
+                  <span className="truncate font-medium">
+                    {locality ? `${locality}, ` : ''}{city ? `${city}` : country}
+                  </span>
+                </div>
+              )}
 
               <h4 className="mt-3 font-semibold text-white">
                 {title || (language === 'en' ? 'Your service title here' : 'Título de tu servicio aquí')}

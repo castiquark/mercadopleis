@@ -1,3 +1,5 @@
+import { CreateServiceInput, ServiceDeliveryType } from '@mercadopleis/types';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export function getAuthToken(address?: string | null): string | null {
@@ -25,16 +27,35 @@ export function clearAuthToken(address?: string | null) {
   }
 }
 
+export interface FetchServicesOptions {
+  category?: string | null;
+  deliveryType?: ServiceDeliveryType | 'all' | null;
+  country?: string | null;
+  city?: string | null;
+  locality?: string | null;
+  search?: string;
+}
+
 /**
  * Fetch services from PostgreSQL backend API
  */
-export async function fetchServices(category?: string | null, search?: string) {
+export async function fetchServices(options?: string | FetchServicesOptions | null, searchParam?: string) {
   try {
     const base = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
     const endpoint = API_URL.startsWith('http') ? `${API_URL}/services` : `${base}${API_URL}/services`;
     const url = new URL(endpoint);
-    if (category) url.searchParams.append('category', category);
-    if (search) url.searchParams.append('search', search);
+
+    if (typeof options === 'string') {
+      if (options) url.searchParams.append('category', options);
+      if (searchParam) url.searchParams.append('search', searchParam);
+    } else if (options && typeof options === 'object') {
+      if (options.category) url.searchParams.append('category', options.category);
+      if (options.deliveryType) url.searchParams.append('deliveryType', options.deliveryType);
+      if (options.country) url.searchParams.append('country', options.country);
+      if (options.city) url.searchParams.append('city', options.city);
+      if (options.locality) url.searchParams.append('locality', options.locality);
+      if (options.search) url.searchParams.append('search', options.search);
+    }
 
     const res = await fetch(url.toString(), { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch services');
@@ -76,14 +97,7 @@ export async function verifySignature(address: string, signature: string, messag
 /**
  * Create a new service in PostgreSQL
  */
-export async function createService(serviceData: {
-  title: string;
-  description: string;
-  category: string;
-  priceUsdc: number;
-  deliveryDays: number;
-  sellerWallet?: string;
-}) {
+export async function createService(serviceData: CreateServiceInput) {
   const token = getAuthToken(serviceData.sellerWallet);
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -99,18 +113,23 @@ export async function createService(serviceData: {
 
 
 /**
- * Fetch orders for current authenticated user from PostgreSQL
+ * Fetch orders for current authenticated user or connected wallet from PostgreSQL
  */
-export async function fetchMyOrders(role?: 'buyer' | 'seller') {
-  const token = getAuthToken();
-  if (!token) return null;
+export async function fetchMyOrders(role?: 'buyer' | 'seller', walletAddress?: string | null) {
+  const token = getAuthToken(walletAddress);
 
   try {
-    const url = new URL(`${API_URL}/orders/my`);
+    const base = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    const endpoint = API_URL.startsWith('http') ? `${API_URL}/orders/my` : `${base}${API_URL}/orders/my`;
+    const url = new URL(endpoint);
     if (role) url.searchParams.append('role', role);
+    if (walletAddress) url.searchParams.append('address', walletAddress);
+
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const res = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
+      headers,
       cache: 'no-store',
     });
 
@@ -126,17 +145,22 @@ export async function fetchMyOrders(role?: 'buyer' | 'seller') {
 /**
  * Creates an order record in PostgreSQL
  */
-export async function createOrder(serviceId: string) {
-  const token = getAuthToken();
-  if (!token) return null;
+export async function createOrder(data: string | {
+  serviceId: string;
+  contractOrderId?: number | null;
+  txHashFunding?: string | null;
+  buyerWallet?: string | null;
+}) {
+  const payload = typeof data === 'string' ? { serviceId: data } : data;
+  const token = getAuthToken(payload.buyerWallet);
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${API_URL}/orders`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ serviceId }),
+    headers,
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
@@ -265,16 +289,23 @@ export async function submitReview(reviewData: {
   orderId: string;
   rating: number;
   comment: string;
+  reviewerWallet?: string;
 }) {
   const token = getAuthToken();
-  if (!token) throw new Error('Debes iniciar sesión con SIWE para calificar');
+  if (!token && !reviewData.reviewerWallet) {
+    throw new Error('Debes conectar tu wallet para calificar el servicio');
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
   const res = await fetch(`${API_URL}/reviews`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
     body: JSON.stringify(reviewData),
   });
 

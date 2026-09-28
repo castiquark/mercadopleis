@@ -16,6 +16,9 @@ import {
   Check,
   UserCheck,
   ExternalLink,
+  MapPin,
+  Globe,
+  Compass,
 } from 'lucide-react';
 import { fetchServiceReviews } from '@/lib/api';
 
@@ -117,19 +120,33 @@ export default function ServiceDetailPage() {
           <span>{language === 'en' ? 'Back to Catalog' : 'Volver al Catálogo'}</span>
         </Link>
 
-        {(() => {
-          const categoryObj = MARKETPLACE_CATEGORIES.find((c) => c.id === service.category);
-          const categoryLabel = categoryObj
-            ? language === 'en'
-              ? categoryObj.nameEn || categoryObj.name
-              : categoryObj.name
-            : service.category;
-          return (
-            <span className="rounded-md bg-surface-elevated px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              {language === 'en' ? 'Category' : 'Categoría'}: {categoryLabel}
+        <div className="flex items-center gap-2">
+          {service.deliveryType === 'in_person' && (
+            <span className="rounded-md bg-cyan-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5" />
+              {language === 'en' ? 'In-Person Service' : 'Servicio Presencial'}
             </span>
-          );
-        })()}
+          )}
+          {service.deliveryType === 'both' && (
+            <span className="rounded-md bg-indigo-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5">
+              <Compass className="h-3.5 w-3.5" />
+              {language === 'en' ? 'Hybrid (Online or In-Person)' : 'Híbrido (Online o Presencial)'}
+            </span>
+          )}
+          {(() => {
+            const categoryObj = MARKETPLACE_CATEGORIES.find((c) => c.id === service.category);
+            const categoryLabel = categoryObj
+              ? language === 'en'
+                ? categoryObj.nameEn || categoryObj.name
+                : categoryObj.name
+              : service.category;
+            return (
+              <span className="rounded-md bg-surface-elevated px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                {language === 'en' ? 'Category' : 'Categoría'}: {categoryLabel}
+              </span>
+            );
+          })()}
+        </div>
       </div>
 
 
@@ -181,12 +198,66 @@ export default function ServiceDetailPage() {
             {/* Description */}
             <div className="mt-8 border-t border-border/80 pt-6">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
-                Acerca de este servicio
+                {language === 'en' ? 'About this service' : 'Acerca de este servicio'}
               </h3>
               <p className="mt-3 leading-relaxed text-slate-300 text-sm sm:text-base whitespace-pre-line">
                 {service.description}
               </p>
             </div>
+
+            {/* In-Person Geographic Location Details if applicable */}
+            {(service.deliveryType === 'in_person' || service.deliveryType === 'both' || service.locality || service.city) && (
+              <div className="mt-8 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="flex items-center gap-2 text-cyan-300">
+                    <MapPin className="h-5 w-5 shrink-0" />
+                    <div>
+                      <h3 className="text-sm font-bold text-white">
+                        {language === 'en' ? 'Geographic Location & Meeting Info' : 'Ubicación Geográfica y Encuentro'}
+                      </h3>
+                      <p className="text-xs text-slate-300">
+                        {service.deliveryType === 'both'
+                          ? (language === 'en' ? 'Available both in-person and remotely' : 'Disponible tanto de forma presencial como remota')
+                          : (language === 'en' ? 'In-person / Physical service' : 'Servicio con prestación física / presencial')}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="self-start sm:self-center rounded-lg bg-cyan-500/20 px-3 py-1 text-xs font-bold text-cyan-300 border border-cyan-500/40">
+                    {service.deliveryType === 'both' ? (language === 'en' ? 'Hybrid' : 'Híbrido') : (language === 'en' ? 'In-Person' : 'Presencial')}
+                  </span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  {service.country && (
+                    <div className="rounded-xl border border-border/80 bg-background/60 p-3">
+                      <span className="text-slate-400 font-medium block">{language === 'en' ? 'Country' : 'País'}</span>
+                      <span className="text-sm font-semibold text-white mt-0.5 block">{service.country}</span>
+                    </div>
+                  )}
+                  {service.city && (
+                    <div className="rounded-xl border border-border/80 bg-background/60 p-3">
+                      <span className="text-slate-400 font-medium block">{language === 'en' ? 'City / State' : 'Ciudad / Depto'}</span>
+                      <span className="text-sm font-semibold text-white mt-0.5 block">{service.city}</span>
+                    </div>
+                  )}
+                  {service.locality && (
+                    <div className="rounded-xl border border-cyan-500/40 bg-cyan-950/40 p-3">
+                      <span className="text-cyan-300 font-medium block">{language === 'en' ? 'Locality / Area' : 'Localidad / Barrio / Balneario'}</span>
+                      <span className="text-sm font-bold text-cyan-200 mt-0.5 block">{service.locality}</span>
+                    </div>
+                  )}
+                </div>
+
+                {service.addressOrReference && (
+                  <div className="mt-3 rounded-xl border border-border/80 bg-background/40 p-3 text-xs">
+                    <span className="text-slate-400 font-medium block">
+                      {language === 'en' ? 'Meeting point, address or coverage notes:' : 'Punto de encuentro, dirección o zona de cobertura:'}
+                    </span>
+                    <p className="text-slate-200 mt-0.5">{service.addressOrReference}</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* What you receive checklist (Section 9.2) */}
             <div className="mt-8 border-t border-border/80 pt-6">
@@ -226,7 +297,11 @@ export default function ServiceDetailPage() {
                 </div>
                 <div className="flex items-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300">
                   <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  <span>4.98 / 5.0</span>
+                  <span>
+                    {(reviewsList.length > 0
+                      ? (reviewsList.reduce((acc: number, r: any) => acc + Number(r.rating || 5), 0) / reviewsList.length).toFixed(1)
+                      : '5.0')} / 5.0 {reviewsList.length > 0 ? `(${reviewsList.length})` : ''}
+                  </span>
                 </div>
               </div>
 

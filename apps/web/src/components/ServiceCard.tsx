@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Service, MARKETPLACE_CATEGORIES } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
-import { Clock, Shield, Star } from 'lucide-react';
+import { Clock, Shield, Star, MapPin } from 'lucide-react';
 
 interface ServiceCardProps {
   service: Service;
@@ -21,19 +21,47 @@ export function ServiceCard({ service, onBook }: ServiceCardProps) {
       : categoryObj.name
     : service.category;
 
+  const isInPerson = service.deliveryType === 'in_person';
+  const isHybrid = service.deliveryType === 'both';
+  const locationText = service.locality
+    ? `${service.locality}${service.city ? `, ${service.city}` : ''}`
+    : service.city
+    ? `${service.city}${service.country ? `, ${service.country}` : ''}`
+    : service.country;
+
   return (
     <div className="group flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-surface p-5 transition-all duration-200 hover:-translate-y-1 hover:border-slate-600 hover:shadow-xl hover:shadow-primary/5">
       <div>
         {/* Category & Badge */}
         <div className="flex items-center justify-between">
-          <span className="rounded-md bg-surface-elevated px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
-            {categoryLabel}
-          </span>
-          <div className="flex items-center gap-1 text-xs font-medium text-amber-400">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="rounded-md bg-surface-elevated px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              {categoryLabel}
+            </span>
+            {isInPerson && (
+              <span className="rounded-md bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-300 border border-cyan-500/30">
+                {language === 'en' ? 'In-Person' : 'Presencial'}
+              </span>
+            )}
+            {isHybrid && (
+              <span className="rounded-md bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-300 border border-indigo-500/30">
+                {language === 'en' ? 'Hybrid' : 'Híbrido'}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1 text-xs font-medium text-amber-400 shrink-0">
             <Star className="h-3.5 w-3.5 fill-current" />
             <span>5.0</span>
           </div>
         </div>
+
+        {/* Location for in-person / hybrid */}
+        {(isInPerson || isHybrid) && locationText && (
+          <div className="mt-2.5 flex items-center gap-1 text-xs font-medium text-cyan-300">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
+            <span className="truncate">{locationText}</span>
+          </div>
+        )}
 
         {/* Title */}
         <Link href={`/services/${service.slug}`}>

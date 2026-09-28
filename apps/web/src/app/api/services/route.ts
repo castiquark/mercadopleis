@@ -5,6 +5,12 @@ import { getAuthUserFromRequest } from '@/lib/serverAuth';
 
 export async function GET(request: NextRequest) {
   const category = request.nextUrl.searchParams.get('category');
+  const deliveryType = request.nextUrl.searchParams.get('deliveryType');
+  const country = request.nextUrl.searchParams.get('country');
+  const city = request.nextUrl.searchParams.get('city');
+  const locality = request.nextUrl.searchParams.get('locality');
+  const search = request.nextUrl.searchParams.get('search')?.toLowerCase().trim();
+
   try {
     const whereClause = eq(services.isActive, true);
 
@@ -24,9 +30,49 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const filtered = category && category !== 'all'
-      ? (allServices as any[]).filter((s: any) => s.category?.toLowerCase() === category.toLowerCase())
-      : allServices;
+    let filtered = (allServices as any[]) || [];
+
+    if (category && category !== 'all') {
+      filtered = filtered.filter((s: any) => s.category?.toLowerCase() === category.toLowerCase());
+    }
+
+    if (deliveryType && deliveryType !== 'all') {
+      filtered = filtered.filter((s: any) => {
+        const type = s.deliveryType || 'digital';
+        if (deliveryType === 'in_person') {
+          return type === 'in_person' || type === 'both';
+        }
+        if (deliveryType === 'digital') {
+          return type === 'digital' || type === 'both';
+        }
+        return type === deliveryType;
+      });
+    }
+
+    if (country) {
+      const cLower = country.toLowerCase().trim();
+      filtered = filtered.filter((s: any) => s.country?.toLowerCase().includes(cLower));
+    }
+
+    if (city) {
+      const cityLower = city.toLowerCase().trim();
+      filtered = filtered.filter((s: any) => s.city?.toLowerCase().includes(cityLower));
+    }
+
+    if (locality) {
+      const locLower = locality.toLowerCase().trim();
+      filtered = filtered.filter((s: any) => s.locality?.toLowerCase().includes(locLower));
+    }
+
+    if (search) {
+      filtered = filtered.filter((s: any) =>
+        s.title?.toLowerCase().includes(search) ||
+        s.description?.toLowerCase().includes(search) ||
+        s.locality?.toLowerCase().includes(search) ||
+        s.city?.toLowerCase().includes(search) ||
+        s.country?.toLowerCase().includes(search)
+      );
+    }
 
     return NextResponse.json({ services: filtered || [] });
   } catch (err: any) {
@@ -39,7 +85,20 @@ export async function POST(request: NextRequest) {
   try {
     const authUser = getAuthUserFromRequest(request);
     const body = await request.json().catch(() => ({}));
-    const { title, description, category, priceUsdc, deliveryDays, coverImageUrl, sellerWallet } = body;
+    const {
+      title,
+      description,
+      category,
+      priceUsdc,
+      deliveryDays,
+      coverImageUrl,
+      sellerWallet,
+      deliveryType,
+      country,
+      city,
+      locality,
+      addressOrReference,
+    } = body;
 
     if (!title || !description || !category || !priceUsdc || !deliveryDays) {
       return NextResponse.json({ error: 'Missing required service fields' }, { status: 400 });
@@ -91,6 +150,11 @@ export async function POST(request: NextRequest) {
         category,
         priceUsdc: priceUsdc.toString(),
         deliveryDays: parseInt(deliveryDays.toString(), 10),
+        deliveryType: deliveryType || 'digital',
+        country: country || null,
+        city: city || null,
+        locality: locality || null,
+        addressOrReference: addressOrReference || null,
         coverImageUrl: coverImageUrl || null,
         isActive: true,
       })

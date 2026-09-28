@@ -122,6 +122,8 @@ export interface User {
   updatedAt: string;
 }
 
+export type ServiceDeliveryType = 'digital' | 'in_person' | 'both';
+
 export interface Service {
   id: string;
   sellerId: string;
@@ -132,10 +134,30 @@ export interface Service {
   category: ServiceCategory;
   priceUsdc: number; // Decimal USDC amount (e.g. 150.00)
   deliveryDays: number;
+  deliveryType?: ServiceDeliveryType;
+  country?: string | null;
+  city?: string | null;
+  locality?: string | null; // Localidad / Barrio / Balneario
+  addressOrReference?: string | null; // Punto de encuentro o referencia
   coverImageUrl?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreateServiceInput {
+  title: string;
+  description: string;
+  category: ServiceCategory;
+  priceUsdc: number;
+  deliveryDays: number;
+  deliveryType?: ServiceDeliveryType;
+  country?: string | null;
+  city?: string | null;
+  locality?: string | null;
+  addressOrReference?: string | null;
+  sellerWallet?: string;
+  coverImageUrl?: string | null;
 }
 
 export interface Order {
@@ -161,6 +183,8 @@ export interface Order {
   autoReleaseDeadline?: number | null; // Unix timestamp for 5 days after delivery
   txHashFunding?: `0x${string}` | null;
   txHashRelease?: `0x${string}` | null;
+  dispute?: Dispute | null;
+  review?: Review | null;
   createdAt: string;
   updatedAt: string;
 }

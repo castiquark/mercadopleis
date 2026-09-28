@@ -8,7 +8,7 @@ import { ServiceCard } from '@/components/ServiceCard';
 import { CheckoutModal } from '@/components/CheckoutModal';
 import { Service } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
-import { ShieldCheck, Search, Zap, CheckCircle } from 'lucide-react';
+import { ShieldCheck, Search, Zap, CheckCircle, MapPin, Globe, Compass, X, Filter } from 'lucide-react';
 
 const INITIAL_SERVICES: Service[] = [];
 
@@ -17,9 +17,10 @@ export default function HomePage() {
   const { language, t } = useLanguage();
   const [servicesList, setServicesList] = useState<Service[]>(INITIAL_SERVICES);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedDeliveryType, setSelectedDeliveryType] = useState<'all' | 'digital' | 'in_person'>('all');
+  const [locationQuery, setLocationQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedServiceForBooking, setSelectedServiceForBooking] = useState<Service | null>(null);
-
 
   useEffect(() => {
     async function loadData() {
@@ -46,14 +47,52 @@ export default function HomePage() {
     loadData();
   }, []);
 
+  // Extract distinct localities/cities from the services list for quick filter pills
+  const availableLocations = React.useMemo(() => {
+    const set = new Set<string>();
+    for (const s of servicesList) {
+      if (s.locality) set.add(s.locality);
+      else if (s.city) set.add(s.city);
+    }
+    return Array.from(set).slice(0, 8);
+  }, [servicesList]);
+
+  const hasActiveFilters = !!(selectedCategory || selectedDeliveryType !== 'all' || locationQuery || searchQuery);
+
+  const handleClearFilters = () => {
+    setSelectedCategory(null);
+    setSelectedDeliveryType('all');
+    setLocationQuery('');
+    setSearchQuery('');
+  };
 
   const filteredServices = servicesList.filter((service) => {
     const matchesCategory = !selectedCategory || service.category === selectedCategory;
+
+    const mode = service.deliveryType || 'digital';
+    const matchesDeliveryType =
+      selectedDeliveryType === 'all' ||
+      (selectedDeliveryType === 'digital' && (mode === 'digital' || mode === 'both')) ||
+      (selectedDeliveryType === 'in_person' && (mode === 'in_person' || mode === 'both'));
+
+    const locLower = locationQuery.toLowerCase().trim();
+    const matchesLocation =
+      !locLower ||
+      service.locality?.toLowerCase().includes(locLower) ||
+      service.city?.toLowerCase().includes(locLower) ||
+      service.country?.toLowerCase().includes(locLower) ||
+      service.addressOrReference?.toLowerCase().includes(locLower);
+
+    const searchLower = searchQuery.toLowerCase().trim();
     const matchesSearch =
-      !searchQuery ||
-      service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      service.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+      !searchLower ||
+      service.title.toLowerCase().includes(searchLower) ||
+      service.description.toLowerCase().includes(searchLower) ||
+      service.locality?.toLowerCase().includes(searchLower) ||
+      service.city?.toLowerCase().includes(searchLower) ||
+      service.country?.toLowerCase().includes(searchLower);
+
+    return matchesCategory && matchesDeliveryType && matchesLocation && matchesSearch;
   });
 
   return (
@@ -145,11 +184,119 @@ export default function HomePage() {
           </span>
         </div>
 
+        {/* Delivery Mode & Location Filter Bar */}
+        <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-border/80 bg-surface/80 p-3 sm:p-4 backdrop-blur-md">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            {/* Left: Mode Segmented Control */}
+            <div className="flex items-center gap-1 rounded-xl bg-background/80 p-1 border border-border">
+              <button
+                type="button"
+                onClick={() => setSelectedDeliveryType('all')}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  selectedDeliveryType === 'all'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>{t('modeAll')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedDeliveryType('digital')}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  selectedDeliveryType === 'digital'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Globe className="h-3.5 w-3.5 text-primary-light" />
+                <span>{t('modeDigital')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedDeliveryType('in_person')}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  selectedDeliveryType === 'in_person'
+                    ? 'bg-cyan-500 text-white shadow-sm shadow-cyan-500/25'
+                    : 'text-slate-400 hover:text-cyan-300'
+                }`}
+              >
+                <MapPin className="h-3.5 w-3.5 text-cyan-400" />
+                <span>{t('modeInPerson')}</span>
+              </button>
+            </div>
+
+            {/* Right: Location Filter Input */}
+            <div className="relative flex-1 md:max-w-xs">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-cyan-400">
+                <MapPin className="h-4 w-4" />
+              </div>
+              <input
+                type="text"
+                value={locationQuery}
+                onChange={(e) => setLocationQuery(e.target.value)}
+                placeholder={t('filterLocationPlaceholder')}
+                className="w-full rounded-xl border border-border bg-background/90 py-2 pl-9 pr-8 text-xs text-white placeholder-slate-500 transition focus:border-cyan-400 focus:outline-none"
+              />
+              {locationQuery && (
+                <button
+                  type="button"
+                  onClick={() => setLocationQuery('')}
+                  className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400 hover:text-white"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Location Pills & Active Filter Reset */}
+          {(availableLocations.length > 0 || hasActiveFilters) && (
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-2.5 text-xs">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1 mr-1">
+                  <MapPin className="h-3 w-3 text-cyan-400" />
+                  {language === 'en' ? 'Locations:' : 'Zonas:'}
+                </span>
+                {availableLocations.map((loc) => (
+                  <button
+                    key={loc}
+                    type="button"
+                    onClick={() => setLocationQuery(locationQuery === loc ? '' : loc)}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition ${
+                      locationQuery.toLowerCase() === loc.toLowerCase()
+                        ? 'border border-cyan-400 bg-cyan-500/20 text-cyan-300 font-bold'
+                        : 'border border-border/80 bg-background/60 text-slate-300 hover:border-slate-500 hover:text-white'
+                    }`}
+                  >
+                    {loc}
+                  </button>
+                ))}
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent hover:underline"
+                >
+                  <X className="h-3 w-3" />
+                  <span>{t('clearFilters')}</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Category Pills */}
-        <CategoryPills
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
-        />
+        <div className="mt-4">
+          <CategoryPills
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+          />
+        </div>
 
         {/* Services Grid */}
         <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -166,7 +313,17 @@ export default function HomePage() {
           <div className="mt-12 rounded-xl border border-dashed border-border p-12 text-center text-slate-400">
             <p className="text-base font-semibold">{t('noServicesFound')}</p>
             <p className="mt-1 text-xs text-slate-500">{t('noServicesDesc')}</p>
-            <div className="mt-5">
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-surface-elevated hover:text-white transition"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  <span>{t('clearFilters')}</span>
+                </button>
+              )}
               <Link
                 href="/services/new"
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/25 transition hover:bg-primary-hover active:scale-95"
