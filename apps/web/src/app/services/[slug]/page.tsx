@@ -21,12 +21,14 @@ import {
   Compass,
 } from 'lucide-react';
 import { fetchServiceReviews } from '@/lib/api';
+import { useAccount } from 'wagmi';
 
 
 const FALLBACK_SERVICES: Service[] = [];
 
 export default function ServiceDetailPage() {
   const { language } = useLanguage();
+  const { chainId } = useAccount();
   const params = useParams();
   const router = useRouter();
   const slug = params?.slug as string;
@@ -158,40 +160,52 @@ export default function ServiceDetailPage() {
             <div className="flex items-center gap-2 text-xs font-medium text-amber-400">
               <div className="flex items-center gap-1">
                 <Star className="h-4 w-4 fill-current" />
-                <span className="font-bold text-white">4.98</span>
+                <span className="font-bold text-white">
+                  {reviewsList.length > 0
+                    ? (reviewsList.reduce((acc: number, r: any) => acc + Number(r.rating || 5), 0) / reviewsList.length).toFixed(1)
+                    : (language === 'en' ? 'New' : 'Nuevo')}
+                </span>
               </div>
               <span className="text-slate-500">•</span>
-              <span className="text-slate-400">83 órdenes completadas</span>
+              <span className="text-slate-400">
+                {reviewsList.length > 0
+                  ? `${reviewsList.length} ${language === 'en' ? (reviewsList.length === 1 ? 'review' : 'reviews') : (reviewsList.length === 1 ? 'reseña' : 'reseñas')}`
+                  : (language === 'en' ? 'First orders open' : 'Primeras contrataciones disponibles')}
+              </span>
               <span className="text-slate-500">•</span>
-              <span className="text-accent font-semibold">100% satisfacción</span>
+              <span className="text-accent font-semibold">
+                {language === 'en' ? 'Non-Custodial Escrow' : 'Escrow Non-Custodial'}
+              </span>
             </div>
 
             <h1 className="mt-3 text-2xl font-bold text-white sm:text-3xl">
               {service.title}
             </h1>
 
-            {/* Seller profile card (Consistent with Section 19.3) */}
+            {/* Seller profile card */}
             <div className="mt-6 flex items-center justify-between rounded-xl border border-border/80 bg-background/50 p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 font-bold text-primary-light">
-                  {service.seller?.displayName?.[0] || 'P'}
+                  {service.seller?.displayName?.[0] || service.seller?.username?.[0] || 'V'}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-white">
-                      {service.seller?.displayName || 'Pablo C.'}
+                      {service.seller?.displayName || service.seller?.username || `${service.seller?.walletAddress?.slice(0, 6)}...${service.seller?.walletAddress?.slice(-4)}` || (language === 'en' ? 'Verified Seller' : 'Vendedor Verificado')}
                     </span>
                     <span className="inline-flex items-center gap-1 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent">
-                      <UserCheck className="h-3 w-3" /> Wallet Verificada
+                      <UserCheck className="h-3 w-3" /> {language === 'en' ? 'Verified Wallet' : 'Wallet Verificada'}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400">Uruguay • Miembro desde 2026</p>
+                  <p className="text-xs text-slate-400">
+                    {service.country || 'Global'} • {language === 'en' ? 'Registered Member' : 'Miembro Registrado'}
+                  </p>
                 </div>
               </div>
 
               <div className="hidden text-right text-xs sm:block">
-                <span className="text-slate-400">Volumen histórico</span>
-                <p className="font-bold text-white">12,430 USDC</p>
+                <span className="text-slate-400">{language === 'en' ? 'Payment Token' : 'Moneda de Cobro'}</span>
+                <p className="font-bold text-white">USDC (Circle)</p>
               </div>
             </div>
 
@@ -259,27 +273,43 @@ export default function ServiceDetailPage() {
               </div>
             )}
 
-            {/* What you receive checklist (Section 9.2) */}
+            {/* What you receive checklist */}
             <div className="mt-8 border-t border-border/80 pt-6">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
-                Qué incluye la entrega
+                {language === 'en' ? 'What is included in the delivery' : 'Qué incluye la entrega'}
               </h3>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="flex items-start gap-2.5 text-sm text-slate-200">
                   <Check className="h-4 w-4 shrink-0 text-accent mt-0.5" />
-                  <span>Código fuente completo y documentación técnica</span>
+                  <span>
+                    {language === 'en'
+                      ? 'Full source files, deliverables and documentation'
+                      : 'Archivos fuente completos, entregables y documentación'}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2.5 text-sm text-slate-200">
                   <Check className="h-4 w-4 shrink-0 text-accent mt-0.5" />
-                  <span>Pruebas unitarias y reporte de verificación</span>
+                  <span>
+                    {language === 'en'
+                      ? 'Quality assurance and deliverable validation'
+                      : 'Control de calidad y verificación del entregable'}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2.5 text-sm text-slate-200">
                   <Check className="h-4 w-4 shrink-0 text-accent mt-0.5" />
-                  <span>Soporte post-entrega y resolución de dudas</span>
+                  <span>
+                    {language === 'en'
+                      ? 'Post-delivery review and revisions window'
+                      : 'Ventana de revisión y ajustes post-entrega'}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2.5 text-sm text-slate-200">
                   <Check className="h-4 w-4 shrink-0 text-accent mt-0.5" />
-                  <span>Hash criptográfico on-chain de los archivos entregados</span>
+                  <span>
+                    {language === 'en'
+                      ? 'On-chain cryptographic SHA-256 hash of delivery files'
+                      : 'Hash criptográfico on-chain de los archivos entregados'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -289,72 +319,69 @@ export default function ServiceDetailPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
-                    Reseñas de Clientes Verificados
+                    {language === 'en' ? 'Verified Client Reviews' : 'Reseñas de Clientes Verificados'}
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Calificaciones registradas on-chain tras la liberación del escrow
+                    {language === 'en'
+                      ? 'Ratings recorded on-chain upon escrow release'
+                      : 'Calificaciones registradas tras la liberación del escrow'}
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  <span>
-                    {(reviewsList.length > 0
-                      ? (reviewsList.reduce((acc: number, r: any) => acc + Number(r.rating || 5), 0) / reviewsList.length).toFixed(1)
-                      : '5.0')} / 5.0 {reviewsList.length > 0 ? `(${reviewsList.length})` : ''}
-                  </span>
-                </div>
+                {reviewsList.length > 0 && (
+                  <div className="flex items-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300">
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    <span>
+                      {(reviewsList.reduce((acc: number, r: any) => acc + Number(r.rating || 5), 0) / reviewsList.length).toFixed(1)} / 5.0 ({reviewsList.length})
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {/* Reviews list */}
+              {/* Reviews list or honest empty state */}
               <div className="mt-4 space-y-3">
-                {(reviewsList.length > 0
-                  ? reviewsList
-                  : [
-                      {
-                        id: 'rev-sample-1',
-                        rating: 5,
-                        comment: 'Excelente desarrollo de smart contracts. El código fue impecable, bien comentado y con pruebas completas de invariantes. Muy recomendable.',
-                        createdAt: '2026-09-24T18:00:00Z',
-                        buyer: { displayName: 'Carlos Web3', walletAddress: '0x90F79bf6EB2c4f870365E785982E1f101E93b906' },
-                      },
-                      {
-                        id: 'rev-sample-2',
-                        rating: 5,
-                        comment: 'Gran comunicación y rapidez en la entrega. Cumplió con todos los requerimientos y el escrow garantizó total tranquilidad durante el proceso.',
-                        createdAt: '2026-09-22T15:30:00Z',
-                        buyer: { displayName: 'Elena D.', walletAddress: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65' },
-                      },
-                    ]
-                ).map((rev: any) => (
-                  <div
-                    key={rev.id}
-                    className="rounded-xl border border-border/80 bg-background/40 p-4 text-xs"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary-light">
-                          {(rev.buyer?.displayName || 'U')[0]}
+                {reviewsList.length > 0 ? (
+                  reviewsList.map((rev: any) => (
+                    <div
+                      key={rev.id}
+                      className="rounded-xl border border-border/80 bg-background/40 p-4 text-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary-light">
+                            {(rev.buyer?.displayName || 'U')[0]}
+                          </div>
+                          <span className="font-semibold text-white">
+                            {rev.buyer?.displayName || `${rev.buyer?.walletAddress?.slice(0, 6)}...${rev.buyer?.walletAddress?.slice(-4)}`}
+                          </span>
+                          <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent">
+                            {language === 'en' ? 'Verified Buyer' : 'Comprador Verificado'}
+                          </span>
                         </div>
-                        <span className="font-semibold text-white">
-                          {rev.buyer?.displayName || `${rev.buyer?.walletAddress?.slice(0, 6)}...${rev.buyer?.walletAddress?.slice(-4)}`}
-                        </span>
-                        <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent">
-                          Verificado
-                        </span>
+
+                        <div className="flex items-center gap-0.5 text-amber-400">
+                          {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                            <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
+                          ))}
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-0.5 text-amber-400">
-                        {Array.from({ length: rev.rating || 5 }).map((_, i) => (
-                          <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
-                        ))}
-                      </div>
+                      <p className="mt-2 text-slate-300 leading-relaxed">
+                        "{rev.comment}"
+                      </p>
                     </div>
-
-                    <p className="mt-2 text-slate-300 leading-relaxed">
-                      "{rev.comment}"
+                  ))
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border/80 bg-background/30 p-5 text-center text-xs text-slate-400">
+                    <p className="font-medium text-slate-300">
+                      {language === 'en' ? 'No reviews recorded yet' : 'Aún no hay reseñas registradas'}
+                    </p>
+                    <p className="mt-1 text-slate-500">
+                      {language === 'en'
+                        ? 'Be the first client to hire this service and leave an on-chain verified review.'
+                        : 'Sé el primer cliente en contratar este servicio y calificar el trabajo completado.'}
                     </p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
@@ -431,9 +458,9 @@ export default function ServiceDetailPage() {
             </button>
 
             <p className="mt-3 text-center text-[11px] text-slate-500">
-              {language === 'en'
-                ? 'Secured by Smart Contract on Base Sepolia'
-                : 'Protegido por Smart Contract en Base Sepolia'}
+              {chainId === 84532
+                ? (language === 'en' ? 'Secured by Escrow Smart Contract on Base Sepolia' : 'Protegido por Smart Contract en Base Sepolia')
+                : (language === 'en' ? 'Secured by Escrow Smart Contract on Base Mainnet' : 'Protegido por Smart Contract en Base Mainnet')}
             </p>
 
           </div>

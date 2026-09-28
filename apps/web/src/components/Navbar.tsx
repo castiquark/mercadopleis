@@ -29,9 +29,18 @@ export function Navbar() {
             </span>
           </Link>
 
-          <div className="hidden items-center gap-1 rounded-full border border-border/80 bg-surface px-3 py-1 text-xs text-slate-300 md:flex">
+          <div className="hidden items-center gap-1.5 rounded-full border border-border/80 bg-surface px-3 py-1 text-xs text-slate-300 md:flex">
             <ShieldCheck className="h-3.5 w-3.5 text-accent" />
-            <span>{t('escrowBadge')}</span>
+            <span>
+              {chainId === 84532
+                ? 'Base Sepolia (Testnet)'
+                : 'Base Mainnet'}
+            </span>
+            {chainId === 84532 && (
+              <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-bold text-amber-300 border border-amber-500/30">
+                TEST
+              </span>
+            )}
           </div>
         </div>
 

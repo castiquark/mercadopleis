@@ -74,7 +74,7 @@ export const translations = {
     hideTimelineAndChat: 'Ocultar Actividad & Mensajes',
     noOrdersBuyer: 'Aún no has contratado servicios',
     noOrdersSeller: 'Aún no has recibido órdenes',
-    noOrdersBuyerDesc: 'Explora el catálogo de servicios verificados y contrata con la seguridad de smart contracts en Base Sepolia con USDC.',
+    noOrdersBuyerDesc: 'Explora el catálogo de servicios verificados y contrata con la seguridad de smart contracts en Base con USDC.',
     noOrdersSellerDesc: 'Publica tus habilidades en el catálogo internacional y comienza a recibir pagos asegurados en escrow.',
     
     // Disputes in Order
@@ -84,7 +84,7 @@ export const translations = {
     disputeBadgeResolved: 'RESUELTA',
     disputeReasonLabel: 'Motivo del reclamo',
     disputeEvidenceLabel: 'Prueba aportada',
-    disputeUnderReviewNotice: 'El proceso de mediación y arbitraje neutral está evaluando las pruebas del caso. Los fondos en USDC permanecen asegurados de forma non-custodial en el contrato de Escrow de Base Sepolia.',
+    disputeUnderReviewNotice: 'El proceso de mediación y arbitraje neutral está evaluando las pruebas del caso. Los fondos en USDC permanecen asegurados de forma non-custodial en el contrato de Escrow de Base.',
     disputeResolvedNotice: 'Resolución de mediación ejecutada',
     disputeArbitratorNotes: 'Fundamentación de la resolución',
     
@@ -196,7 +196,7 @@ export const translations = {
     hideTimelineAndChat: 'Hide Activity & Messages',
     noOrdersBuyer: 'You have not hired any services yet',
     noOrdersSeller: 'You have not received any orders yet',
-    noOrdersBuyerDesc: 'Explore verified services and hire with smart contract security on Base Sepolia using USDC.',
+    noOrdersBuyerDesc: 'Explore verified services and hire with smart contract security on Base using USDC.',
     noOrdersSellerDesc: 'List your skills on the international marketplace and start receiving secured escrow payments.',
     
     // Disputes in Order
@@ -206,7 +206,7 @@ export const translations = {
     disputeBadgeResolved: 'RESOLVED',
     disputeReasonLabel: 'Claim Reason',
     disputeEvidenceLabel: 'Submitted Evidence',
-    disputeUnderReviewNotice: 'Neutral mediation & arbitration is reviewing submitted evidence. USDC funds remain non-custodially locked in Base Sepolia escrow.',
+    disputeUnderReviewNotice: 'Neutral mediation & arbitration is reviewing submitted evidence. USDC funds remain non-custodially locked in Base escrow.',
     disputeResolvedNotice: 'Mediation resolution executed',
     disputeArbitratorNotes: 'Resolution findings & notes',
     

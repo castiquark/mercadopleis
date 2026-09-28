@@ -268,7 +268,7 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
               </strong>
             </span>
 
-            {hasInsufficientBalance && (
+            {hasInsufficientBalance && activeChainId === 84532 && (
               <FaucetButton
                 variant="compact"
                 amount={service.priceUsdc.toString()}
@@ -283,9 +283,13 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
           <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-300">
             <Droplet className="h-4 w-4 shrink-0 text-amber-400" />
             <span>
-              {language === 'en'
-                ? 'Insufficient balance for this order. Claim testnet funds above with 1 click.'
-                : 'Saldo insuficiente para esta orden. Reclama fondos de prueba arriba con 1 clic.'}
+              {activeChainId === 84532
+                ? (language === 'en'
+                    ? 'Insufficient balance for this order. Claim testnet funds above with 1 click.'
+                    : 'Saldo insuficiente para esta orden. Reclama fondos de prueba arriba con 1 clic.')
+                : (language === 'en'
+                    ? 'Insufficient USDC balance on Base Mainnet. Please fund your wallet with USDC.'
+                    : 'Saldo insuficiente de USDC en Base Mainnet. Por favor fondea tu wallet con USDC.')}
             </span>
           </div>
         )}

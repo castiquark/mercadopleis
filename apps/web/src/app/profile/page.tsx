@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { useAuth } from '@/lib/authContext';
+import { useLanguage } from '@/lib/languageContext';
 import {
   UserCheck,
   Shield,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export default function ProfilePage() {
+  const { language } = useLanguage();
   const { address, isConnected } = useAccount();
   const { user, token, isAuthenticated, isLoading, signIn, signOut } = useAuth();
 
@@ -200,7 +202,7 @@ export default function ProfilePage() {
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="ej. Pablo Castiglioni"
+                placeholder={language === 'en' ? 'e.g. Alex Rivera' : 'ej. Carlos M.'}
                 className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-primary focus:outline-none"
               />
             </div>

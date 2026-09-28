@@ -51,7 +51,11 @@ export function ServiceCard({ service, onBook }: ServiceCardProps) {
           </div>
           <div className="flex items-center gap-1 text-xs font-medium text-amber-400 shrink-0">
             <Star className="h-3.5 w-3.5 fill-current" />
-            <span>5.0</span>
+            <span className="font-semibold">
+              {(service as any).avgRating 
+                ? Number((service as any).avgRating).toFixed(1) 
+                : (language === 'en' ? 'New' : 'Nuevo')}
+            </span>
           </div>
         </div>
 
