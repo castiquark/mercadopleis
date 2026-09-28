@@ -5,6 +5,7 @@ import { useAccount, useSignMessage } from 'wagmi';
 import { getNonce, verifySignature, getAuthToken, clearAuthToken } from './api';
 
 import { isAdminWallet } from '@mercadopleis/types';
+import { isUserRejection } from './web3Errors';
 
 interface AuthUser {
   id: string;
@@ -117,16 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return false;
     } catch (error: any) {
-      const isRejection =
-        error?.name === 'UserRejectedRequestError' ||
-        error?.code === 4001 ||
-        error?.cause?.code === 4001 ||
-        error?.message?.includes('User rejected') ||
-        error?.message?.includes('User denied') ||
-        error?.shortMessage?.includes('User rejected') ||
-        error?.shortMessage?.includes('User denied');
-
-      if (isRejection) {
+      if (isUserRejection(error)) {
         console.info('[SIWE] Firma cancelada por el usuario en su wallet.');
       } else {
         console.error('SIWE login error:', error);

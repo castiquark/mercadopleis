@@ -6,6 +6,7 @@ import { parseUnits, formatUnits } from 'viem';
 import { Erc20Abi } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { Droplet, CheckCircle2, Loader2, Sparkles, Plus } from 'lucide-react';
+import { isUserRejection } from '../lib/web3Errors';
 
 interface FaucetButtonProps {
   amount?: string;
@@ -60,16 +61,7 @@ export function FaucetButton({ amount = '1000', variant = 'navbar', onMintSucces
 
       setTimeout(() => setSuccess(false), 4000);
     } catch (err: any) {
-      const isRejection =
-        err?.name === 'UserRejectedRequestError' ||
-        err?.code === 4001 ||
-        err?.cause?.code === 4001 ||
-        err?.message?.includes('User rejected') ||
-        err?.message?.includes('User denied') ||
-        err?.shortMessage?.includes('User rejected') ||
-        err?.shortMessage?.includes('User denied');
-
-      if (isRejection) {
+      if (isUserRejection(err)) {
         console.info('[Faucet] Reclamo cancelado por el usuario en su wallet.');
         setErrorMessage('Reclamo cancelado en tu wallet.');
         setTimeout(() => setErrorMessage(null), 3000);

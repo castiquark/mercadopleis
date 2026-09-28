@@ -20,6 +20,7 @@ import {
   HelpCircle,
   Coins
 } from 'lucide-react';
+import { isUserRejection } from '../../lib/web3Errors';
 
 export default function FaucetPage() {
   const { address, isConnected, chainId } = useAccount();
@@ -63,16 +64,7 @@ export default function FaucetPage() {
       }, 2000);
       setTimeout(() => setSuccess(false), 5000);
     } catch (err: any) {
-      const isRejection =
-        err?.name === 'UserRejectedRequestError' ||
-        err?.code === 4001 ||
-        err?.cause?.code === 4001 ||
-        err?.message?.includes('User rejected') ||
-        err?.message?.includes('User denied') ||
-        err?.shortMessage?.includes('User rejected') ||
-        err?.shortMessage?.includes('User denied');
-
-      if (isRejection) {
+      if (isUserRejection(err)) {
         console.info('[Faucet] Reclamo cancelado por el usuario en su wallet.');
         setErrorMessage('Reclamo cancelado en tu wallet.');
         setTimeout(() => setErrorMessage(null), 3000);

@@ -9,6 +9,7 @@ import { Erc20Abi, MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { Shield, Clock, CheckCircle2, AlertCircle, X, ExternalLink, Droplet } from 'lucide-react';
 import { FaucetButton } from './FaucetButton';
+import { isUserRejection } from '../lib/web3Errors';
 
 interface CheckoutModalProps {
   service: Service | null;
@@ -132,17 +133,8 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
       setStep('success');
       setTimeout(() => onSuccess(), 2000);
     } catch (err: any) {
-      const isRejection =
-        err?.name === 'UserRejectedRequestError' ||
-        err?.code === 4001 ||
-        err?.cause?.code === 4001 ||
-        err?.message?.includes('User rejected') ||
-        err?.message?.includes('User denied') ||
-        err?.shortMessage?.includes('User rejected') ||
-        err?.shortMessage?.includes('User denied');
-
-      if (isRejection) {
-        console.info('[Wallet] Transacción o firma cancelada por el usuario.');
+      if (isUserRejection(err)) {
+        console.info('[Wallet] Transacción o firma cancelada por el usuario en su wallet.');
         setErrorMessage(
           language === 'en'
             ? 'Signature or transaction cancelled in your wallet. No funds were debited.'

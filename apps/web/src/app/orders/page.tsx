@@ -36,6 +36,7 @@ import {
   Gavel,
 } from 'lucide-react';
 import { OrderTimelineAndChat } from '@/components/OrderTimelineAndChat';
+import { isUserRejection } from '@/lib/web3Errors';
 
 interface MockOrder {
   id: string;
@@ -261,16 +262,7 @@ export default function OrdersDashboardPage() {
       );
       setActionNotice(`¡Orden #${order.contractOrderId} aprobada! Fondos liberados al prestador.`);
     } catch (err: any) {
-      const isRejection =
-        err?.name === 'UserRejectedRequestError' ||
-        err?.code === 4001 ||
-        err?.cause?.code === 4001 ||
-        err?.message?.includes('User rejected') ||
-        err?.message?.includes('User denied') ||
-        err?.shortMessage?.includes('User rejected') ||
-        err?.shortMessage?.includes('User denied');
-
-      if (isRejection) {
+      if (isUserRejection(err)) {
         setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
       } else {
         console.error(err);
@@ -337,16 +329,7 @@ export default function OrdersDashboardPage() {
       setActionNotice(`¡Disputa abierta con éxito para Orden #${activeDisputeModalOrder.contractOrderId}! Fondos congelados en escrow para arbitraje.`);
       setActiveDisputeModalOrder(null);
     } catch (err: any) {
-      const isRejection =
-        err?.name === 'UserRejectedRequestError' ||
-        err?.code === 4001 ||
-        err?.cause?.code === 4001 ||
-        err?.message?.includes('User rejected') ||
-        err?.message?.includes('User denied') ||
-        err?.shortMessage?.includes('User rejected') ||
-        err?.shortMessage?.includes('User denied');
-
-      if (isRejection) {
+      if (isUserRejection(err)) {
         setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
       } else {
         console.error(err);
@@ -383,16 +366,7 @@ export default function OrdersDashboardPage() {
       );
       setActionNotice(`100% de los fondos reembolsados directamente al comprador.`);
     } catch (err: any) {
-      const isRejection =
-        err?.name === 'UserRejectedRequestError' ||
-        err?.code === 4001 ||
-        err?.cause?.code === 4001 ||
-        err?.message?.includes('User rejected') ||
-        err?.message?.includes('User denied') ||
-        err?.shortMessage?.includes('User rejected') ||
-        err?.shortMessage?.includes('User denied');
-
-      if (isRejection) {
+      if (isUserRejection(err)) {
         setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
       } else {
         console.error(err);
@@ -515,16 +489,7 @@ export default function OrdersDashboardPage() {
       setDeliveryHash('');
       setUploadedFileMeta(null);
     } catch (err: any) {
-      const isRejection =
-        err?.name === 'UserRejectedRequestError' ||
-        err?.code === 4001 ||
-        err?.cause?.code === 4001 ||
-        err?.message?.includes('User rejected') ||
-        err?.message?.includes('User denied') ||
-        err?.shortMessage?.includes('User rejected') ||
-        err?.shortMessage?.includes('User denied');
-
-      if (isRejection) {
+      if (isUserRejection(err)) {
         setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
       } else {
         console.error(err);
