@@ -3,10 +3,20 @@ import { db, disputes, orders } from '@mercadopleis/database';
 import { eq, desc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const authUser = getAuthUserFromRequest(request);
   if (!authUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Strictly restricted to ADMINISTRATOR only
+  if (authUser.role !== 'ADMIN') {
+    return NextResponse.json(
+      { error: 'Forbidden: El módulo de arbitraje y disputas es de acceso exclusivo para el administrador' },
+      { status: 403 }
+    );
   }
 
   try {
@@ -42,20 +52,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Administrators / Arbitrators see all disputes across the platform
-    if (authUser.role === 'ADMIN') {
-      return NextResponse.json({ disputes: list });
-    }
-
-    // Regular users ONLY see disputes pertaining to their own orders
-    const userDisputes = list.filter(
-      (d: any) =>
-        d.order?.buyerId === authUser.id ||
-        d.order?.sellerId === authUser.id ||
-        d.openedById === authUser.id
-    );
-
-    return NextResponse.json({ disputes: userDisputes });
+    return NextResponse.json({ disputes: list });
   } catch (error: any) {
     console.error('Error fetching disputes:', error);
     return NextResponse.json({ error: 'Failed to fetch disputes' }, { status: 500 });
