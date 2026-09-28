@@ -202,6 +202,32 @@ export async function fetchDisputes() {
 }
 
 /**
+ * Open a dispute on backend
+ */
+export async function openDisputeApi(data: {
+  orderId: string;
+  reason: string;
+  evidenceUrl?: string;
+}) {
+  const token = getAuthToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_URL}/disputes`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to open dispute on backend');
+  }
+
+  return await res.json();
+}
+
+/**
  * Resolve dispute on backend
  */
 export async function resolveDisputeApi(

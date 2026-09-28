@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
             displayName: true,
           },
         },
+        dispute: true,
       },
     });
 

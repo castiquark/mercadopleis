@@ -4,9 +4,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAccount, useWriteContract } from 'wagmi';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
-import { CONTRACT_CONFIG } from '@mercadopleis/types';
+import { CONTRACT_CONFIG, ADMIN_WALLET_ADDRESS } from '@mercadopleis/types';
 import { useAuth } from '@/lib/authContext';
-import { fetchMyOrders, updateOrder, submitReview } from '@/lib/api';
+import { fetchMyOrders, updateOrder, submitReview, openDisputeApi } from '@/lib/api';
 import {
   ShieldCheck,
   Clock,
@@ -32,6 +32,7 @@ import {
   Check,
   ShoppingBag,
   Trash2,
+  Gavel,
 } from 'lucide-react';
 import { OrderTimelineAndChat } from '@/components/OrderTimelineAndChat';
 
@@ -51,6 +52,16 @@ interface MockOrder {
   sellerAddress: string;
   buyerAddress: string;
   isDemo?: boolean;
+  dispute?: {
+    id: string;
+    reason: string;
+    evidenceUrl?: string | null;
+    status: 'OPEN' | 'RESOLVED';
+    sellerAwardUsdc?: string | null;
+    buyerRefundUsdc?: string | null;
+    resolutionNotes?: string | null;
+    createdAt?: string;
+  } | null;
 }
 
 const INITIAL_DEMO_ORDERS: MockOrder[] = [
@@ -125,6 +136,9 @@ export default function OrdersDashboardPage() {
   const [reviewHoverRating, setReviewHoverRating] = useState<number>(0);
   const [reviewComment, setReviewComment] = useState<string>('');
   const [reviewedOrders, setReviewedOrders] = useState<Record<string, number>>({});
+  const [activeDisputeModalOrder, setActiveDisputeModalOrder] = useState<MockOrder | null>(null);
+  const [disputeReason, setDisputeReason] = useState<string>('');
+  const [disputeEvidenceUrl, setDisputeEvidenceUrl] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>('ord-101');
@@ -186,6 +200,7 @@ export default function OrdersDashboardPage() {
           sellerAddress: bo.seller?.walletAddress || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
           buyerAddress: bo.buyer?.walletAddress || address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
           isDemo: false,
+          dispute: bo.dispute || null,
         }));
       }
 
@@ -251,34 +266,63 @@ export default function OrdersDashboardPage() {
     }
   };
 
-  // Buyer Action: Open dispute
-  const handleOpenDispute = async (order: MockOrder) => {
+  // Buyer Action: Open dispute modal
+  const handleOpenDispute = (order: MockOrder) => {
+    setActiveDisputeModalOrder(order);
+    setDisputeReason('');
+    setDisputeEvidenceUrl('');
+  };
+
+  // Buyer Action: Confirm dispute submission
+  const handleConfirmDispute = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeDisputeModalOrder || !disputeReason.trim()) return;
+
     try {
       setIsProcessing(true);
-      setActionNotice(`Abriendo disputa para Orden #${order.contractOrderId}...`);
+      setActionNotice(`Abriendo disputa formal para Orden #${activeDisputeModalOrder.contractOrderId}...`);
 
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
         await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
           functionName: 'openDispute',
-          args: [BigInt(order.contractOrderId)],
+          args: [BigInt(activeDisputeModalOrder.contractOrderId)],
         });
       }
 
       try {
-        await updateOrder(order.id, { status: 'DISPUTED' });
+        await openDisputeApi({
+          orderId: activeDisputeModalOrder.id,
+          reason: disputeReason.trim(),
+          evidenceUrl: disputeEvidenceUrl.trim() || undefined,
+        });
       } catch (err) {
-        console.warn('Backend sync note:', err);
+        console.warn('Backend dispute record note:', err);
       }
 
       setOrders((prev) =>
-        prev.map((o) => (o.id === order.id ? { ...o, status: 'DISPUTED' } : o))
+        prev.map((o) =>
+          o.id === activeDisputeModalOrder.id
+            ? {
+                ...o,
+                status: 'DISPUTED',
+                dispute: {
+                  id: 'disp-' + Date.now(),
+                  reason: disputeReason.trim(),
+                  evidenceUrl: disputeEvidenceUrl.trim() || null,
+                  status: 'OPEN',
+                },
+              }
+            : o
+        )
       );
-      setActionNotice(`Disputa abierta para Orden #${order.contractOrderId}. Fondos congelados en escrow.`);
+
+      setActionNotice(`¡Disputa abierta con éxito para Orden #${activeDisputeModalOrder.contractOrderId}! Fondos congelados en escrow para arbitraje.`);
+      setActiveDisputeModalOrder(null);
     } catch (err: any) {
       console.error(err);
-      setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error en transacción'}`);
+      setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error al abrir disputa'}`);
     } finally {
       setIsProcessing(false);
     }
@@ -599,6 +643,71 @@ export default function OrdersDashboardPage() {
                   </span>
                 </div>
               </div>
+
+              {/* Dispute Status Card (Strictly private: only buyer and seller of this order see it) */}
+              {(order.status === 'DISPUTED' || order.dispute) && (
+                <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 font-bold text-red-400">
+                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      <span>
+                        {order.dispute?.status === 'RESOLVED'
+                          ? 'Fallo Arbitral Emitido por el Administrador'
+                          : 'Disputa en Curso — Fondos Congelados en Escrow'}
+                      </span>
+                    </div>
+                    <span
+                      className={`rounded px-2.5 py-0.5 text-[11px] font-bold ${
+                        order.dispute?.status === 'RESOLVED'
+                          ? 'bg-accent/20 text-accent'
+                          : 'bg-red-500/20 text-red-300'
+                      }`}
+                    >
+                      {order.dispute?.status === 'RESOLVED' ? 'RESUELTA' : 'EN MEDIACIÓN'}
+                    </span>
+                  </div>
+
+                  {order.dispute?.reason && (
+                    <div className="mt-2.5 text-slate-300">
+                      <strong className="text-red-300">Motivo del reclamo: </strong>
+                      <span>{order.dispute.reason}</span>
+                    </div>
+                  )}
+
+                  {order.dispute?.evidenceUrl && (
+                    <div className="mt-1.5 text-slate-400">
+                      <span>Prueba aportada: </span>
+                      <a
+                        href={order.dispute.evidenceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-primary-light hover:underline inline-flex items-center gap-1"
+                      >
+                        {order.dispute.evidenceUrl}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
+
+                  {order.dispute?.status === 'RESOLVED' ? (
+                    <div className="mt-3 rounded-lg border border-accent/30 bg-accent/10 p-3 text-accent">
+                      <p className="font-bold">
+                        Resolución arbitral ejecutada: {order.dispute.sellerAwardUsdc} USDC acreditados al prestador / {order.dispute.buyerRefundUsdc} USDC reembolsados al comprador.
+                      </p>
+                      {order.dispute.resolutionNotes && (
+                        <p className="mt-1.5 text-xs text-slate-300">
+                          <strong className="text-slate-400">Fundamentación del árbitro: </strong>
+                          {order.dispute.resolutionNotes}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-[11px] text-slate-400 leading-relaxed">
+                      El administrador y árbitro oficial de la plataforma ({ADMIN_WALLET_ADDRESS.slice(0, 8)}...{ADMIN_WALLET_ADDRESS.slice(-4)}) está evaluando el caso. Los fondos permanecen congelados de manera segura en el escrow de Base Sepolia.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Action Buttons Row */}
               <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-border/80 pt-4">
@@ -1053,6 +1162,82 @@ export default function OrdersDashboardPage() {
                   className="flex-1 rounded-xl bg-amber-500 py-2.5 text-sm font-bold text-background shadow-lg shadow-amber-500/20 transition hover:bg-amber-400 active:scale-95 disabled:opacity-50"
                 >
                   {isProcessing ? 'Guardando...' : 'Publicar Calificación'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Buyer Opening a Dispute */}
+      {activeDisputeModalOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-red-500/40 bg-surface p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border/80 pb-4">
+              <div className="flex items-center gap-2 text-red-400">
+                <AlertTriangle className="h-5 w-5" />
+                <h3 className="text-lg font-bold text-white">
+                  Abrir Disputa de Orden #{activeDisputeModalOrder.contractOrderId}
+                </h3>
+              </div>
+              <button
+                onClick={() => setActiveDisputeModalOrder(null)}
+                className="text-xs text-slate-400 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="mt-3 text-xs text-slate-400 leading-relaxed">
+              Al abrir una disputa, el auto-release de fondos se congela de inmediato en el smart contract escrow. El administrador intervendrá como árbitro neutral para evaluar el caso y decidir el reparto o reembolso de los fondos.
+            </p>
+
+            <form onSubmit={handleConfirmDispute} className="mt-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300">
+                  Motivo detallado del reclamo <span className="text-red-400">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Explica detalladamente por qué el trabajo no cumple con lo acordado (ej. fallos de compilación, requerimientos no incluidos, entregable erróneo)..."
+                  value={disputeReason}
+                  onChange={(e) => setDisputeReason(e.target.value)}
+                  className="mt-1.5 w-full rounded-xl border border-border bg-background p-3 text-xs text-white placeholder-slate-500 focus:border-red-400 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300">
+                  Enlace a pruebas / evidencia (URL pública, GitHub, Google Drive, etc.)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://github.com/... o https://drive.google.com/..."
+                  value={disputeEvidenceUrl}
+                  onChange={(e) => setDisputeEvidenceUrl(e.target.value)}
+                  className="mt-1.5 w-full rounded-xl border border-border bg-background p-2.5 text-xs text-white placeholder-slate-500 focus:border-red-400 focus:outline-none"
+                />
+              </div>
+
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-[11px] text-red-300">
+                ⚠️ El árbitro evaluará esta evidencia junto con los mensajes intercambiados en la orden para dictar el fallo final.
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveDisputeModalOrder(null)}
+                  className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-slate-400 hover:text-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProcessing || !disputeReason.trim()}
+                  className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-bold text-white shadow-lg shadow-red-500/20 transition hover:bg-red-600 active:scale-95 disabled:opacity-50"
+                >
+                  {isProcessing ? 'Congelando Fondos en Escrow...' : 'Confirmar y Congelar Fondos'}
                 </button>
               </div>
             </form>
