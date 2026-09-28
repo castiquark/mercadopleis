@@ -82,8 +82,9 @@ export async function createService(serviceData: {
   category: string;
   priceUsdc: number;
   deliveryDays: number;
+  sellerWallet?: string;
 }) {
-  const token = getAuthToken();
+  const token = getAuthToken(serviceData.sellerWallet);
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -95,6 +96,7 @@ export async function createService(serviceData: {
   if (!res.ok) throw new Error('Failed to create service in database');
   return await res.json();
 }
+
 
 /**
  * Fetch orders for current authenticated user from PostgreSQL

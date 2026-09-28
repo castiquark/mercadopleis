@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Service } from '@mercadopleis/types';
+import { Service, MARKETPLACE_CATEGORIES } from '@mercadopleis/types';
+import { useLanguage } from '@/lib/languageContext';
 import { CheckoutModal } from '@/components/CheckoutModal';
 import {
   ArrowLeft,
@@ -18,120 +19,48 @@ import {
 } from 'lucide-react';
 import { fetchServiceReviews } from '@/lib/api';
 
-const FALLBACK_SERVICES: Service[] = [
-  {
-    id: 's-1',
-    sellerId: 'user-1',
-    title: 'Desarrollo de Smart Contract Escrow o ERC20 en Solidity',
-    slug: 'desarrollo-smart-contract-escrow-solidity',
-    description:
-      'Desarrollo integral de smart contracts con Foundry y OpenZeppelin. Incluye contratos auditables, suite completa de pruebas unitarias, fuzz testing de invariantes matemáticas, optimización de consumo de gas y scripts de despliegue para Base y Base Sepolia.',
-    category: 'development',
-    priceUsdc: 250,
-    deliveryDays: 4,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 's-2',
-    sellerId: 'user-2',
-    title: 'Diseño UI/UX de Landing Page Web3 en Figma',
-    slug: 'diseno-ui-ux-landing-page-web3-figma',
-    description:
-      'Prototipo interactivo en Figma de alta fidelidad para aplicaciones descentralizadas. Incluye sistema de diseño completo con componentes reutilizables, tipografías modernas, paleta dark mode premium con gradientes sutiles y diseño 100% responsive para móviles y desktop.',
-    category: 'design',
-    priceUsdc: 180,
-    deliveryDays: 3,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 's-3',
-    sellerId: 'user-3',
-    title: 'Redacción de Documentación Técnica & Whitepaper Cripto',
-    slug: 'redaccion-documentacion-tecnica-whitepaper',
-    description:
-      'Especificación rigurosa de producto y arquitectura técnica: descripción de smart contracts, flujos de escrow, diagramas de interacción, tokenomics y modelo de negocio en inglés y español con estándares profesionales.',
-    category: 'marketing',
-    priceUsdc: 150,
-    deliveryDays: 5,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 's-4',
-    sellerId: 'user-4',
-    title: 'Consultoría y Auditoría de Seguridad Preliminar de Contratos',
-    slug: 'consultoria-auditoria-seguridad-contratos',
-    description:
-      'Revisión manual y automatizada de contratos inteligentes para prevenir vulnerabilidades críticas como reentrancy, desbordamientos, manipulaciones de timestamp o fallos de control de acceso antes de su despliegue en mainnet.',
-    category: 'consulting',
-    priceUsdc: 300,
-    deliveryDays: 3,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 's-5',
-    sellerId: 'user-5',
-    title: 'Desarrollo Frontend DApp con Next.js, Wagmi & RainbowKit',
-    slug: 'desarrollo-frontend-dapp-nextjs-wagmi',
-    description:
-      'Integración completa de interfaz Web3 moderna con Next.js App Router, conexión multicanal con RainbowKit, transacciones tipadas con Viem y Wagmi, y diseño responsive con Tailwind CSS.',
-    category: 'development',
-    priceUsdc: 350,
-    deliveryDays: 6,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 's-6',
-    sellerId: 'user-6',
-    title: 'Diseño de Marca e Identidad Visual para Proyectos Web3',
-    slug: 'diseno-marca-identidad-visual-web3',
-    description:
-      'Identidad visual completa adaptada al ecosistema cripto: logotipo vectorial, paleta de colores cromática, fuentes, manual de uso y activos gráficos para perfiles de redes sociales y Discord.',
-    category: 'design',
-    priceUsdc: 200,
-    deliveryDays: 4,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+
+const FALLBACK_SERVICES: Service[] = [];
 
 export default function ServiceDetailPage() {
+  const { language } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const slug = params?.slug as string;
 
   const [service, setService] = useState<Service | null>(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let allServices = [...FALLBACK_SERVICES];
+    let customServices: Service[] = [];
     try {
-      const stored = localStorage.getItem('mercadopleis_custom_services');
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('mercadopleis_custom_services') : null;
       if (stored) {
         const custom = JSON.parse(stored);
         if (Array.isArray(custom)) {
-          allServices = [...custom, ...FALLBACK_SERVICES];
+          customServices = custom;
         }
       }
     } catch (e) {
       console.error(e);
     }
 
-    const found = allServices.find((s) => s.slug === slug);
-    if (found) {
-      setService(found);
+    const localFound = customServices.find((s) => s.slug === slug);
+    if (localFound) {
+      setService(localFound);
+      setLoading(false);
+    } else {
+      fetch(`/api/services/${slug}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.service) setService(data.service);
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
     }
   }, [slug]);
+
 
   const [reviewsList, setReviewsList] = useState<any[]>([]);
 
@@ -143,16 +72,38 @@ export default function ServiceDetailPage() {
     }
   }, [service?.id]);
 
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-16 text-center">
+        <p className="text-slate-400">
+          {language === 'en' ? 'Loading service details...' : 'Cargando detalles del servicio...'}
+        </p>
+      </div>
+    );
+  }
+
   if (!service) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <p className="text-slate-400">Cargando detalles del servicio...</p>
-        <Link href="/" className="mt-4 inline-block text-sm text-primary-light hover:underline">
-          Volver al Catálogo
+        <p className="text-lg font-semibold text-white">
+          {language === 'en' ? 'Service not found' : 'Servicio no encontrado'}
+        </p>
+        <p className="mt-1 text-xs text-slate-400">
+          {language === 'en'
+            ? 'This service does not exist or may have been removed.'
+            : 'Este servicio no existe o puede haber sido retirado.'}
+        </p>
+        <Link
+          href="/"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-md shadow-primary/25 transition hover:bg-primary-hover"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>{language === 'en' ? 'Back to Catalog' : 'Volver al Catálogo'}</span>
         </Link>
       </div>
     );
   }
+
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -163,13 +114,24 @@ export default function ServiceDetailPage() {
           className="inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Volver al Catálogo</span>
+          <span>{language === 'en' ? 'Back to Catalog' : 'Volver al Catálogo'}</span>
         </Link>
 
-        <span className="rounded-md bg-surface-elevated px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
-          Categoría: {service.category}
-        </span>
+        {(() => {
+          const categoryObj = MARKETPLACE_CATEGORIES.find((c) => c.id === service.category);
+          const categoryLabel = categoryObj
+            ? language === 'en'
+              ? categoryObj.nameEn || categoryObj.name
+              : categoryObj.name
+            : service.category;
+          return (
+            <span className="rounded-md bg-surface-elevated px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              {language === 'en' ? 'Category' : 'Categoría'}: {categoryLabel}
+            </span>
+          );
+        })()}
       </div>
+
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Main Details (2 cols) */}
@@ -327,12 +289,14 @@ export default function ServiceDetailPage() {
         <div className="lg:col-span-1">
           <div className="sticky top-24 rounded-2xl border border-border bg-surface p-6 shadow-2xl">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Resumen de Contratación
+              {language === 'en' ? 'Order Summary' : 'Resumen de Contratación'}
             </span>
 
             {/* Price */}
             <div className="mt-4 flex items-baseline justify-between">
-              <span className="text-sm text-slate-300">Precio total</span>
+              <span className="text-sm text-slate-300">
+                {language === 'en' ? 'Total price' : 'Precio total'}
+              </span>
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-extrabold text-white">{service.priceUsdc}</span>
                 <span className="text-sm font-bold text-usdc">USDC</span>
@@ -342,10 +306,13 @@ export default function ServiceDetailPage() {
             {/* Delivery time */}
             <div className="mt-3 flex items-center justify-between border-b border-border/80 pb-4 text-xs text-slate-400">
               <span className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-slate-400" /> Plazo de entrega:
+                <Clock className="h-4 w-4 text-slate-400" />{' '}
+                {language === 'en' ? 'Delivery timeframe:' : 'Plazo de entrega:'}
               </span>
               <span className="font-semibold text-white">
-                {service.deliveryDays} {service.deliveryDays === 1 ? 'día' : 'días'}
+                {language === 'en'
+                  ? `${service.deliveryDays} ${service.deliveryDays === 1 ? 'day' : 'days'}`
+                  : `${service.deliveryDays} ${service.deliveryDays === 1 ? 'día' : 'días'}`}
               </span>
             </div>
 
@@ -354,19 +321,28 @@ export default function ServiceDetailPage() {
               <div className="flex items-start gap-2">
                 <ShieldCheck className="h-4 w-4 shrink-0 text-accent mt-0.5" />
                 <span>
-                  <strong>0% de recargo al comprador:</strong> Abonas el precio exacto sin comisiones sorpresa.
+                  <strong>{language === 'en' ? '0% buyer surcharge:' : '0% de recargo al comprador:'}</strong>{' '}
+                  {language === 'en'
+                    ? 'You pay the exact price with zero hidden fees.'
+                    : 'Abonas el precio exacto sin comisiones sorpresa.'}
                 </span>
               </div>
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-primary-light mt-0.5" />
                 <span>
-                  <strong>Escrow Non-Custodial:</strong> Los USDC se bloquean en el contrato inteligente hasta tu aprobación.
+                  <strong>{language === 'en' ? 'Non-Custodial Escrow:' : 'Escrow Non-Custodial:'}</strong>{' '}
+                  {language === 'en'
+                    ? 'USDC is locked in the smart contract until your approval.'
+                    : 'Los USDC se bloquean en el contrato inteligente hasta tu aprobación.'}
                 </span>
               </div>
               <div className="flex items-start gap-2">
                 <Clock className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
                 <span>
-                  <strong>5 días de revisión:</strong> Ventana garantizada para validar entregas antes del auto-release.
+                  <strong>{language === 'en' ? '5-day inspection:' : '5 días de revisión:'}</strong>{' '}
+                  {language === 'en'
+                    ? 'Guaranteed window to inspect deliveries prior to auto-release.'
+                    : 'Ventana garantizada para validar entregas antes del auto-release.'}
                 </span>
               </div>
             </div>
@@ -376,12 +352,15 @@ export default function ServiceDetailPage() {
               onClick={() => setIsCheckoutOpen(true)}
               className="mt-6 w-full rounded-xl bg-primary py-3.5 text-center text-sm font-bold text-white shadow-xl shadow-primary/25 transition hover:bg-primary-hover active:scale-[0.99]"
             >
-              Contratar Servicio con Escrow
+              {language === 'en' ? 'Hire Service with Escrow' : 'Contratar Servicio con Escrow'}
             </button>
 
             <p className="mt-3 text-center text-[11px] text-slate-500">
-              Protegido por Smart Contract en Base Sepolia
+              {language === 'en'
+                ? 'Secured by Smart Contract on Base Sepolia'
+                : 'Protegido por Smart Contract en Base Sepolia'}
             </p>
+
           </div>
         </div>
       </div>

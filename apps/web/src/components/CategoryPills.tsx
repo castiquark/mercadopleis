@@ -1,14 +1,31 @@
-'use client';
-
 import React from 'react';
-import { MARKETPLACE_CATEGORIES, ServiceCategory } from '@mercadopleis/types';
-import { Code, Palette, Megaphone, Briefcase, LayoutGrid } from 'lucide-react';
+import { MARKETPLACE_CATEGORIES } from '@mercadopleis/types';
+import { useLanguage } from '@/lib/languageContext';
+import {
+  Code,
+  Palette,
+  Megaphone,
+  FileText,
+  Bot,
+  ShieldCheck,
+  Briefcase,
+  Film,
+  Scale,
+  MoreHorizontal,
+  LayoutGrid,
+} from 'lucide-react';
 
 const ICON_MAP = {
   Code,
   Palette,
   Megaphone,
+  FileText,
+  Bot,
+  ShieldCheck,
   Briefcase,
+  Film,
+  Scale,
+  MoreHorizontal,
 };
 
 interface CategoryPillsProps {
@@ -17,6 +34,8 @@ interface CategoryPillsProps {
 }
 
 export function CategoryPills({ selectedCategory, onSelectCategory }: CategoryPillsProps) {
+  const { language, t } = useLanguage();
+
   return (
     <div className="flex flex-wrap items-center gap-2 py-4">
       <button
@@ -28,12 +47,13 @@ export function CategoryPills({ selectedCategory, onSelectCategory }: CategoryPi
         }`}
       >
         <LayoutGrid className="h-4 w-4" />
-        <span>Todos</span>
+        <span>{t('allCategories')}</span>
       </button>
 
       {MARKETPLACE_CATEGORIES.map((cat) => {
-        const IconComponent = ICON_MAP[cat.icon as keyof typeof ICON_MAP] || Code;
+        const IconComponent = ICON_MAP[cat.icon as keyof typeof ICON_MAP] || MoreHorizontal;
         const isSelected = selectedCategory === cat.id;
+        const displayName = language === 'en' ? (cat.nameEn || cat.name) : cat.name;
 
         return (
           <button
@@ -46,10 +66,11 @@ export function CategoryPills({ selectedCategory, onSelectCategory }: CategoryPi
             }`}
           >
             <IconComponent className="h-4 w-4" />
-            <span>{cat.name}</span>
+            <span>{displayName}</span>
           </button>
         );
       })}
     </div>
   );
 }
+

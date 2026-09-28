@@ -6,6 +6,7 @@ import { useAccount, useWriteContract } from 'wagmi';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { useAuth } from '@/lib/authContext';
+import { useLanguage } from '@/lib/languageContext';
 import { fetchMyOrders, updateOrder, submitReview, openDisputeApi } from '@/lib/api';
 import {
   ShieldCheck,
@@ -115,6 +116,7 @@ const INITIAL_DEMO_ORDERS: MockOrder[] = [
 export default function OrdersDashboardPage() {
   const { isConnected, chainId, address } = useAccount();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'buyer' | 'seller'>('buyer');
   const [showDemoOrders, setShowDemoOrders] = useState(false);
   const [orders, setOrders] = useState<MockOrder[]>([]);
@@ -484,9 +486,9 @@ export default function OrdersDashboardPage() {
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-extrabold text-white">Panel de Órdenes</h1>
+          <h1 className="text-3xl font-extrabold text-white">{t('ordersTitle')}</h1>
           <p className="mt-1 text-sm text-slate-400">
-            Supervisa tus contratos de escrow activos en Base, aprueba entregas o gestiona cobros.
+            {t('ordersSubtitle')}
           </p>
         </div>
 
@@ -497,7 +499,7 @@ export default function OrdersDashboardPage() {
             title="Actualizar listado de órdenes"
           >
             <RefreshCw className="h-4 w-4 text-primary-light" />
-            <span className="hidden sm:inline">Actualizar</span>
+            <span className="hidden sm:inline">{t('refresh')}</span>
           </button>
 
           <button
@@ -505,21 +507,21 @@ export default function OrdersDashboardPage() {
               if (typeof window !== 'undefined') {
                 localStorage.removeItem('mercadopleis_custom_orders');
                 loadOrders();
-                setActionNotice('Caché local de órdenes de prueba eliminada.');
+                setActionNotice(language === 'en' ? 'Local test orders cache cleared.' : 'Caché local de órdenes de prueba eliminada.');
               }
             }}
             className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-slate-400 transition hover:bg-surface-elevated hover:text-white"
             title="Limpiar datos temporales de prueba en tu navegador"
           >
             <Trash2 className="h-3.5 w-3.5 text-slate-400" />
-            <span className="hidden sm:inline">Limpiar Caché</span>
+            <span className="hidden sm:inline">{t('clearCache')}</span>
           </button>
 
           <Link
             href="/"
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-surface-elevated"
           >
-            <span>Explorar Servicios</span>
+            <span>{t('exploreServices')}</span>
             <ArrowRight className="h-4 w-4 text-primary-light" />
           </Link>
         </div>
@@ -548,7 +550,7 @@ export default function OrdersDashboardPage() {
               : 'text-slate-400 hover:bg-surface hover:text-white'
           }`}
         >
-          Como Comprador ({orders.filter((o) => o.role === 'buyer').length})
+          {t('asBuyer')} ({orders.filter((o) => o.role === 'buyer').length})
         </button>
         <button
           onClick={() => setActiveTab('seller')}
@@ -558,7 +560,7 @@ export default function OrdersDashboardPage() {
               : 'text-slate-400 hover:bg-surface hover:text-white'
           }`}
         >
-          Como Prestador ({orders.filter((o) => o.role === 'seller').length})
+          {t('asSeller')} ({orders.filter((o) => o.role === 'seller').length})
         </button>
       </div>
 
@@ -581,27 +583,27 @@ export default function OrdersDashboardPage() {
                     {/* Status Badge */}
                     {order.status === 'FUNDED' && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-400">
-                        <Clock className="h-3 w-3" /> Fondeada (En progreso)
+                        <Clock className="h-3 w-3" /> {t('statusFunded')}
                       </span>
                     )}
                     {order.status === 'DELIVERED' && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-2.5 py-0.5 text-xs font-medium text-purple-400">
-                        <FileCheck className="h-3 w-3" /> Entregada (En revisión)
+                        <FileCheck className="h-3 w-3" /> {t('statusDelivered')}
                       </span>
                     )}
                     {order.status === 'RELEASED' && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
-                        <CheckCircle className="h-3 w-3" /> Completada & Pagada
+                        <CheckCircle className="h-3 w-3" /> {t('statusReleased')}
                       </span>
                     )}
                     {order.status === 'REFUNDED' && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-400">
-                        <RotateCcw className="h-3 w-3" /> Reembolsada 100%
+                        <RotateCcw className="h-3 w-3" /> {t('statusRefunded')}
                       </span>
                     )}
                     {order.status === 'DISPUTED' && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-medium text-red-400">
-                        <AlertTriangle className="h-3 w-3" /> En Disputa
+                        <AlertTriangle className="h-3 w-3" /> {t('statusDisputed')}
                       </span>
                     )}
                   </div>
@@ -719,17 +721,17 @@ export default function OrdersDashboardPage() {
                       disabled={isProcessing}
                       className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-background transition hover:bg-accent/90 active:scale-95"
                     >
-                      Aprobar Entrega y Liberar Pago
+                      {t('approveAndRelease')}
                     </button>
                     <button
                       onClick={() => handleOpenDispute(order)}
                       disabled={isProcessing}
                       className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/20"
                     >
-                      Abrir Disputa
+                      {t('openDispute')}
                     </button>
                     <span className="text-xs text-slate-400 ml-auto">
-                      Auto-release activo en 4 días si no hay disputa.
+                      {t('autoReleaseNotice')}
                     </span>
                   </>
                 )}
@@ -756,7 +758,7 @@ export default function OrdersDashboardPage() {
                     disabled={isProcessing}
                     className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-md shadow-primary/20 transition hover:bg-primary-hover active:scale-95"
                   >
-                    Registrar Entrega de Trabajo
+                    {t('submitDelivery')}
                   </button>
                 )}
 
@@ -837,12 +839,12 @@ export default function OrdersDashboardPage() {
               <ShoppingBag className="h-8 w-8 text-primary" />
             </div>
             <h3 className="text-lg font-bold text-white">
-              {activeTab === 'buyer' ? 'Aún no has contratado servicios' : 'Aún no has recibido órdenes'}
+              {activeTab === 'buyer' ? t('noOrdersBuyer') : t('noOrdersSeller')}
             </h3>
             <p className="mt-1 text-sm text-slate-400 max-w-md mx-auto">
               {activeTab === 'buyer'
-                ? 'Explora el catálogo de servicios verificados y contrata con la seguridad de smart contracts en Base Sepolia con USDC.'
-                : 'Publica tus habilidades en el catálogo internacional y comienza a recibir pagos asegurados en escrow.'}
+                ? t('noOrdersBuyerDesc')
+                : t('noOrdersSellerDesc')}
             </p>
 
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">

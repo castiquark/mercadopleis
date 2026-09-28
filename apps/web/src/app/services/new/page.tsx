@@ -4,12 +4,14 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import { MARKETPLACE_CATEGORIES, ServiceCategory } from '@mercadopleis/types';
+import { useLanguage } from '@/lib/languageContext';
 import { ArrowLeft, Clock, DollarSign, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function NewServicePage() {
   const router = useRouter();
   const { isConnected, address } = useAccount();
+  const { language } = useLanguage();
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<ServiceCategory>('development');
@@ -53,7 +55,9 @@ export default function NewServicePage() {
         category,
         priceUsdc: priceNum,
         deliveryDays: parseInt(deliveryDays, 10) || 3,
+        sellerWallet: address || undefined,
       }).catch((e) => console.warn('[API] Could not save to remote backend, saving to local fallback:', e));
+
 
       const existing = JSON.parse(localStorage.getItem('mercadopleis_custom_services') || '[]');
       localStorage.setItem('mercadopleis_custom_services', JSON.stringify([newService, ...existing]));
@@ -68,6 +72,13 @@ export default function NewServicePage() {
     }
   };
 
+  const selectedCatObj = MARKETPLACE_CATEGORIES.find((c) => c.id === category);
+  const selectedCatLabel = selectedCatObj
+    ? language === 'en'
+      ? selectedCatObj.nameEn || selectedCatObj.name
+      : selectedCatObj.name
+    : category;
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Back navigation */}
@@ -76,7 +87,7 @@ export default function NewServicePage() {
         className="inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
       >
         <ArrowLeft className="h-4 w-4" />
-        <span>Volver al Catálogo</span>
+        <span>{language === 'en' ? 'Back to Catalog' : 'Volver al Catálogo'}</span>
       </Link>
 
       <div className="mt-6 flex flex-col gap-8 lg:flex-row">
@@ -84,24 +95,38 @@ export default function NewServicePage() {
         <div className="flex-1 rounded-2xl border border-border bg-surface p-6 sm:p-8">
           <div className="flex items-center gap-2 text-primary-light">
             <Sparkles className="h-5 w-5" />
-            <span className="text-xs font-semibold uppercase tracking-wider">Crear Oferta</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">
+              {language === 'en' ? 'Create Listing' : 'Crear Oferta'}
+            </span>
           </div>
-          <h1 className="mt-2 text-2xl font-bold text-white">Publicar Nuevo Servicio</h1>
+          <h1 className="mt-2 text-2xl font-bold text-white">
+            {language === 'en' ? 'Publish New Service' : 'Publicar Nuevo Servicio'}
+          </h1>
           <p className="mt-1 text-sm text-slate-400">
-            Define tu tarifa en USDC y plazo de entrega. Cobra mediante liquidación automática por smart contract.
+            {language === 'en'
+              ? 'Set your USDC price and delivery timeframe. Get paid via automated smart contract escrow.'
+              : 'Define tu tarifa en USDC y plazo de entrega. Cobra mediante liquidación automática por smart contract.'}
           </p>
 
           {!isConnected && (
             <div className="mt-6 flex items-center gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-300">
               <AlertCircle className="h-4 w-4 shrink-0 text-amber-400" />
-              <span>Conecta tu wallet para vincular este servicio a tu dirección de cobro.</span>
+              <span>
+                {language === 'en'
+                  ? 'Connect your wallet to link this service to your payout address.'
+                  : 'Conecta tu wallet para vincular este servicio a tu dirección de cobro.'}
+              </span>
             </div>
           )}
 
           {success && (
             <div className="mt-6 flex items-center gap-2.5 rounded-xl border border-accent/30 bg-accent/10 p-3.5 text-xs font-semibold text-accent">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-accent" />
-              <span>¡Servicio publicado con éxito! Redirigiendo al catálogo...</span>
+              <span>
+                {language === 'en'
+                  ? 'Service published successfully! Redirecting to catalog...'
+                  : '¡Servicio publicado con éxito! Redirigiendo al catálogo...'}
+              </span>
             </div>
           )}
 
@@ -109,12 +134,16 @@ export default function NewServicePage() {
             {/* Title */}
             <div>
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                Título del Servicio
+                {language === 'en' ? 'Service Title' : 'Título del Servicio'}
               </label>
               <input
                 type="text"
                 required
-                placeholder="ej. Desarrollo de Smart Contract Escrow en Solidity"
+                placeholder={
+                  language === 'en'
+                    ? 'e.g. Escrow Smart Contract Development in Solidity'
+                    : 'ej. Desarrollo de Smart Contract Escrow en Solidity'
+                }
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 transition focus:border-primary focus:outline-none"
@@ -124,7 +153,7 @@ export default function NewServicePage() {
             {/* Category */}
             <div>
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                Categoría
+                {language === 'en' ? 'Category' : 'Categoría'}
               </label>
               <select
                 value={category}
@@ -133,7 +162,7 @@ export default function NewServicePage() {
               >
                 {MARKETPLACE_CATEGORIES.map((cat) => (
                   <option key={cat.id} value={cat.id} className="bg-surface text-white">
-                    {cat.name}
+                    {language === 'en' ? (cat.nameEn || cat.name) : cat.name}
                   </option>
                 ))}
               </select>
@@ -142,12 +171,16 @@ export default function NewServicePage() {
             {/* Description */}
             <div>
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                Descripción y Entregables
+                {language === 'en' ? 'Description & Deliverables' : 'Descripción y Entregables'}
               </label>
               <textarea
                 required
                 rows={4}
-                placeholder="Detalla qué incluye tu entrega, herramientas que usas, entregables y requisitos del cliente..."
+                placeholder={
+                  language === 'en'
+                    ? 'Detail what your deliverables include, tools used, requirements from client...'
+                    : 'Detalla qué incluye tu entrega, herramientas que usas, entregables y requisitos del cliente...'
+                }
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 transition focus:border-primary focus:outline-none"
@@ -158,7 +191,7 @@ export default function NewServicePage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                  Precio (USDC)
+                  {language === 'en' ? 'Price (USDC)' : 'Precio (USDC)'}
                 </label>
                 <div className="relative mt-2">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
@@ -181,7 +214,7 @@ export default function NewServicePage() {
 
               <div>
                 <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                  Tiempo de Entrega (Días)
+                  {language === 'en' ? 'Delivery Time (Days)' : 'Tiempo de Entrega (Días)'}
                 </label>
                 <div className="relative mt-2">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
@@ -197,7 +230,7 @@ export default function NewServicePage() {
                     className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-14 text-sm text-white transition focus:border-primary focus:outline-none"
                   />
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-xs text-slate-400">
-                    días
+                    {language === 'en' ? 'days' : 'días'}
                   </div>
                 </div>
               </div>
@@ -206,15 +239,25 @@ export default function NewServicePage() {
             {/* Commission calculation preview */}
             <div className="rounded-xl border border-border/80 bg-background/50 p-4 text-xs">
               <div className="flex justify-between text-slate-400">
-                <span>Precio publicado al comprador:</span>
+                <span>
+                  {language === 'en' ? 'Published price to buyer:' : 'Precio publicado al comprador:'}
+                </span>
                 <span className="font-semibold text-white">{priceNum} USDC</span>
               </div>
               <div className="mt-1.5 flex justify-between text-slate-400">
-                <span>Comisión de plataforma (3% deducido en liquidación):</span>
+                <span>
+                  {language === 'en'
+                    ? 'Platform fee (3% deducted upon escrow release):'
+                    : 'Comisión de plataforma (3% deducido en liquidación):'}
+                </span>
                 <span className="text-slate-300">-{fee} USDC</span>
               </div>
               <div className="mt-2 flex justify-between border-t border-border/60 pt-2 font-bold text-accent">
-                <span>Recibes neto en tu wallet al aprobar entrega:</span>
+                <span>
+                  {language === 'en'
+                    ? 'Net received in your wallet when delivery approved:'
+                    : 'Recibes neto en tu wallet al aprobar entrega:'}
+                </span>
                 <span>{netEarnings} USDC</span>
               </div>
             </div>
@@ -224,7 +267,9 @@ export default function NewServicePage() {
               disabled={isSubmitting || !title || !description || priceNum <= 0}
               className="w-full rounded-xl bg-primary py-3 font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-hover active:scale-[0.99] disabled:opacity-50"
             >
-              {isSubmitting ? 'Publicando...' : 'Publicar Servicio en el Marketplace'}
+              {isSubmitting
+                ? (language === 'en' ? 'Publishing...' : 'Publicando...')
+                : (language === 'en' ? 'Publish Service to Marketplace' : 'Publicar Servicio en el Marketplace')}
             </button>
           </form>
         </div>
@@ -233,32 +278,45 @@ export default function NewServicePage() {
         <div className="w-full lg:w-80">
           <div className="sticky top-24">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Vista Previa de Tarjeta
+              {language === 'en' ? 'Card Live Preview' : 'Vista Previa de Tarjeta'}
             </span>
 
             <div className="mt-3 overflow-hidden rounded-xl border border-border bg-surface p-5 shadow-xl">
               <div className="flex items-center justify-between">
                 <span className="rounded-md bg-surface-elevated px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  {category}
+                  {selectedCatLabel}
                 </span>
-                <span className="text-xs font-semibold text-accent">Nuevo</span>
+                <span className="text-xs font-semibold text-accent">
+                  {language === 'en' ? 'New' : 'Nuevo'}
+                </span>
               </div>
 
               <h4 className="mt-3 font-semibold text-white">
-                {title || 'Título de tu servicio aquí'}
+                {title || (language === 'en' ? 'Your service title here' : 'Título de tu servicio aquí')}
               </h4>
 
               <p className="mt-2 line-clamp-3 text-xs text-slate-400">
-                {description || 'Aquí aparecerá la descripción detallada de lo que entregas al comprador...'}
+                {description ||
+                  (language === 'en'
+                    ? 'Detailed description of your deliverables will appear here...'
+                    : 'Aquí aparecerá la descripción detallada de lo que entregas al comprador...')}
               </p>
 
               <div className="mt-4 border-t border-border/80 pt-3">
                 <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span>Entrega: {deliveryDays || 3} días</span>
-                  <span className="text-accent">Escrow protegido</span>
+                  <span>
+                    {language === 'en'
+                      ? `Delivery: ${deliveryDays || 3} days`
+                      : `Entrega: ${deliveryDays || 3} días`}
+                  </span>
+                  <span className="text-accent">
+                    {language === 'en' ? 'Protected Escrow' : 'Escrow protegido'}
+                  </span>
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">
-                  <span className="text-xs text-slate-400">Precio total</span>
+                  <span className="text-xs text-slate-400">
+                    {language === 'en' ? 'Total price' : 'Precio total'}
+                  </span>
                   <span className="text-lg font-bold text-white">
                     {priceNum} <span className="text-xs text-usdc">USDC</span>
                   </span>
@@ -271,3 +329,4 @@ export default function NewServicePage() {
     </div>
   );
 }
+

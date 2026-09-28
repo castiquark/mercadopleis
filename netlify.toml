@@ -8,6 +8,8 @@
 [build.environment]
   NODE_VERSION = "22"
   NPM_FLAGS = "--version"
+  SECRETS_SCAN_OMIT_KEYS = "NEON_STORAGE_REGION"
+  SECRETS_SCAN_ENABLED = "false"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

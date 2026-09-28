@@ -5,12 +5,15 @@ import Link from 'next/link';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { useAuth } from '@/lib/authContext';
-import { ShieldCheck, PlusCircle, ShoppingBag, KeyRound, UserCheck, User, Scale, Droplet } from 'lucide-react';
+import { useLanguage } from '@/lib/languageContext';
+import { ShieldCheck, PlusCircle, ShoppingBag, KeyRound, UserCheck, Scale, Droplet } from 'lucide-react';
 import { FaucetButton } from './FaucetButton';
+import { LanguageSwitch } from './LanguageSwitch';
 
 export function Navbar() {
   const { isConnected } = useAccount();
-  const { user, isAuthenticated, isAdmin, isLoading, signIn, signOut } = useAuth();
+  const { user, isAuthenticated, isAdmin, isLoading, signIn } = useAuth();
+  const { t } = useLanguage();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
@@ -28,7 +31,7 @@ export function Navbar() {
 
           <div className="hidden items-center gap-1 rounded-full border border-border/80 bg-surface px-3 py-1 text-xs text-slate-300 md:flex">
             <ShieldCheck className="h-3.5 w-3.5 text-accent" />
-            <span>Escrow Non-Custodial en Base</span>
+            <span>{t('escrowBadge')}</span>
           </div>
         </div>
 
@@ -39,7 +42,7 @@ export function Navbar() {
             className="hidden items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white sm:flex"
           >
             <PlusCircle className="h-4 w-4 text-primary-light" />
-            <span>Publicar Servicio</span>
+            <span>{t('postService')}</span>
           </Link>
 
           <Link
@@ -47,7 +50,7 @@ export function Navbar() {
             className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white"
           >
             <ShoppingBag className="h-4 w-4 text-slate-400" />
-            <span className="hidden sm:inline">Mis Órdenes</span>
+            <span className="hidden sm:inline">{t('myOrders')}</span>
           </Link>
 
           {isAdmin && (
@@ -57,7 +60,7 @@ export function Navbar() {
               title="Panel de Mediación de Disputas"
             >
               <Scale className="h-3.5 w-3.5 text-amber-400" />
-              <span>Panel Admin</span>
+              <span>{t('adminPanel')}</span>
             </Link>
           )}
 
@@ -67,11 +70,14 @@ export function Navbar() {
             title="Faucet de Test USDC en Base Sepolia"
           >
             <Droplet className="h-3.5 w-3.5 fill-cyan-400/20 text-cyan-400" />
-            <span className="hidden sm:inline">Faucet</span>
+            <span className="hidden sm:inline">{t('faucet')}</span>
           </Link>
 
           {/* Quick Faucet Mint Button if connected */}
           {isConnected && <FaucetButton variant="navbar" amount="1000" />}
+
+          {/* Language Switcher */}
+          <LanguageSwitch />
 
           {/* SIWE Authenticated user pill or Sign button */}
           {isConnected && !isAuthenticated && (
@@ -81,7 +87,7 @@ export function Navbar() {
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary/20 border border-primary/40 px-3 py-2 text-xs font-semibold text-primary-light transition hover:bg-primary/30 active:scale-95 animate-pulse"
             >
               <KeyRound className="h-3.5 w-3.5" />
-              <span>{isLoading ? 'Firmando...' : 'Firmar Sesión (SIWE)'}</span>
+              <span>{isLoading ? t('signing') : t('signSession')}</span>
             </button>
           )}
 

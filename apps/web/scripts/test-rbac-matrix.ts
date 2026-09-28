@@ -5,7 +5,7 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = process.env.API_BASE || 'http://localhost:3000/api';
 const DEPLOYER_KEY = process.env.DEPLOYER_PRIVATE_KEY as `0x${string}`;
 
 async function authenticateWallet(account: any) {
@@ -13,8 +13,9 @@ async function authenticateWallet(account: any) {
   if (!nonceRes.ok) throw new Error(`Failed to get nonce for ${account.address}`);
   const { nonce } = await nonceRes.json();
 
-  const domain = 'localhost:3000';
-  const origin = 'http://localhost:3000';
+  const apiUrlObj = new URL(API_BASE);
+  const domain = apiUrlObj.host;
+  const origin = apiUrlObj.origin;
   const statement = 'Iniciar sesión en mercadopleis con tu wallet criptográfica.';
   const issuedAt = new Date().toISOString();
   const message = `${domain} wants you to sign in with your Ethereum account:\n${account.address}\n\n${statement}\n\nURI: ${origin}\nVersion: 1\nChain ID: 84532\nNonce: ${nonce}\nIssued At: ${issuedAt}`;

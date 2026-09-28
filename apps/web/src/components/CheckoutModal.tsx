@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Service } from '@mercadopleis/types';
+import { Service, MARKETPLACE_CATEGORIES } from '@mercadopleis/types';
+import { useLanguage } from '@/lib/languageContext';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import { Erc20Abi, MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
@@ -16,9 +17,11 @@ interface CheckoutModalProps {
 }
 
 export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProps) {
+  const { language } = useLanguage();
   const { address, isConnected, chainId } = useAccount();
   const [step, setStep] = useState<'quote' | 'approving' | 'funding' | 'success'>('quote');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
 
   const activeChainId = chainId || CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
   const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID];
@@ -49,8 +52,16 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
 
   if (!service) return null;
 
+  const categoryObj = MARKETPLACE_CATEGORIES.find((c) => c.id === service.category);
+  const categoryLabel = categoryObj
+    ? language === 'en'
+      ? categoryObj.nameEn || categoryObj.name
+      : categoryObj.name
+    : service.category;
+
   const needsApproval = currentAllowance !== undefined && currentAllowance < rawAmount;
   const hasInsufficientBalance = currentBalance !== undefined && currentBalance < rawAmount;
+
 
   const handleConfirmOrder = async () => {
     try {
@@ -144,32 +155,38 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
             <Shield className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Contratar con Escrow Seguro</h2>
-            <p className="text-xs text-slate-400">Fondos bloqueados hasta tu aprobación de entrega</p>
+            <h2 className="text-lg font-bold text-white">
+              {language === 'en' ? 'Hire with Secure Escrow' : 'Contratar con Escrow Seguro'}
+            </h2>
+            <p className="text-xs text-slate-400">
+              {language === 'en'
+                ? 'Funds locked in smart contract until your delivery approval'
+                : 'Fondos bloqueados hasta tu aprobación de entrega'}
+            </p>
           </div>
         </div>
 
         {/* Service Summary */}
         <div className="mt-5 rounded-xl border border-border/80 bg-background/50 p-4">
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            {service.category}
+            {categoryLabel}
           </span>
           <h4 className="mt-1 font-semibold text-white">{service.title}</h4>
 
           <div className="mt-4 space-y-2 border-t border-border/60 pt-3 text-sm">
             <div className="flex justify-between text-slate-300">
-              <span>Precio del servicio</span>
+              <span>{language === 'en' ? 'Service price' : 'Precio del servicio'}</span>
               <span className="font-medium text-white">{service.priceUsdc} USDC</span>
             </div>
             <div className="flex justify-between text-slate-400">
               <span className="flex items-center gap-1">
-                Comisión para comprador
+                {language === 'en' ? 'Buyer fee' : 'Comisión para comprador'}
                 <span className="rounded bg-accent/10 px-1 text-[10px] font-semibold text-accent">0%</span>
               </span>
               <span className="text-accent font-medium">0.00 USDC</span>
             </div>
             <div className="flex justify-between border-t border-border/60 pt-2 text-base font-bold text-white">
-              <span>Total a fondear</span>
+              <span>{language === 'en' ? 'Total to fund' : 'Total a fondear'}</span>
               <span className="text-primary-light">{service.priceUsdc} USDC</span>
             </div>
           </div>
@@ -179,15 +196,27 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
         <div className="mt-4 space-y-2 rounded-xl bg-surface-elevated/50 p-3.5 text-xs text-slate-300">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-accent" />
-            <span>Los fondos permanecen en el smart contract, nunca en manos de terceros.</span>
+            <span>
+              {language === 'en'
+                ? 'Funds remain in the smart contract, never held by third parties.'
+                : 'Los fondos permanecen en el smart contract, nunca en manos de terceros.'}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 shrink-0 text-primary-light" />
-            <span>Dispones de 5 días para revisar la entrega antes de la liberación automática.</span>
+            <span>
+              {language === 'en'
+                ? 'You have 5 days to review deliverables before automatic release.'
+                : 'Dispones de 5 días para revisar la entrega antes de la liberación automática.'}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 shrink-0 text-amber-400" />
-            <span>Reembolso 100% automático si el vendedor no entrega antes del deadline.</span>
+            <span>
+              {language === 'en'
+                ? '100% automatic refund if freelancer fails to deliver before deadline.'
+                : 'Reembolso 100% automático si el vendedor no entrega antes del deadline.'}
+            </span>
           </div>
         </div>
 
@@ -195,11 +224,11 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
         {isConnected && (
           <div className="mt-4 flex items-center justify-between rounded-xl border border-border/70 bg-surface-elevated/40 px-3.5 py-2.5 text-xs">
             <span className="text-slate-400">
-              Tu saldo de USDC:{' '}
+              {language === 'en' ? 'Your USDC balance:' : 'Tu saldo de USDC:'}{' '}
               <strong className="text-white">
                 {currentBalance !== undefined
                   ? `${Number(formatUnits(currentBalance, 6)).toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC`
-                  : 'Cargando...'}
+                  : (language === 'en' ? 'Loading...' : 'Cargando...')}
               </strong>
             </span>
 
@@ -218,7 +247,9 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
           <div className="mt-2.5 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-300">
             <Droplet className="h-4 w-4 shrink-0 text-amber-400" />
             <span>
-              Saldo insuficiente para esta orden. Reclama fondos de prueba arriba con 1 clic.
+              {language === 'en'
+                ? 'Insufficient balance for this order. Claim testnet funds above with 1 click.'
+                : 'Saldo insuficiente para esta orden. Reclama fondos de prueba arriba con 1 clic.'}
             </span>
           </div>
         )}
@@ -235,12 +266,20 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
         <div className="mt-6">
           {!isConnected ? (
             <div className="text-center">
-              <p className="mb-2 text-xs text-slate-400">Conecta tu wallet para proceder con el escrow</p>
+              <p className="mb-2 text-xs text-slate-400">
+                {language === 'en'
+                  ? 'Connect your wallet to proceed with escrow'
+                  : 'Conecta tu wallet para proceder con el escrow'}
+              </p>
             </div>
           ) : step === 'success' ? (
             <div className="flex items-center justify-center gap-2 rounded-xl bg-accent/20 py-3 text-sm font-bold text-accent">
               <CheckCircle2 className="h-5 w-5" />
-              <span>¡Orden fondeada en Escrow exitosamente!</span>
+              <span>
+                {language === 'en'
+                  ? 'Order successfully funded in Escrow!'
+                  : '¡Orden fondeada en Escrow exitosamente!'}
+              </span>
             </div>
           ) : (
             <button
@@ -248,9 +287,13 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
               disabled={step !== 'quote'}
               className="w-full rounded-xl bg-primary py-3 font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-hover active:scale-[0.99] disabled:opacity-50"
             >
-              {step === 'approving' && '1/2 Aprobando USDC en tu wallet...'}
-              {step === 'funding' && '2/2 Confirmando depósito en el Smart Contract...'}
-              {step === 'quote' && (needsApproval ? 'Aprobar USDC y Fondear Escrow' : 'Confirmar y Fondear en Escrow')}
+              {step === 'approving' && (language === 'en' ? '1/2 Approving USDC in your wallet...' : '1/2 Aprobando USDC en tu wallet...')}
+              {step === 'funding' && (language === 'en' ? '2/2 Confirming deposit in the Smart Contract...' : '2/2 Confirmando depósito en el Smart Contract...')}
+              {step === 'quote' && (
+                needsApproval
+                  ? (language === 'en' ? 'Approve USDC & Fund Escrow' : 'Aprobar USDC y Fondear Escrow')
+                  : (language === 'en' ? 'Confirm & Fund in Escrow' : 'Confirmar y Fondear en Escrow')
+              )}
             </button>
           )}
         </div>
@@ -258,3 +301,4 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
     </div>
   );
 }
+

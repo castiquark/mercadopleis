@@ -19,11 +19,18 @@ export type ServiceCategory =
   | 'development'
   | 'design'
   | 'marketing'
-  | 'consulting';
+  | 'writing_translation'
+  | 'ai_data'
+  | 'security_audit'
+  | 'consulting'
+  | 'video_audio'
+  | 'legal_finance'
+  | 'others';
 
 export interface CategoryInfo {
   id: ServiceCategory;
   name: string;
+  nameEn?: string;
   description: string;
   icon: string;
 }
@@ -32,26 +39,72 @@ export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
   {
     id: 'development',
     name: 'Desarrollo & Smart Contracts',
+    nameEn: 'Development & Smart Contracts',
     description: 'Websites, DApps, Solidity, APIs, Backend y Frontend',
     icon: 'Code',
   },
   {
     id: 'design',
     name: 'Diseño UI/UX & Creativo',
+    nameEn: 'UI/UX Design & Creative',
     description: 'Prototipos Figma, landing pages, logos, diseño Web3',
     icon: 'Palette',
   },
   {
     id: 'marketing',
-    name: 'Marketing & Redacción',
-    description: 'Contenido técnico, traducción, community management, SEO',
+    name: 'Marketing & Redes',
+    nameEn: 'Marketing & Social Media',
+    description: 'Community management, crecimiento, campañas Web3, SEO',
     icon: 'Megaphone',
   },
   {
+    id: 'writing_translation',
+    name: 'Redacción & Traducción',
+    nameEn: 'Writing & Translation',
+    description: 'Whitepapers, documentación técnica, artículos y traducciones',
+    icon: 'FileText',
+  },
+  {
+    id: 'ai_data',
+    name: 'IA, Prompting & Datos',
+    nameEn: 'AI, Prompting & Data',
+    description: 'Agentes de IA, prompt engineering, automatizaciones y análisis de datos',
+    icon: 'Bot',
+  },
+  {
+    id: 'security_audit',
+    name: 'Seguridad & Auditorías',
+    nameEn: 'Security & Auditing',
+    description: 'Auditorías de contratos, pentesting y análisis de vulnerabilidades',
+    icon: 'ShieldCheck',
+  },
+  {
     id: 'consulting',
-    name: 'Consultoría & Asesoría Web3',
-    description: 'Tokenomics, arquitectura técnica, auditoría preliminar',
+    name: 'Consultoría & Estrategia',
+    nameEn: 'Consulting & Strategy',
+    description: 'Tokenomics, gobernanza, arquitectura y asesoría de producto',
     icon: 'Briefcase',
+  },
+  {
+    id: 'video_audio',
+    name: 'Video, Audio & Animación',
+    nameEn: 'Video, Audio & Animation',
+    description: 'Edición de video, motion graphics, intros 3D y producción de audio',
+    icon: 'Film',
+  },
+  {
+    id: 'legal_finance',
+    name: 'Legal, Finanzas & Compliance',
+    nameEn: 'Legal, Finance & Compliance',
+    description: 'Estructuración fiscal, cumplimiento normativo y asesoramiento legal cripto',
+    icon: 'Scale',
+  },
+  {
+    id: 'others',
+    name: 'Otros Servicios',
+    nameEn: 'Other Services',
+    description: 'Tareas generales, asistencia virtual y servicios misceláneos',
+    icon: 'MoreHorizontal',
   },
 ];
 
