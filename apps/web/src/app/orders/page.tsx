@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAccount, useWriteContract } from 'wagmi';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
-import { CONTRACT_CONFIG, ADMIN_WALLET_ADDRESS } from '@mercadopleis/types';
+import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { useAuth } from '@/lib/authContext';
 import { fetchMyOrders, updateOrder, submitReview, openDisputeApi } from '@/lib/api';
 import {
@@ -652,7 +652,7 @@ export default function OrdersDashboardPage() {
                       <AlertTriangle className="h-4 w-4 shrink-0" />
                       <span>
                         {order.dispute?.status === 'RESOLVED'
-                          ? 'Fallo Arbitral Emitido por el Administrador'
+                          ? 'Fallo de Mediación y Arbitraje Emitido'
                           : 'Disputa en Curso — Fondos Congelados en Escrow'}
                       </span>
                     </div>
@@ -692,18 +692,18 @@ export default function OrdersDashboardPage() {
                   {order.dispute?.status === 'RESOLVED' ? (
                     <div className="mt-3 rounded-lg border border-accent/30 bg-accent/10 p-3 text-accent">
                       <p className="font-bold">
-                        Resolución arbitral ejecutada: {order.dispute.sellerAwardUsdc} USDC acreditados al prestador / {order.dispute.buyerRefundUsdc} USDC reembolsados al comprador.
+                        Resolución de mediación ejecutada: {order.dispute.sellerAwardUsdc} USDC acreditados al prestador / {order.dispute.buyerRefundUsdc} USDC reembolsados al comprador.
                       </p>
                       {order.dispute.resolutionNotes && (
                         <p className="mt-1.5 text-xs text-slate-300">
-                          <strong className="text-slate-400">Fundamentación del árbitro: </strong>
+                          <strong className="text-slate-400">Fundamentación de la resolución: </strong>
                           {order.dispute.resolutionNotes}
                         </p>
                       )}
                     </div>
                   ) : (
                     <p className="mt-2 text-[11px] text-slate-400 leading-relaxed">
-                      El administrador y árbitro oficial de la plataforma ({ADMIN_WALLET_ADDRESS.slice(0, 8)}...{ADMIN_WALLET_ADDRESS.slice(-4)}) está evaluando el caso. Los fondos permanecen congelados de manera segura en el escrow de Base Sepolia.
+                      El proceso de mediación y arbitraje neutral está evaluando las pruebas del caso. Los fondos en USDC permanecen asegurados de forma non-custodial en el contrato de Escrow de Base Sepolia.
                     </p>
                   )}
                 </div>
@@ -1189,7 +1189,7 @@ export default function OrdersDashboardPage() {
             </div>
 
             <p className="mt-3 text-xs text-slate-400 leading-relaxed">
-              Al abrir una disputa, el auto-release de fondos se congela de inmediato en el smart contract escrow. El administrador intervendrá como árbitro neutral para evaluar el caso y decidir el reparto o reembolso de los fondos.
+              Al abrir una disputa, el auto-release de fondos se congela de inmediato en el smart contract escrow. El servicio de mediación y arbitraje neutral evaluará el caso para determinar la distribución o reembolso justo de los fondos.
             </p>
 
             <form onSubmit={handleConfirmDispute} className="mt-5 space-y-4">
@@ -1221,7 +1221,7 @@ export default function OrdersDashboardPage() {
               </div>
 
               <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-[11px] text-red-300">
-                ⚠️ El árbitro evaluará esta evidencia junto con los mensajes intercambiados en la orden para dictar el fallo final.
+                ⚠️ Las pruebas aportadas y los mensajes intercambiados en la orden serán evaluados para dictar la resolución final.
               </div>
 
               <div className="flex gap-3 pt-2">

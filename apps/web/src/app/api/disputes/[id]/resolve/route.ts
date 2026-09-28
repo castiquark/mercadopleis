@@ -13,10 +13,7 @@ export async function POST(
   }
 
   if (authUser.role !== 'ADMIN') {
-    return NextResponse.json(
-      { error: 'Forbidden: Solo el administrador / árbitro autorizado puede resolver disputas' },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
   }
 
   try {

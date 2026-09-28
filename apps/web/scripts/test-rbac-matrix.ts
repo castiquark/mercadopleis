@@ -66,10 +66,10 @@ async function runTest() {
   const buyerDisputes = await fetch(`${API_BASE}/disputes`, {
     headers: { Authorization: `Bearer ${buyerAuth.token}` },
   });
-  console.log(`  [Buyer] GET /api/disputes -> HTTP ${buyerDisputes.status} (Esperado: 403 Forbidden)`);
+  console.log(`  [Buyer] GET /api/disputes -> HTTP ${buyerDisputes.status} (Esperado: 404 Not Found / Stealth)`);
   const buyerDisputesJson = await buyerDisputes.json();
   console.log(`  Mensaje de respuesta: "${buyerDisputesJson.error}"`);
-  if (buyerDisputes.status !== 403) throw new Error('Security flaw: regular user can access disputes');
+  if (buyerDisputes.status !== 404) throw new Error('Security flaw: regular user can access disputes or endpoint is not hidden');
 
   const buyerResolve = await fetch(`${API_BASE}/disputes/disp-random-id/resolve`, {
     method: 'POST',
@@ -79,8 +79,8 @@ async function runTest() {
     },
     body: JSON.stringify({ sellerAwardUsdc: 10, buyerRefundUsdc: 10 }),
   });
-  console.log(`  [Buyer] POST /api/disputes/.../resolve -> HTTP ${buyerResolve.status} (Esperado: 403 Forbidden)`);
-  if (buyerResolve.status !== 403) throw new Error('Security flaw: regular user can resolve disputes');
+  console.log(`  [Buyer] POST /api/disputes/.../resolve -> HTTP ${buyerResolve.status} (Esperado: 404 Not Found / Stealth)`);
+  if (buyerResolve.status !== 404) throw new Error('Security flaw: regular user can resolve disputes or endpoint is not hidden');
 
   const buyerOrders = await fetch(`${API_BASE}/orders/my`, {
     headers: { Authorization: `Bearer ${buyerAuth.token}` },
@@ -99,8 +99,8 @@ async function runTest() {
   const sellerDisputes = await fetch(`${API_BASE}/disputes`, {
     headers: { Authorization: `Bearer ${sellerAuth.token}` },
   });
-  console.log(`  [Seller] GET /api/disputes -> HTTP ${sellerDisputes.status} (Esperado: 403 Forbidden)`);
-  if (sellerDisputes.status !== 403) throw new Error('Security flaw: regular seller can access disputes');
+  console.log(`  [Seller] GET /api/disputes -> HTTP ${sellerDisputes.status} (Esperado: 404 Not Found / Stealth)`);
+  if (sellerDisputes.status !== 404) throw new Error('Security flaw: regular seller can access disputes or endpoint is not hidden');
 
   // 4. Wallet Administrador Oficial (la que cobra los fees)
   console.log('\n--- 4. Pruebas con Wallet Administradora (0xF6d48E6EFa40Ac16B2A71fa89c81D93da171cA00) ---');

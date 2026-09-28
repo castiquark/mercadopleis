@@ -4,15 +4,15 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { useAccount, useWriteContract } from 'wagmi';
 import { parseUnits } from 'viem';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES, calculateOrderAmounts } from '@mercadopleis/contracts-abi';
-import { CONTRACT_CONFIG, isAdminWallet, ADMIN_WALLET_ADDRESS } from '@mercadopleis/types';
+import { CONTRACT_CONFIG, isAdminWallet } from '@mercadopleis/types';
 import { fetchDisputes, resolveDisputeApi } from '@/lib/api';
 import { useAuth } from '@/lib/authContext';
 import {
   Gavel,
-  ShieldAlert,
   ShieldCheck,
   CheckCircle2,
   AlertTriangle,
@@ -20,10 +20,8 @@ import {
   ArrowRight,
   RefreshCw,
   ExternalLink,
-  Lock,
   Loader2,
   LogIn,
-  ShoppingBag,
   Sparkles,
 } from 'lucide-react';
 
@@ -44,8 +42,9 @@ interface DisputeItem {
 }
 
 export default function AdminDisputesPage() {
-  const { address, isConnected, chainId } = useAccount();
+  const { address, isConnected, chainId, status } = useAccount();
   const { user, isAdmin, isLoading: isAuthLoading, signIn } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [disputesList, setDisputesList] = useState<DisputeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDispute, setSelectedDispute] = useState<DisputeItem | null>(null);
@@ -53,6 +52,10 @@ export default function AdminDisputesPage() {
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const activeChainId = chainId || CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
   const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID];
@@ -162,83 +165,19 @@ export default function AdminDisputesPage() {
     }
   };
 
-  // State 1: Wallet not connected
-  if (!isConnected) {
+  // While mounting or wagmi is establishing connection, show neutral loader
+  if (!mounted || status === 'connecting' || status === 'reconnecting') {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
-        <div className="rounded-3xl border border-border/80 bg-surface/90 p-8 sm:p-12 text-center backdrop-blur-md shadow-2xl">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20">
-            <Lock className="h-8 w-8" />
-          </div>
-          <h1 className="mt-6 text-2xl font-bold text-white sm:text-3xl">Acceso Restringido</h1>
-          <p className="mt-3 text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
-            El Panel de Arbitraje y Administración está reservado exclusivamente para la billetera del administrador y árbitro oficial de la plataforma:
-          </p>
-          <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-background/80 px-4 py-2 font-mono text-xs text-primary-light">
-            <span>{ADMIN_WALLET_ADDRESS}</span>
-          </div>
-          <p className="mt-4 text-xs text-slate-500">
-            Por favor, conecta la wallet correspondiente desde la barra superior para continuar.
-          </p>
-          <div className="mt-8 flex justify-center gap-4">
-            <Link
-              href="/orders"
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-surface-elevated hover:text-white transition"
-            >
-              <ShoppingBag className="h-4 w-4" />
-              <span>Mis Órdenes</span>
-            </Link>
-            <Link
-              href="/services"
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover transition"
-            >
-              <span>Explorar Servicios</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
       </div>
     );
   }
 
-  // State 2: Wallet connected but not authorized admin
-  if (!isAuthorized) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
-        <div className="rounded-3xl border border-red-500/30 bg-surface/90 p-8 sm:p-12 text-center backdrop-blur-md shadow-2xl">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10 text-red-400 ring-1 ring-red-500/20">
-            <ShieldAlert className="h-8 w-8" />
-          </div>
-          <span className="mt-6 inline-block rounded-full bg-red-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-red-400">
-            Error 403 • Acceso Denegado
-          </span>
-          <h1 className="mt-3 text-2xl font-bold text-white sm:text-3xl">Zona Exclusiva de Administración</h1>
-          <p className="mt-3 text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
-            Tu wallet conectada (<code className="font-mono text-slate-300">{address?.slice(0, 10)}...{address?.slice(-6)}</code>) no cuenta con privilegios administrativos ni facultades de arbitraje.
-          </p>
-          <div className="mt-4 rounded-xl border border-border/80 bg-background/60 p-4 text-xs text-slate-400 max-w-md mx-auto">
-            <div className="text-slate-500 uppercase tracking-wider text-[10px] font-semibold mb-1">Wallet Administradora Requerida</div>
-            <span className="font-mono text-primary-light">{ADMIN_WALLET_ADDRESS}</span>
-          </div>
-          <div className="mt-8 flex justify-center gap-4">
-            <Link
-              href="/orders"
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover transition"
-            >
-              <ShoppingBag className="h-4 w-4" />
-              <span>Ver Mis Órdenes</span>
-            </Link>
-            <Link
-              href="/services"
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-surface-elevated hover:text-white transition"
-            >
-              <span>Servicios Disponibles</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
+  // If not authorized (not connected, or connected with a non-admin wallet):
+  // Never reveal an admin screen or 403 message — simply render a clean 404
+  if (!isConnected || !isAuthorized) {
+    notFound();
   }
 
   // State 3: Authorized Administrator view

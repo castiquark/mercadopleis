@@ -13,10 +13,7 @@ export async function GET(request: NextRequest) {
 
   // Strictly restricted to ADMINISTRATOR only
   if (authUser.role !== 'ADMIN') {
-    return NextResponse.json(
-      { error: 'Forbidden: El módulo de arbitraje y disputas es de acceso exclusivo para el administrador' },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
   }
 
   try {

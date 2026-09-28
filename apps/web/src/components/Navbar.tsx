@@ -54,7 +54,7 @@ export function Navbar() {
             <Link
               href="/admin/disputes"
               className="hidden items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-300 transition hover:bg-amber-500/20 hover:text-white lg:flex"
-              title="Panel de Árbitro de Disputas (Solo Administrador)"
+              title="Panel de Mediación de Disputas"
             >
               <Scale className="h-3.5 w-3.5 text-amber-400" />
               <span>Panel Admin</span>
