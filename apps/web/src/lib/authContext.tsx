@@ -116,10 +116,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return true;
       }
       return false;
-    } catch (error) {
-      console.error('SIWE login error:', error);
+    } catch (error: any) {
+      const isRejection =
+        error?.name === 'UserRejectedRequestError' ||
+        error?.code === 4001 ||
+        error?.cause?.code === 4001 ||
+        error?.message?.includes('User rejected') ||
+        error?.message?.includes('User denied') ||
+        error?.shortMessage?.includes('User rejected') ||
+        error?.shortMessage?.includes('User denied');
+
+      if (isRejection) {
+        console.info('[SIWE] Firma cancelada por el usuario en su wallet.');
+      } else {
+        console.error('SIWE login error:', error);
+      }
       return false;
     } finally {
+
       setIsLoading(false);
     }
   };

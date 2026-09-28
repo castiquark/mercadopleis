@@ -261,12 +261,26 @@ export default function OrdersDashboardPage() {
       );
       setActionNotice(`¡Orden #${order.contractOrderId} aprobada! Fondos liberados al prestador.`);
     } catch (err: any) {
-      console.error(err);
-      setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error en transacción'}`);
+      const isRejection =
+        err?.name === 'UserRejectedRequestError' ||
+        err?.code === 4001 ||
+        err?.cause?.code === 4001 ||
+        err?.message?.includes('User rejected') ||
+        err?.message?.includes('User denied') ||
+        err?.shortMessage?.includes('User rejected') ||
+        err?.shortMessage?.includes('User denied');
+
+      if (isRejection) {
+        setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
+      } else {
+        console.error(err);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error en transacción'}`);
+      }
     } finally {
       setIsProcessing(false);
     }
   };
+
 
   // Buyer Action: Open dispute modal
   const handleOpenDispute = (order: MockOrder) => {
@@ -323,8 +337,21 @@ export default function OrdersDashboardPage() {
       setActionNotice(`¡Disputa abierta con éxito para Orden #${activeDisputeModalOrder.contractOrderId}! Fondos congelados en escrow para arbitraje.`);
       setActiveDisputeModalOrder(null);
     } catch (err: any) {
-      console.error(err);
-      setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error al abrir disputa'}`);
+      const isRejection =
+        err?.name === 'UserRejectedRequestError' ||
+        err?.code === 4001 ||
+        err?.cause?.code === 4001 ||
+        err?.message?.includes('User rejected') ||
+        err?.message?.includes('User denied') ||
+        err?.shortMessage?.includes('User rejected') ||
+        err?.shortMessage?.includes('User denied');
+
+      if (isRejection) {
+        setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
+      } else {
+        console.error(err);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error al abrir disputa'}`);
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -356,12 +383,26 @@ export default function OrdersDashboardPage() {
       );
       setActionNotice(`100% de los fondos reembolsados directamente al comprador.`);
     } catch (err: any) {
-      console.error(err);
-      setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error en transacción'}`);
+      const isRejection =
+        err?.name === 'UserRejectedRequestError' ||
+        err?.code === 4001 ||
+        err?.cause?.code === 4001 ||
+        err?.message?.includes('User rejected') ||
+        err?.message?.includes('User denied') ||
+        err?.shortMessage?.includes('User rejected') ||
+        err?.shortMessage?.includes('User denied');
+
+      if (isRejection) {
+        setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
+      } else {
+        console.error(err);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error en transacción'}`);
+      }
     } finally {
       setIsProcessing(false);
     }
   };
+
 
   const openDeliveryModal = (order: MockOrder) => {
     setActiveDeliveryModalOrder(order);
@@ -474,11 +515,25 @@ export default function OrdersDashboardPage() {
       setDeliveryHash('');
       setUploadedFileMeta(null);
     } catch (err: any) {
-      console.error(err);
-      setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error en transacción'}`);
+      const isRejection =
+        err?.name === 'UserRejectedRequestError' ||
+        err?.code === 4001 ||
+        err?.cause?.code === 4001 ||
+        err?.message?.includes('User rejected') ||
+        err?.message?.includes('User denied') ||
+        err?.shortMessage?.includes('User rejected') ||
+        err?.shortMessage?.includes('User denied');
+
+      if (isRejection) {
+        setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
+      } else {
+        console.error(err);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error en transacción'}`);
+      }
     } finally {
       setIsProcessing(false);
     }
+
   };
 
   return (

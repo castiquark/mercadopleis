@@ -132,11 +132,30 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
       setStep('success');
       setTimeout(() => onSuccess(), 2000);
     } catch (err: any) {
-      console.error('Order error:', err);
-      setErrorMessage(err?.shortMessage || err?.message || 'Error al procesar la transacción en la wallet.');
+      const isRejection =
+        err?.name === 'UserRejectedRequestError' ||
+        err?.code === 4001 ||
+        err?.cause?.code === 4001 ||
+        err?.message?.includes('User rejected') ||
+        err?.message?.includes('User denied') ||
+        err?.shortMessage?.includes('User rejected') ||
+        err?.shortMessage?.includes('User denied');
+
+      if (isRejection) {
+        console.info('[Wallet] Transacción o firma cancelada por el usuario.');
+        setErrorMessage(
+          language === 'en'
+            ? 'Signature or transaction cancelled in your wallet. No funds were debited.'
+            : 'Firma o transacción cancelada en tu wallet. No se debitó ningún fondo.'
+        );
+      } else {
+        console.error('Order error:', err);
+        setErrorMessage(err?.shortMessage || err?.message || 'Error al procesar la transacción en la wallet.');
+      }
       setStep('quote');
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">

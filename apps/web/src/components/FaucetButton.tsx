@@ -60,12 +60,28 @@ export function FaucetButton({ amount = '1000', variant = 'navbar', onMintSucces
 
       setTimeout(() => setSuccess(false), 4000);
     } catch (err: any) {
-      console.error('Error minting test USDC:', err);
-      setErrorMessage(err?.shortMessage || err?.message || 'Error al reclamar test USDC');
-      setTimeout(() => setErrorMessage(null), 5000);
+      const isRejection =
+        err?.name === 'UserRejectedRequestError' ||
+        err?.code === 4001 ||
+        err?.cause?.code === 4001 ||
+        err?.message?.includes('User rejected') ||
+        err?.message?.includes('User denied') ||
+        err?.shortMessage?.includes('User rejected') ||
+        err?.shortMessage?.includes('User denied');
+
+      if (isRejection) {
+        console.info('[Faucet] Reclamo cancelado por el usuario en su wallet.');
+        setErrorMessage('Reclamo cancelado en tu wallet.');
+        setTimeout(() => setErrorMessage(null), 3000);
+      } else {
+        console.error('Error minting test USDC:', err);
+        setErrorMessage(err?.shortMessage || err?.message || 'Error al reclamar test USDC');
+        setTimeout(() => setErrorMessage(null), 5000);
+      }
     } finally {
       setIsMinting(false);
     }
+
   };
 
   const handleAddToWallet = async () => {
