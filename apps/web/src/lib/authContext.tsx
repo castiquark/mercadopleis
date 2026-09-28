@@ -44,41 +44,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check existing token on mount
-  useEffect(() => {
-    const savedToken = getAuthToken();
-    if (savedToken) {
-      setToken(savedToken);
-      fetchUserProfile(savedToken);
-    }
-  }, []);
-
-  // If wallet disconnects, clear session
-  useEffect(() => {
-    if (!isConnected && token) {
-      signOut();
-    }
-  }, [isConnected]);
-
   const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
-  const fetchUserProfile = async (authToken: string) => {
+  const fetchUserProfile = async (authToken: string, currentAddress?: string | null) => {
     try {
       const res = await fetch(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${authToken}` },
       });
       if (res.ok) {
         const data = await res.json();
-        setUser(data.user);
-      } else {
-        clearAuthToken();
-        setToken(null);
-        setUser(null);
+        if (
+          !currentAddress ||
+          data.user?.walletAddress?.toLowerCase() === currentAddress.toLowerCase()
+        ) {
+          setUser(data.user);
+          setToken(authToken);
+          return;
+        }
       }
+      clearAuthToken(currentAddress);
+      setToken(null);
+      setUser(null);
     } catch (e) {
       console.warn('Could not fetch user profile:', e);
+      setToken(null);
+      setUser(null);
     }
   };
+
+  // Sync session on mount and whenever active wallet address or connection state changes
+  useEffect(() => {
+    if (!isConnected || !address) {
+      setToken(null);
+      setUser(null);
+      return;
+    }
+
+    const savedToken = getAuthToken(address);
+    if (savedToken) {
+      fetchUserProfile(savedToken, address);
+    } else {
+      setToken(null);
+      setUser(null);
+    }
+  }, [address, isConnected]);
 
   const signIn = async (): Promise<boolean> => {
     if (!address || !isConnected) return false;
@@ -116,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = () => {
-    clearAuthToken();
+    clearAuthToken(address);
     setToken(null);
     setUser(null);
   };

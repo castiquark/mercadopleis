@@ -1,18 +1,28 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
-export function getAuthToken(): string | null {
+export function getAuthToken(address?: string | null): string | null {
   if (typeof window === 'undefined') return null;
+  if (address) {
+    const specific = localStorage.getItem(`mercadopleis_jwt_${address.toLowerCase()}`);
+    if (specific) return specific;
+  }
   return localStorage.getItem('mercadopleis_jwt');
 }
 
-export function setAuthToken(token: string) {
+export function setAuthToken(token: string, address?: string | null) {
   if (typeof window === 'undefined') return;
   localStorage.setItem('mercadopleis_jwt', token);
+  if (address) {
+    localStorage.setItem(`mercadopleis_jwt_${address.toLowerCase()}`, token);
+  }
 }
 
-export function clearAuthToken() {
+export function clearAuthToken(address?: string | null) {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('mercadopleis_jwt');
+  if (address) {
+    localStorage.removeItem(`mercadopleis_jwt_${address.toLowerCase()}`);
+  }
 }
 
 /**
@@ -58,7 +68,7 @@ export async function verifySignature(address: string, signature: string, messag
   if (!res.ok) throw new Error('Signature verification failed');
   const data = await res.json();
   if (data.token) {
-    setAuthToken(data.token);
+    setAuthToken(data.token, address);
   }
   return data;
 }
