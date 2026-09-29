@@ -45,7 +45,7 @@ export function Navbar() {
         </div>
 
         {/* Action Links & Connect Wallet */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <Link
             href="/services/new"
             className="hidden items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white sm:flex"
@@ -56,7 +56,8 @@ export function Navbar() {
 
           <Link
             href="/orders"
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-surface p-2 sm:px-3.5 sm:py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white"
+            title={t('myOrders')}
           >
             <ShoppingBag className="h-4 w-4 text-slate-400" />
             <span className="hidden sm:inline">{t('myOrders')}</span>
@@ -77,7 +78,7 @@ export function Navbar() {
           {(!chainId || chainId === 84532) && (
             <Link
               href="/faucet"
-              className="flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/20 hover:border-cyan-400"
+              className="hidden sm:flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/20 hover:border-cyan-400"
               title="Faucet de Test USDC en Base Sepolia"
             >
               <Droplet className="h-3.5 w-3.5 fill-cyan-400/20 text-cyan-400" />
@@ -86,7 +87,11 @@ export function Navbar() {
           )}
 
           {/* Quick Faucet Mint Button if connected to Base Sepolia */}
-          {isConnected && chainId === 84532 && <FaucetButton variant="navbar" amount="1000" />}
+          {isConnected && chainId === 84532 && (
+            <div className="hidden md:block">
+              <FaucetButton variant="navbar" amount="1000" />
+            </div>
+          )}
 
           {/* Language Switcher */}
           <LanguageSwitch />
@@ -96,31 +101,33 @@ export function Navbar() {
             <button
               onClick={() => signIn()}
               disabled={isLoading}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary/20 border border-primary/40 px-3 py-2 text-xs font-semibold text-primary-light transition hover:bg-primary/30 active:scale-95 animate-pulse"
+              className="inline-flex items-center gap-1 rounded-lg bg-primary/20 border border-primary/40 px-2 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-primary-light transition hover:bg-primary/30 active:scale-95 animate-pulse"
             >
               <KeyRound className="h-3.5 w-3.5" />
-              <span>{isLoading ? t('signing') : t('signSession')}</span>
+              <span className="hidden xs:inline">{isLoading ? t('signing') : t('signSession')}</span>
             </button>
           )}
 
           {isConnected && isAuthenticated && user && (
             <Link
               href="/profile"
-              className="flex items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-semibold text-accent transition hover:bg-accent/20"
+              className="hidden sm:flex items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-semibold text-accent transition hover:bg-accent/20"
             >
               <UserCheck className="h-3.5 w-3.5" />
               <span>{user.displayName || user.username}</span>
             </Link>
           )}
 
-          <ConnectButton
-            chainStatus="icon"
-            showBalance={false}
-            accountStatus={{
-              smallScreen: 'avatar',
-              largeScreen: 'full',
-            }}
-          />
+          <div className="shrink-0 max-w-[140px] sm:max-w-none">
+            <ConnectButton
+              chainStatus="none"
+              showBalance={false}
+              accountStatus={{
+                smallScreen: 'avatar',
+                largeScreen: 'full',
+              }}
+            />
+          </div>
         </div>
       </div>
     </header>
