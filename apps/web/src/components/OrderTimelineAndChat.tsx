@@ -24,6 +24,7 @@ interface OrderTimelineAndChatProps {
     id: string;
     contractOrderId: number;
     status: 'CREATED' | 'FUNDED' | 'DELIVERED' | 'RELEASED' | 'REFUNDED' | 'DISPUTED';
+    chainId?: number;
     amountUsdc: number;
     sellerAmountUsdc: number;
     platformFeeUsdc: number;
@@ -56,6 +57,10 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>('');
+
+  const isSepolia = order.chainId === 84532;
+  const networkName = isSepolia ? 'Base Sepolia' : 'Base Mainnet';
+  const explorerBaseUrl = isSepolia ? 'https://sepolia.basescan.org' : 'https://basescan.org';
 
   // Real on-chain hashes from order record
   const fundingTx = order.txHashFunding || null;
@@ -188,7 +193,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
           <div className="flex items-center gap-2 mb-4">
             <ShieldCheck className="h-4 w-4 text-accent" />
             <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-              Línea de Tiempo On-Chain (Base Sepolia)
+              Línea de Tiempo On-Chain ({networkName})
             </h4>
           </div>
 
@@ -208,7 +213,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                 </p>
                 {fundingTx && (
                   <a
-                    href={`https://sepolia.basescan.org/tx/${fundingTx}`}
+                    href={`${explorerBaseUrl}/tx/${fundingTx}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-1.5 inline-flex items-center gap-1 font-mono text-[10px] text-cyan-400 hover:text-cyan-300"
@@ -268,7 +273,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
 
                 {deliveryTx && (
                   <a
-                    href={`https://sepolia.basescan.org/tx/${deliveryTx}`}
+                    href={`${explorerBaseUrl}/tx/${deliveryTx}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-1.5 inline-flex items-center gap-1 font-mono text-[10px] text-cyan-400 hover:text-cyan-300"
@@ -340,7 +345,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
 
                 {releaseTx && (
                   <a
-                    href={`https://sepolia.basescan.org/tx/${releaseTx}`}
+                    href={`${explorerBaseUrl}/tx/${releaseTx}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-1.5 inline-flex items-center gap-1 font-mono text-[10px] text-cyan-400 hover:text-cyan-300"

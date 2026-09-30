@@ -57,8 +57,10 @@ export default function AdminDisputesPage() {
     setMounted(true);
   }, []);
 
-  const activeChainId = chainId || CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
-  const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID];
+  const activeChainId = chainId || CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID;
+  const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID];
+  const isSepolia = activeChainId === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
+  const explorerBaseUrl = isSepolia ? 'https://sepolia.basescan.org' : 'https://basescan.org';
   const { writeContractAsync } = useWriteContract();
 
   const isArbitrator = !!address && isAdminWallet(address);
@@ -239,9 +241,9 @@ export default function AdminDisputesPage() {
       <div className="mt-6 rounded-2xl border border-border bg-surface p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between text-xs">
           <div>
-            <span className="text-slate-400">Smart Contract Escrow: </span>
+            <span className="text-slate-400">Smart Contract Escrow ({isSepolia ? 'Base Sepolia' : 'Base Mainnet'}): </span>
             <a
-              href={`https://sepolia.basescan.org/address/${escrowAddress}`}
+              href={`${explorerBaseUrl}/address/${escrowAddress}`}
               target="_blank"
               rel="noreferrer"
               className="font-mono text-primary-light hover:underline inline-flex items-center gap-1"

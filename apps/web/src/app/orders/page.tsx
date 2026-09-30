@@ -47,6 +47,9 @@ interface MockOrder {
   sellerAmountUsdc: number;
   platformFeeUsdc: number;
   status: 'CREATED' | 'FUNDED' | 'DELIVERED' | 'RELEASED' | 'REFUNDED' | 'DISPUTED';
+  chainId?: number;
+  txHashFunding?: string;
+  txHashRelease?: string;
   deliveryHash?: string;
   deliveryUrl?: string;
   deadlineTimestamp: number;
@@ -173,8 +176,11 @@ export default function OrdersDashboardPage() {
             sellerAmountUsdc: parseFloat(bo.sellerAmountUsdc),
             platformFeeUsdc: parseFloat(bo.platformFeeUsdc),
             status: bo.status,
+            chainId: bo.chainId || activeChainId,
+            txHashFunding: bo.txHashFunding || undefined,
+            txHashRelease: bo.txHashRelease || undefined,
             deliveryHash: bo.deliveryHash,
-            deliveryUrl: bo.deliveryUrl,
+            deliveryUrl: bo.deliveryUrl || bo.deliveryReferenceUrl || undefined,
             deadlineTimestamp: bo.deadlineTimestamp,
             autoReleaseDeadline: bo.autoReleaseDeadline,
             sellerAddress: bo.seller?.walletAddress || '',
