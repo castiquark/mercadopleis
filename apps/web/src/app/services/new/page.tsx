@@ -35,14 +35,18 @@ export default function NewServicePage() {
     e.preventDefault();
     if (!title || !description || priceNum <= 0) return;
 
-    setIsSubmitting(true);
+    if (!address) {
+      alert('Por favor conecta tu wallet para publicar un servicio.');
+      setIsSubmitting(false);
+      return;
+    }
 
     const isInPerson = deliveryType === 'in_person' || deliveryType === 'both';
 
     // Store in localStorage so it appears immediately across all components!
     const newService = {
       id: `local-${Date.now()}`,
-      sellerId: address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+      sellerId: address,
       title,
       slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + `-${Date.now().toString().slice(-4)}`,
       description,

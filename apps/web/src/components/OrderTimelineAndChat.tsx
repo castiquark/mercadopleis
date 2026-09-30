@@ -57,10 +57,10 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
   const [isSending, setIsSending] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>('');
 
-  // Default tx hashes for demo / known on-chain order #1
-  const fundingTx = order.txHashFunding || (order.contractOrderId === 1 ? '0x6919d937a92506ff945374ac84da036bd2f7e45f81d35b26c5e226d24884ca3a' : null);
-  const deliveryTx = order.deliveryHash || (order.contractOrderId === 1 ? '0x80cc8ef3e440a41d2192463a5580f4cf2b11e23fa401beb0283a95ce02a6e0e4' : null);
-  const releaseTx = order.txHashRelease || (order.contractOrderId === 1 ? '0x7680dba2bea156dedbdfdd95abfe2d138b0b18d833012cc8191d0b7c37712b14' : null);
+  // Real on-chain hashes from order record
+  const fundingTx = order.txHashFunding || null;
+  const deliveryTx = order.deliveryHash || null;
+  const releaseTx = order.txHashRelease || null;
 
   // Auto-release countdown logic
   useEffect(() => {
@@ -107,29 +107,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
           if (data.messages && data.messages.length > 0) {
             setMessages(data.messages);
           } else {
-            // Seed initial mock communication if none exists
-            setMessages([
-              {
-                id: 'm-1',
-                senderId: 'buyer',
-                content: `Hola! He depositado ${order.amountUsdc} USDC en el contrato de escrow para iniciar el servicio. Quedo atento a tus avances.`,
-                createdAt: new Date(Date.now() - 3600 * 1000 * 24).toISOString(),
-                sender: {
-                  displayName: order.role === 'buyer' ? 'Tú (Comprador)' : 'Comprador',
-                  walletAddress: order.buyerAddress,
-                },
-              },
-              {
-                id: 'm-2',
-                senderId: 'seller',
-                content: '¡Excelente! Fondos confirmados en el smart contract. Comenzando el desarrollo según los requerimientos acordados.',
-                createdAt: new Date(Date.now() - 3600 * 1000 * 18).toISOString(),
-                sender: {
-                  displayName: order.role === 'seller' ? 'Tú (Prestador)' : 'Prestador',
-                  walletAddress: order.sellerAddress,
-                },
-              },
-            ]);
+            setMessages([]);
           }
         }
       } catch (err) {

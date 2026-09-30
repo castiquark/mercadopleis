@@ -85,7 +85,14 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
         );
       }
 
-      const sellerWallet = (service.seller?.walletAddress || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8') as `0x${string}`;
+      const sellerWallet = service.seller?.walletAddress as `0x${string}` | undefined;
+      if (!sellerWallet || !sellerWallet.startsWith('0x') || sellerWallet.length !== 42) {
+        throw new Error(
+          language === 'en'
+            ? 'Seller wallet is unavailable or invalid for this service.'
+            : 'La wallet del vendedor no está configurada o es inválida para este servicio.'
+        );
+      }
 
       // Step 1: Approve USDC if needed on real deployed contract
       if (needsApproval) {

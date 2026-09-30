@@ -72,53 +72,7 @@ interface MockOrder {
   } | null;
 }
 
-const INITIAL_DEMO_ORDERS: MockOrder[] = [
-  {
-    id: 'ord-101',
-    contractOrderId: 1,
-    serviceTitle: 'Desarrollo de Smart Contract Escrow o ERC20 en Solidity',
-    role: 'buyer',
-    amountUsdc: 250,
-    sellerAmountUsdc: 242.5,
-    platformFeeUsdc: 7.5,
-    status: 'DELIVERED',
-    deliveryHash: '0x8f2d79c6b840e53a29b433a7e5814bfb2298e3b5e4ff8890dfcfb37b670356c1',
-    deliveryUrl: 'https://github.com/example/solidity-escrow-delivery',
-    deadlineTimestamp: Math.floor(Date.now() / 1000) + 86400 * 3,
-    autoReleaseDeadline: Math.floor(Date.now() / 1000) + 86400 * 4,
-    sellerAddress: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
-    buyerAddress: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-    isDemo: true,
-  },
-  {
-    id: 'ord-102',
-    contractOrderId: 2,
-    serviceTitle: 'Diseño UI/UX de Landing Page Web3 en Figma',
-    role: 'seller',
-    amountUsdc: 180,
-    sellerAmountUsdc: 174.6,
-    platformFeeUsdc: 5.4,
-    status: 'FUNDED',
-    deadlineTimestamp: Math.floor(Date.now() / 1000) + 86400 * 2,
-    sellerAddress: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-    buyerAddress: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
-    isDemo: true,
-  },
-  {
-    id: 'ord-103',
-    contractOrderId: 3,
-    serviceTitle: 'Consultoría y Auditoría de Seguridad Preliminar de Contratos',
-    role: 'buyer',
-    amountUsdc: 300,
-    sellerAmountUsdc: 291,
-    platformFeeUsdc: 9,
-    status: 'RELEASED',
-    deadlineTimestamp: Math.floor(Date.now() / 1000) - 86400 * 10,
-    sellerAddress: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
-    buyerAddress: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-    isDemo: true,
-  },
-];
+const INITIAL_DEMO_ORDERS: MockOrder[] = [];
 
 export default function OrdersDashboardPage() {
   const { isConnected, chainId, address } = useAccount();
@@ -150,10 +104,10 @@ export default function OrdersDashboardPage() {
   const [disputeEvidenceUrl, setDisputeEvidenceUrl] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>('ord-101');
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
-  const activeChainId = chainId || CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
-  const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID];
+  const activeChainId = chainId || CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID;
+  const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID];
   const { writeContractAsync } = useWriteContract();
 
   const handleSubmitReview = async (e: React.FormEvent) => {
@@ -212,7 +166,7 @@ export default function OrdersDashboardPage() {
           }
           return {
             id: bo.id,
-            contractOrderId: bo.contractOrderId || Math.floor(100 + Math.random() * 900),
+            contractOrderId: bo.contractOrderId || null,
             serviceTitle: bo.service?.title || 'Servicio Contratado',
             role: (bo.buyer?.walletAddress?.toLowerCase() === address?.toLowerCase() || (user?.id && bo.buyerId === user.id)) ? 'buyer' : 'seller',
             amountUsdc: parseFloat(bo.grossAmountUsdc),
@@ -223,8 +177,8 @@ export default function OrdersDashboardPage() {
             deliveryUrl: bo.deliveryUrl,
             deadlineTimestamp: bo.deadlineTimestamp,
             autoReleaseDeadline: bo.autoReleaseDeadline,
-            sellerAddress: bo.seller?.walletAddress || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-            buyerAddress: bo.buyer?.walletAddress || address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+            sellerAddress: bo.seller?.walletAddress || '',
+            buyerAddress: bo.buyer?.walletAddress || address || '',
             isDemo: false,
             dispute: bo.dispute || null,
             review: bo.review || null,
