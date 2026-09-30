@@ -50,3 +50,22 @@ PRODUCT_STATUS.md
 crypto_service_marketplace_product_architecture.md
 sprint_0_specification.md
 
+
+# Agent / tooling local state
+.claude/
+skills-lock.json
+
+# Deploy platform local state
+.netlify/
+.vercel/
+
+# Misc build / test artifacts
+*.tsbuildinfo
+coverage
+
+# Internal production-ops scripts (use deployer keys / touch prod data)
+apps/web/scripts/test-rbac-production.ts
+apps/web/scripts/check-fee-balance.ts
+apps/web/scripts/clean-test-data.mjs
+scripts/clean-and-publish-real-service.ts
+scripts/migrate-columns.ts
