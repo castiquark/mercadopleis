@@ -18,6 +18,10 @@ export async function OPTIONS() {
 
 export async function GET(request: NextRequest) {
   const category = request.nextUrl.searchParams.get('category');
+  const capability = request.nextUrl.searchParams.get('capability')?.toLowerCase().trim();
+  const minPrice = request.nextUrl.searchParams.get('minPrice');
+  const maxPrice = request.nextUrl.searchParams.get('maxPrice');
+  const maxDeliveryDays = request.nextUrl.searchParams.get('maxDeliveryDays');
   const deliveryType = request.nextUrl.searchParams.get('deliveryType');
   const country = request.nextUrl.searchParams.get('country');
   const city = request.nextUrl.searchParams.get('city');
@@ -47,6 +51,35 @@ export async function GET(request: NextRequest) {
 
     if (category && category !== 'all') {
       filtered = filtered.filter((s: any) => s.category?.toLowerCase() === category.toLowerCase());
+    }
+
+    if (capability) {
+      const tokens = capability.replace(/[-_]+/g, ' ').split(/\s+/).filter(Boolean);
+      filtered = filtered.filter((s: any) => {
+        const text = `${s.title} ${s.description} ${s.category} ${s.slug}`.toLowerCase();
+        return tokens.some((token) => text.includes(token));
+      });
+    }
+
+    if (minPrice) {
+      const min = parseFloat(minPrice);
+      if (!isNaN(min)) {
+        filtered = filtered.filter((s: any) => parseFloat(s.priceUsdc) >= min);
+      }
+    }
+
+    if (maxPrice) {
+      const max = parseFloat(maxPrice);
+      if (!isNaN(max)) {
+        filtered = filtered.filter((s: any) => parseFloat(s.priceUsdc) <= max);
+      }
+    }
+
+    if (maxDeliveryDays) {
+      const maxDays = parseInt(maxDeliveryDays, 10);
+      if (!isNaN(maxDays)) {
+        filtered = filtered.filter((s: any) => s.deliveryDays <= maxDays);
+      }
     }
 
     if (deliveryType && deliveryType !== 'all') {
@@ -87,9 +120,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const formattedServices = filtered.map((s: any) => ({
+      ...s,
+      price: {
+        amount: s.priceUsdc,
+        currency: 'USDC',
+        tokenAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+        decimals: 6,
+      },
+      settlement: {
+        network: 'Base',
+        chainId: 8453,
+        method: 'smart_contract_escrow',
+        escrowContract: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
+        feeBps: 300,
+        reviewWindowDays: 5,
+      },
+    }));
+
     return NextResponse.json(
       {
-        protocol: 'Mercadopleis Escrow Protocol v1',
+        protocol: 'Mercadopleis Agent Commerce v1',
         network: 'Base Mainnet',
         chainId: 8453,
         escrowContract: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
@@ -98,8 +149,8 @@ export async function GET(request: NextRequest) {
           address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
           decimals: 6,
         },
-        count: filtered.length,
-        services: filtered || [],
+        count: formattedServices.length,
+        services: formattedServices || [],
       },
       { headers: CORS_HEADERS }
     );
@@ -107,7 +158,7 @@ export async function GET(request: NextRequest) {
     console.warn('Database query notice, returning empty catalog:', err?.message);
     return NextResponse.json(
       {
-        protocol: 'Mercadopleis Escrow Protocol v1',
+        protocol: 'Mercadopleis Agent Commerce v1',
         network: 'Base Mainnet',
         chainId: 8453,
         escrowContract: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',

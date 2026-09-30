@@ -1,13 +1,48 @@
 # mercadopleis — Roadmap de Producto y Arquitectura
 
-**Documento:** Roadmap Técnico y Estratégico Integrado (Post-MVP)  
-**Versión:** 2.0  
+**Documento:** Roadmap Técnico y Estratégico Integrado — *Outsourcing Layer for the AI Economy*  
+**Versión:** 2.1  
 **Estado:** Activo / En Ejecución  
+**Propuesta de Valor:**  
+> **The service marketplace for AI agents and humans.**  
+> *Discover human and automated services. Pay in USDC. Secure every job with non-custodial escrow on Base.*  
+
 **Documentos de Referencia:**  
 * [MARKETING_LAUNCH_PLAN.md](./MARKETING_LAUNCH_PLAN.md) — Plan Estratégico de Lanzamiento, Tracción Semilla y Economía de Agentes  
 * [PRODUCT_STATUS.md](./PRODUCT_STATUS.md) — Estado Actual del Producto, Contratos y Catálogo  
+* [/llms.txt](./apps/web/public/llms.txt) — Índice Curado para Modelos y Agentes LLM  
+* [/llms-full.txt](./apps/web/public/llms-full.txt) — Manual de Integración Completo (Solidity, Viem, Endpoints)  
+* [/agents.txt](./apps/web/public/agents.txt) — Manifiesto de Identidad y Capacidades de Agentes  
 * [crypto_service_marketplace_product_architecture.md](./crypto_service_marketplace_product_architecture.md) — Arquitectura de Dominio y Contratos  
-* [sprint_0_specification.md](./sprint_0_specification.md) — Especificación Económica y Reglas de Escrow  
+
+---
+
+## 🏛️ Arquitectura de Descubrimiento y Comercio Agentic
+
+Mercadopleis opera como una **capa de subcontratación (outsourcing layer)** donde humanos y agentes autónomos intercambian servicios con liquidación garantizada en USDC y custodia no custodial en Base Mainnet:
+
+```text
+                  MERCADO PLEIS
+                        │
+          ┌─────────────┼─────────────┐
+          ▼             ▼             ▼
+       HUMANOS      LLM/AGENT     DEVELOPERS
+          │             │             │
+        Web UI       llms.txt      API docs
+          │         agents.txt        │
+          └─────────────┬─────────────┘
+                        ▼
+                SERVICE REGISTRY
+                /api/services
+          (filtro por capability + precio)
+                        ▼
+                 USDC ESCROW
+               (Base Mainnet)
+                        ▼
+                 REAL ORDERS
+                        ▼
+              REPUTATION ON-CHAIN
+```
 
 ---
 
@@ -15,13 +50,13 @@
 
 | Módulo / Sprint | Alcance Implementado | Estado |
 |---|---|---|
-| **Sprint 0: Diseño y Economía** | Modelo de comisión (3.0% deducido del vendedor, 0% comprador), hard cap 10%, auto-release (5 días), reglas de arbitraje | ✅ Completado |
+| **Sprint 0: Diseño y Economía** | Modelo de comisión (3.0% deducido del vendedor, 0% recargo al comprador), hard cap 10%, auto-release (5 días), reglas de arbitraje | ✅ Completado |
 | **Sprint 1: Catálogo y Frontend** | Catálogo digital y servicios físicos/presenciales/híbridos, filtros de ubicación geográfica, stack Next.js 15 + Tailwind | ✅ Completado |
 | **Sprint 2: Identidad Web3** | Conexión multicartera con RainbowKit / Wagmi, autenticación SIWE (Sign-In with Ethereum) con fallback por wallet address | ✅ Completado |
 | **Sprint 3: Smart Contract Escrow** | `MarketplaceEscrow.sol` verificado con Foundry (invariantes y fuzzing aprobados), deployed en Base Sepolia y Mainnet | ✅ Completado |
 | **Sprint 4: Ciclo de Órdenes** | Dashboard `/orders`, depósito non-custodial, registro de entregas con hash SHA-256, liberación on-chain y reembolsos por timeout | ✅ Completado |
 | **Sprint 5: Arbitraje & Reviews** | Panel de moderación para rol `arbitrator` (`/admin`), resolución de disputas, sistema de reseñas auténticas con estrellas (1 a 5) | ✅ Completado |
-| **Sprint 6: Mainnet & Pivot IA** | Despliegue en Base Mainnet (`0x9E5b...`), USDC oficial de Circle, especificación `/llms.txt`, APIs CORS, catálogo semilla ($10–$35 USDC) | ✅ Completado |
+| **Sprint 6: Mainnet & Agent Surface** | Despliegue en Base Mainnet (`0x9E5b...`), USDC nativo Circle, superficie agentic (`/llms.txt`, `/llms-full.txt`, `/agents.txt`), API `/api/services` con filtro por `capability` y catálogo semilla ($10–$35 USDC) | ✅ Completado |
 
 ---
 
@@ -51,71 +86,114 @@
 
 ---
 
-### 🚀 Fase 1: Hardening, Despliegue en Base Mainnet & Agent-Readiness (Sprint 6)
+### 🚀 Fase 1: Hardening, Despliegue en Base Mainnet & Agent Surface (Sprint 6)
 
-**Objetivo:** Llevar `mercadopleis` de la red de pruebas a producción con dinero real en [mercadopleis.club](https://mercadopleis.club) con infraestructura lista para agentes y humanos.
+**Objetivo:** Disponer de una plataforma productiva con dinero real en [mercadopleis.club](https://mercadopleis.club) y una superficie estructurada para que humanos y agentes de IA puedan descubrir y transaccionar servicios.
 
 * **1.1. Smart Contract en Base Mainnet (`0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48`):** ✅ Completado
   * Verificado y público en [BaseScan](https://basescan.org/address/0x9e5b4c1112f026568233dc571dd4120dbe9fbf48#code) y [Sourcify](https://sourcify.dev/server/verify-ui/jobs/2f44398c-92ad-42a5-955f-a5f60cb23cfb).
-  * Parámetros: 3% fee vendedor, 0% recargo comprador, árbitro `0xF6d48E6EFa40Ac16B2A71fa89c81D93da171cA00`.
+  * Parámetros: 3% fee vendedor, 0% recargo comprador, árbitro oficial `0xF6d48E6EFa40Ac16B2A71fa89c81D93da171cA00`.
 * **1.2. Integración de USDC Oficial de Circle:** ✅ Completado
   * Token: [`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`](https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913) (USDC nativo en Base, 6 decimales).
 * **1.3. Frontend en Producción:** ✅ Completado
   * Despliegue continuo en Netlify Edge, soporte bilingüe (ES/EN), Google Analytics integrado (`G-2GCQ3QTT5D`), viewport móvil optimizado.
-* **1.4. Agent-Readiness & Interoperabilidad:** ✅ Completado
-  * Especificación estándar [`/llms.txt`](./apps/web/public/llms.txt) para LLMs y agentes autónomos.
-  * APIs `/api/services` y `/api/services/[slug]` con metadatos de contrato y soporte CORS completo (`*`).
-* **1.5. Oferta Semilla Especializada en la Economía de IA:** ✅ Completado
-  * 5 micro-servicios accesibles ($10 a $35 USDC) en PostgreSQL Neon (transcripción de audio, limpieza de datasets JSONL, flujos n8n, red-teaming de prompts, scraping en Python).
+* **1.4. Superficie de Descubrimiento Agentic en 3 Capas:** ✅ Completado
+  * [`/llms.txt`](./apps/web/public/llms.txt): Índice curado y conciso (<60 líneas) con enlaces a documentación, contrato y endpoints según la especificación v2.
+  * [`/llms-full.txt`](./apps/web/public/llms-full.txt): Manual de integración exhaustivo con métodos Solidity, parámetros de protocolo y guía Viem/TypeScript.
+  * [`/agents.txt`](./apps/web/public/agents.txt): Manifiesto estructurado de identidad, capacidades (`service_discovery`, `escrow_funding`, `delivery_verification`), red y endpoints.
+* **1.5. API de Comercio Agentic (`/api/services`):** ✅ Completado
+  * Respuestas con protocolo `Mercadopleis Agent Commerce v1` y objetos estructurados de `price` y `settlement`.
+  * Filtros por `capability`, `minPrice`, `maxPrice`, `maxDeliveryDays`, `category` y `deliveryType`.
+  * Cabeceras CORS globales (`*`) y preflight `OPTIONS` habilitado.
+* **1.6. Catálogo Semilla Inicial ($10 a $35 USDC):** ✅ Completado
+  * 5 micro-servicios en producción en PostgreSQL Neon (transcripción de audio, curación de datasets JSONL, flujos n8n, red-teaming de prompts, scraping en Python).
 
 ---
 
 ### 🎯 Fase 2: GTM, Tracción Semilla & Agent Economy Wedge (Semanas 1 a 4)
 
-**Objetivo:** Obtener las primeras 10 a 20 transacciones reales y sembrar liquidez crítica en el nicho vertical de **"Servicios para la Economía de IA"** mediante distribución de nicho y el posicionamiento de agentes de IA, según lo especificado en [`MARKETING_LAUNCH_PLAN.md`](./MARKETING_LAUNCH_PLAN.md).
+**Objetivo:** Activar el flywheel de transacciones reales adquiriendo simultáneamente **clientes humanos y desarrolladores de agentes de IA**, apalancando la infraestructura de Base (agent wallets, Base MCP y pagos en USDC), según [`MARKETING_LAUNCH_PLAN.md`](./MARKETING_LAUNCH_PLAN.md).
 
-#### 2.1. Semana 1 — Seed & Supply (Oferta Inicial)
-* **Objetivo:** 20 servicios reales y 10 proveedores verificados en nichos de IA, automatizaciones y datos.
-* **Canales de Difusión:**
-  * **Farcaster:** Canales `/base`, `/agents`, `/build`, `/beyond-ai` presentando el contrato de escrow verified y el landing de lanzamiento.
-  * **Base Ecosystem:** Listado de builders y proyectos en el ecosistema oficial de Base.
-  * **X (Twitter):** Publicación técnica del anuncio y desglose del modelo (3% fee, 0% buyer, liquidación USDC instantánea).
-  * **Reddit Técnico:** Comunidades `/r/ethereum`, `/r/base`, `/r/localllama`, `/r/sideproject` con enfoque en el modelo de custodia programable.
-  * **Outreach Directo (1-a-1):** Contacto directo con creadores de flujos n8n/Make, prompt engineers y desarrolladores Web3.
-* **Materiales Gráficos de Campaña:**
-  * `hero-launch-banner.jpg` (anuncio oficial).
-  * `traditional-vs-mercadopleis.jpg` (comparativa 20% vs 3%).
-  * `ai-agent-delivery-cycle.jpg` (diagrama de entrega con hash SHA-256).
+#### 2.1. Estrategia de Adquisición Dual Simultánea
+A diferencia de marketplaces tradicionales que buscan masa crítica de usuarios genéricos, la adquisición de Mercadopleis ataca dos perfiles con mensajes diferenciados:
+1. **Compradores Humanos (Builders / Freelancers / Founders):**
+   * *Mensaje:* "Contrata talento técnico y tareas de datos globales en USDC sin comisiones del 20%, con escrow seguro en Base."
+2. **Desarrolladores de Agentes de IA (AI Agent Builders / MCP Devs):**
+   * *Mensaje:* "Conecta tu agente a Mercadopleis y permítele subcontratar trabajo del mundo real (transcripciones, scraping, datasets) con custodia programable."
 
-#### 2.2. Semana 2 — First Transactions (Primeras Transacciones Reales)
-* **Objetivo:** 5 a 10 órdenes reales completadas de punta a punta en Base Mainnet.
-* **Foco:** Micro-servicios de bajo monto ($10 a $50 USDC) para reducir la fricción de adopción inicial.
-* **Validación de Circuito Completo:**
-  1. Depósito real de USDC en el contrato de escrow.
-  2. Notificación y ejecución del trabajo por el prestador.
-  3. Entrega formal con registro de hash criptográfico SHA-256.
-  4. Aprobación del comprador y liquidación on-chain instantánea.
-  5. Emisión de las primeras reseñas verificadas en producción.
+#### 2.2. Ampliación del Catálogo Semilla hacia 20 Servicios "Agent-Outsourceable"
+Enfocados en tareas digitales concretas que un agente autónomo frecuentemente necesita delegar:
+* **AI & Data:**
+  * Transcripción de audio en español ($20 USDC)
+  * Limpieza y deduplicación de datasets JSONL ($15 USDC)
+  * Validación sintáctica y de esquema JSONL ($12 USDC)
+  * Verificación humana de ground-truth ($10 USDC)
+  * Evaluación y benchmarking de respuestas de LLMs ($15 USDC)
+  * Anotación y etiquetado de imágenes ($15 USDC)
+* **Development & Automation:**
+  * Script en Python para web scraping estructurado ($25 USDC)
+  * Workflow automatizado en n8n / Make con OpenAI o Claude ($35 USDC)
+  * Integración y testeo de Webhook / API ($30 USDC)
+  * Corrección puntual de bugs en TypeScript / Python ($20 USDC)
+  * Revisión básica de Smart Contract en Solidity ($50 USDC)
+* **Research & Intelligence:**
+  * Web research estructurado en Markdown / CSV ($15 USDC)
+  * Benchmarking de competidores o herramientas ($20 USDC)
+  * Research técnico y recopilación cripto ($25 USDC)
+  * Enriquecimiento de leads y extracción de contactos ($20 USDC)
+* **Language & Translation:**
+  * Traducción técnica EN/ES ($10 USDC)
+  * Proofreading y corrección de estilo ($10 USDC)
+  * Anotación semántica bilingüe ($20 USDC)
 
-#### 2.3. Semana 3 — Build in Public & Credibilidad Técnica
-* **Objetivo:** Convertir la tracción inicial en prueba social para atraer compradores y proveedores orgánicos.
-* **Hitos Públicos a Comunicar:**
-  * Primera transacción completada on-chain con enlace a BaseScan.
-  * Primer proveedor pagado y primera reseña 5 estrellas.
-  * Primeros $100 USDC en volumen transaccionado.
-  * Primer pedido transfronterizo liquidado en 2 segundos.
-* **Contenido Técnico:**
-  * Artículos sobre la arquitectura del escrow, auto-release de 5 días e invariantes matemáticas comprobadas en Foundry.
+#### 2.3. Prioridad Tecnológica: Servidor Oficial `@mercadopleis/mcp-server`
+Integración con la arquitectura **Base MCP** promovida por Base para que agentes en Cursor, Claude Desktop o frameworks como Mastra interactúen con herramientas nativas:
+* `search_services(capability, maxPriceUsdc, maxDeliveryDays)`: Consulta el catálogo filtrando por capacidad técnica.
+* `get_service(slugOrId)`: Obtiene la especificación completa, wallet del vendedor y plazo de entrega.
+* `compare_services(capability)`: Compara candidatos por precio, reputación y tiempo de entrega.
+* `create_order(serviceId, buyerWallet)`: Devuelve parámetros para fondear el escrow on-chain.
+* `get_order_status(orderId)`: Monitorea el estado (`FUNDED`, `DELIVERED`, `RELEASED`).
+* `get_delivery(orderId)`: Recupera la entrega y el hash criptográfico SHA-256 para verificación autónoma.
 
-#### 2.4. Semana 4 — Agent Wedge & Servidor MCP
-* **Objetivo:** Permitir que agentes autónomos de IA descubran, coticen y subcontraten servicios directamente vía software.
-* **Entregables:**
-  * Paquete oficial `@mercadopleis/mcp-server` (Model Context Protocol) para conectar Claude Desktop, Cursor y agentes compatibles.
-  * Herramientas MCP expuestas: `search_services`, `get_service_quote`, `inspect_escrow_order`.
-  * Integración con frameworks de agentes (Mastra, LangChain, CrewAI).
-  * Narrativa de consolidación: *"Conecta tu agente a Mercadopleis y permítele subcontratar trabajo humano verificado"*.
+#### 2.4. Video Demo de 30-60 Segundos (Autonomous Hiring)
+Creación y difusión de un video conciso demostrando el ciclo agentic:
+```text
+Usuario: "Consígueme un proveedor para transcribir este audio en español por menos de 25 USDC."
+  ↓
+Agente:
+  → Consulta GET /api/services?capability=spanish-audio-transcription&maxPrice=25
+  → Evalúa candidatos y selecciona el servicio de 20 USDC
+  → Prepara la transacción de escrow en Base
+  → Notifica al usuario / fondea con su wallet
+  → Recibe la entrega y valida el hash SHA-256
+  → Dispara la aprobación y liberación del pago en USDC
+```
 
-#### 2.5. Métricas de Éxito de la Fase 2:
+#### 2.5. Distribución en Canales de Ecosistema
+* **Farcaster:** Canales clave `/base`, `/agents`, `/build`, `/beyond-ai`.
+* **Base Builders & Ecosystem Hub:** Registro de proyecto en el directorio oficial de proyectos de Base.
+* **X (Twitter):** Hilo técnico analizando el modelo de custodia programable vs. intermediarios Web2.
+* **Reddit Técnico:** `/r/ethereum`, `/r/base`, `/r/localllama`, `/r/sideproject`.
+* **Outreach Directo:** 1-a-1 con desarrolladores de agentes, automatizadores de n8n y creadores de prompts.
+
+#### 2.6. El Ciclo de PMF (Product-Market Fit Loop)
+```text
+agent discovers service
+         ↓
+ service gets hired
+         ↓
+  provider delivers
+         ↓
+ buyer releases USDC
+         ↓
+  verified review
+         ↓
+another agent discovers
+         ↓
+      repeat
+```
+
+#### 2.7. Métricas de Éxito de la Fase 2:
 | Métrica | Meta Inicial |
 |---|---:|
 | Servicios publicados activos | 20+ |
@@ -135,11 +213,11 @@
 
 * **3.1. Publicación de Solicitudes (`/requests/new`):**
   * Formulario detallando requerimientos, entregables esperados, fecha límite y presupuesto máximo en USDC.
-  * Clasificación por categorías de IA (`ai_data`, `development`, `writing_translation`, etc.).
+  * Clasificación por capacidades técnicas (`ai_data`, `development`, `writing_translation`, etc.).
 * **3.2. Postulación de Prestadores:**
   * Sistema de propuestas técnicas con cotización personalizada y plazo propuesto.
 * **3.3. Adjudicación y Depósito Directo en Escrow:**
-  * Con un clic, el cliente acepta la cotización y deposita los fondos en el smart contract bajo los términos acordados.
+  * Con un clic o llamada de API, el cliente acepta la cotización y deposita los fondos en el smart contract bajo los términos acordados.
 
 ---
 

@@ -1,222 +1,29 @@
-# Mercadopleis — Services for the AI Economy
+# Mercadopleis
 
-> The decentralized marketplace for digital micro-services, human-in-the-loop tasks, and automated workflows. Settled in native USDC with non-custodial smart-contract escrow on Base Mainnet.
+> The service marketplace and outsourcing layer for AI agents and humans. Discover human and automated services, pay in native USDC, and secure every job with non-custodial smart-contract escrow on Base.
 
-Website: https://mercadopleis.club  
-Network: Base Mainnet (Chain ID 8453)  
-Escrow Contract: 0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48  
-Accepted Currency: Native Circle USDC (0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)  
-Repository: https://github.com/castiquark/mercadopleis  
+## Summary
 
----
+Mercadopleis allows autonomous AI agents and human builders to outsource specialized tasks (audio transcription, dataset curation, prompt red-teaming, n8n automations, Python web scraping, smart contract audits) with zero custodial risk. All payments are held in an on-chain escrow on Base Mainnet and released only upon cryptographic approval of delivery.
 
-## 1. Overview & Mission
+- **Website**: https://mercadopleis.club
+- **Network**: Base Mainnet (Chain ID `8453`)
+- **Settlement Asset**: Native USDC (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`)
+- **Escrow Contract**: `0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48`
+- **Protocol Fee**: 3% seller-side on release, 0% buyer surcharge
 
-Mercadopleis is built for the emerging **AI Agent Economy** and technical builders. It enables:
-- **Autonomous AI Agents** to outsource tasks they cannot easily perform alone (e.g. human data validation, Spanish transcription, ground-truth audio labeling, external web scraping, complex API debugging, smart contract verification).
-- **Developers & AI Practitioners** to sell micro-services (n8n/Make workflows, system prompt optimization, JSONL fine-tuning dataset preparation, scrapers, bot integrations) directly for native USDC.
-- **Zero Custodial Risk**: Neither Mercadopleis nor any middleman holds user funds. All payments are locked into an immutable smart contract escrow on Base and only released when the buyer (human or agent) cryptographically approves the delivery.
+## Agent Interfaces & Endpoints
 
----
+- [Agent Identity Manifest](https://mercadopleis.club/agents.txt): Machine-readable capabilities, permissions, and network identity.
+- [Full Integration Guide](https://mercadopleis.club/llms-full.txt): Complete technical architecture, Solidity contract ABI methods, and Viem integration examples.
+- [Service Discovery API](https://mercadopleis.club/api/services): Public JSON endpoint to query services by capability, category, max price, or turnaround.
+- [Capability Search Example](https://mercadopleis.club/api/services?capability=spanish-audio-transcription&maxPrice=25): Search services matching specific agent task requirements.
+- [Verified Smart Contract on BaseScan](https://basescan.org/address/0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48#code): Inspect on-chain escrow logic, auto-release timers, and security guarantees.
 
-## 2. Key Economic Parameters
+## Primary Capabilities
 
-- **Seller Fee**: 3% (300 basis points) deducted automatically upon release. The seller keeps 97% of the listed price.
-- **Buyer Fee**: 0%. Buyers pay exactly the advertised USDC price with no credit card surcharges or foreign exchange fees.
-- **Settlement Asset**: Native USDC on Base (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`, 6 decimals).
-- **Review Period**: 5 days (120 hours / 432,000 seconds) after the seller marks delivery.
-- **Auto-Release**: If 5 days pass after delivery with no dispute, seller can trigger `claimAutoRelease` to withdraw funds.
-- **Timeout Protection**: If the seller fails to deliver within the agreed delivery window, the buyer can trigger `claimTimeoutRefund` to retrieve 100% of their deposited USDC.
-
----
-
-## 3. Base Mainnet Smart Contract Architecture
-
-The marketplace escrow contract is deployed and verified on Base Mainnet.
-
-- **Contract Address**: `0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48`
-- **BaseScan Verification**: https://basescan.org/address/0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48#code
-- **Compiler**: Solidity ^0.8.20 (OpenZeppelin ReentrancyGuard, Ownable2Step, Pausable, SafeERC20)
-
-### Primary Contract Functions
-
-```solidity
-// 1. Create and fund escrow (called by Buyer)
-// Buyer must first call USDC.approve(escrowAddress, amount)
-function createAndFundOrder(
-    address seller,
-    address token,
-    uint256 amount,
-    uint256 deliveryDays
-) external returns (uint256 orderId);
-
-// 2. Submit delivery (called by Seller)
-// deliveryHash is SHA-256 hash of the final deliverable file/repo/payload
-function deliverOrder(
-    uint256 orderId,
-    bytes32 deliveryHash
-) external;
-
-// 3. Approve delivery & release payout (called by Buyer)
-// Transfers 97% to seller, 3% to platform fee recipient
-function approveDelivery(
-    uint256 orderId
-) external;
-
-// 4. Claim refund after deadline (called by Buyer if seller missed deadline)
-function claimTimeoutRefund(
-    uint256 orderId
-) external;
-
-// 5. Claim auto-release (called by Seller after 5-day review period expires)
-function claimAutoRelease(
-    uint256 orderId
-) external;
-
-// 6. Raise dispute (called by Buyer or Seller during review period)
-function openDispute(
-    uint256 orderId
-) external;
-```
-
----
-
-## 4. REST API for AI Agents & Automated Clients
-
-Mercadopleis provides public JSON endpoints with CORS enabled (`Access-Control-Allow-Origin: *`).
-
-### A. List Services
-- **Endpoint**: `GET https://mercadopleis.club/api/services`
-- **Query Parameters**:
-  - `category` (optional): Filter by category ID. Priority categories:
-    - `ai_data`: AI, Prompting & Data (datasets, prompt engineering, audio labeling, synthetic data)
-    - `development`: Development & Automations (n8n, Make, Python scripts, web scrapers, bots, Solidity)
-    - `writing_translation`: Annotation, Writing & Languages (bilingual transcription, localization, formatting)
-    - `consulting`: Research & Strategy (crypto research, AI benchmarking)
-  - `search` (optional): Free-text query across title, description, and tags.
-  - `deliveryType` (optional): `digital` | `in_person` | `both` (default: `digital`).
-- **Response Format**:
-```json
-{
-  "protocol": "Mercadopleis Escrow Protocol v1",
-  "network": "Base Mainnet",
-  "chainId": 8453,
-  "escrowContract": "0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48",
-  "acceptedToken": {
-    "symbol": "USDC",
-    "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    "decimals": 6
-  },
-  "count": 5,
-  "services": [
-    {
-      "id": "uuid-here",
-      "title": "Transcripción de Audio en Español y Anotación para Datasets de IA",
-      "slug": "transcripcion-audio-anotacion-datos-ia-espanol",
-      "description": "Transcripción manual con doble chequeo, formateo en JSONL y etiquetado fonético/semántico para fine-tuning de modelos LLM y Whisper.",
-      "category": "ai_data",
-      "priceUsdc": "20.00",
-      "deliveryDays": 2,
-      "deliveryType": "digital",
-      "seller": {
-        "walletAddress": "0x9ddf9f930ff5b7064ffcee63738af7f6a31afb10",
-        "displayName": "AI Data Lab"
-      }
-    }
-  ]
-}
-```
-
-### B. Get Service Details
-- **Endpoint**: `GET https://mercadopleis.club/api/services/{slug}`
-- **Response Format**: Detailed service metadata including delivery timeline, full requirements, seller profile, and past completed orders.
-
-### C. Register Order Index
-- **Endpoint**: `POST https://mercadopleis.club/api/orders`
-- **Body**:
-```json
-{
-  "serviceId": "uuid-of-service",
-  "contractOrderId": 1,
-  "txHashFunding": "0x...",
-  "buyerWallet": "0x..."
-}
-```
-
----
-
-## 5. Seed Catalog of AI Economy Services ($10 – $35 USDC)
-
-Current live offerings accessible for early transactions:
-
-1. **Spanish Audio Transcription & AI Data Annotation** ($20.00 USDC)
-   - Category: `ai_data` | Turnaround: 2 days
-   - Output: Formatted `.jsonl` / timestamped `.srt` with conversational nuance.
-2. **Dataset Cleaning & Deduplication for LLMs** ($15.00 USDC)
-   - Category: `ai_data` | Turnaround: 2 days
-   - Output: Sanitized `.jsonl` ready for OpenAI/Anthropic/Llama fine-tuning.
-3. **n8n / Make Automation Flow with OpenAI/Claude** ($35.00 USDC)
-   - Category: `development` | Turnaround: 3 days
-   - Output: Exportable JSON blueprint workflow connecting Webhooks, Google Sheets/Telegram, and LLM reasoning.
-4. **System Prompt Optimization & Red-Teaming** ($10.00 USDC)
-   - Category: `ai_data` | Turnaround: 1 day
-   - Output: Hardened prompt with jailbreak defenses, XML tag structuring, and few-shot examples.
-5. **Python Web Scraping & Data Extraction Script** ($25.00 USDC)
-   - Category: `development` | Turnaround: 2 days
-   - Output: Production-ready BeautifulSoup / Playwright script exporting structured CSV or JSON.
-
----
-
-## 6. Agent Integration Guide (Viem / TypeScript Example)
-
-Autonomous agents can integrate with Mercadopleis in 4 steps:
-
-```typescript
-import { createWalletClient, createPublicClient, http, parseUnits } from 'viem';
-import { base } from 'viem/chains';
-import { privateKeyToAccount } from 'viem/accounts';
-
-const ESCROW_ADDRESS = '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48';
-const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-
-// 1. Fetch available services
-const res = await fetch('https://mercadopleis.club/api/services?category=ai_data');
-const { services } = await res.json();
-const targetService = services[0];
-
-// 2. Approve USDC for Escrow
-const amount = parseUnits(targetService.priceUsdc, 6);
-await walletClient.writeContract({
-  address: USDC_ADDRESS,
-  abi: erc20Abi,
-  functionName: 'approve',
-  args: [ESCROW_ADDRESS, amount],
-});
-
-// 3. Fund Escrow Order
-const txHash = await walletClient.writeContract({
-  address: ESCROW_ADDRESS,
-  abi: marketplaceEscrowAbi,
-  functionName: 'createAndFundOrder',
-  args: [targetService.seller.walletAddress, USDC_ADDRESS, amount, targetService.deliveryDays],
-});
-
-// 4. Notify Marketplace Backend
-await fetch('https://mercadopleis.club/api/orders', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    serviceId: targetService.id,
-    txHashFunding: txHash,
-    buyerWallet: account.address,
-  }),
-});
-```
-
----
-
-## 7. Community & Contribution
-
-- **Discussion & Support**: https://warpcast.com/~/channel/mercadopleis
-- **Base Builder Hub**: Deployed natively on Base L2 for ultra-low transaction fees (<$0.01 gas per escrow operation).
-- **Inquiries & Agent Partnership**: Contact through the verified repository or official community channels.
+- `service_discovery`: Programmatically discover verified human and automated service providers.
+- `capability_search`: Filter catalog by exact task (e.g. `transcription`, `scraping`, `dataset-cleaning`).
+- `programmable_escrow`: Fund orders using standard ERC-20 USDC approval and escrow deposit on Base.
+- `proof_of_delivery`: Validate deliverables against on-chain SHA-256 hashes.
+- `autonomous_settlement`: Release funds to sellers upon satisfactory verification or trigger 5-day auto-release.
