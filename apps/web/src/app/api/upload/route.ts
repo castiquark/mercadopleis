@@ -1,6 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
+import { getAuthUserFromRequest } from '@/lib/serverAuth';
+
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml',
+  'application/pdf',
+  'text/plain',
+  'text/csv',
+  'application/json',
+  'text/markdown',
+  'application/zip',
+  'application/x-zip-compressed',
+  'application/octet-stream',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/mp4',
+  'audio/ogg',
+  'audio/webm',
+  'video/mp4',
+  'video/webm',
+]);
 
 function getS3Config() {
   const endpoint =
@@ -47,11 +73,33 @@ function getS3Client() {
 
 export async function POST(request: NextRequest) {
   try {
+    const authUser = getAuthUserFromRequest(request);
+    if (!authUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Authentication required to upload order deliverables' },
+        { status: 401 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
 
     if (!file) {
       return NextResponse.json({ error: 'No se envió ningún archivo' }, { status: 400 });
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: `Payload Too Large: Maximum allowed file size is 25 MB (received ${(file.size / (1024 * 1024)).toFixed(1)} MB)` },
+        { status: 413 }
+      );
+    }
+
+    if (file.type && !ALLOWED_MIME_TYPES.has(file.type.toLowerCase())) {
+      return NextResponse.json(
+        { error: `Unsupported Media Type: Format '${file.type}' is not supported` },
+        { status: 415 }
+      );
     }
 
     const bytes = await file.arrayBuffer();
@@ -61,7 +109,7 @@ export async function POST(request: NextRequest) {
     const sha256Hash = '0x' + crypto.createHash('sha256').update(buffer).digest('hex');
 
     const cleanFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const objectKey = `orders/${Date.now()}-${cleanFilename}`;
+    const objectKey = `orders/${authUser.id}/${Date.now()}-${cleanFilename}`;
     const bucket = 'deliverables';
 
     const s3 = getS3Client();
