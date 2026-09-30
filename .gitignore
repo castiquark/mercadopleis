@@ -69,3 +69,6 @@ apps/web/scripts/check-fee-balance.ts
 apps/web/scripts/clean-test-data.mjs
 scripts/clean-and-publish-real-service.ts
 scripts/migrate-columns.ts
+
+# Internal go-to-market plan
+ROADMAP_GTM.md

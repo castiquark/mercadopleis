@@ -89,7 +89,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 [ FASE 1: Hardening & Despliegue en Base Mainnet (Dinero Real) ]  ✅ COMPLETADO
                         │
                         ▼
-[ FASE 2: GTM, Tracción Semilla & Agent Economy Wedge ]           🔄 EN EJECUCIÓN (Semanas 1 a 4)
+[ FASE 2: Tracción Semilla & Agent Economy Wedge ]           🔄 EN EJECUCIÓN (Semanas 1 a 4)
                         │
                         ▼
 [ FASE 3: Request Marketplace & Presupuestos Inversos (Bounties) ] 📋 PLANIFICADO
@@ -150,167 +150,11 @@ Autonomous Hiring & Settlement en Base Mainnet
 
 ---
 
-### 🎯 Fase 2: GTM, Tracción Semilla & Agent Economy Wedge (Semanas 1 a 4)
+### 🎯 Fase 2: Tracción Semilla & Agent Economy Wedge (Semanas 1 a 4)
 
-**Objetivo:** Activar el flywheel de transacciones reales adquiriendo simultáneamente **clientes humanos y desarrolladores de agentes de IA**, apalancando la infraestructura de Base (agent wallets, Base MCP y pagos en USDC), según el plan estratégico de lanzamiento y tracción.
+**Objetivo:** Activar las primeras transacciones reales adquiriendo clientes humanos y desarrolladores de agentes de IA, ampliando el catálogo semilla, publicando un servidor MCP oficial (`@mercadopleis/mcp-server`) y manteniendo el protocolo abierto bajo Apache-2.0.
 
-#### 2.1. Estrategia Open Source: Protocolo Abierto & Repositorio Público como Canal de Adquisición y Confianza
-
-Mercadopleis se posiciona como **infraestructura para la economía de agentes**. En este contexto, el repositorio público en GitHub (`castiquark/mercadopleis`) no es solo código fuente: funciona como **prueba técnica, superficie de descubrimiento orgánico y señal de confianza**.
-
-Mantener el repositorio privado mientras se presenta el protocolo a agentes y desarrolladores generaba una contradicción con [`/llms.txt`](./apps/web/public/llms.txt). La apertura pública del repositorio resuelve esta fricción y activa cuatro ventajas competitivas:
-
-1. **Credibilidad Técnica:**
-   * El contrato ya está verificado en BaseScan (`0x9E5b...`), pero el repositorio público permite a cualquier builder auditar el sistema completo:
-     * Cómo se calcula el fee de protocolo (`sellerPayout + platformFee == grossAmount`).
-     * Cómo se gestiona el escrow non-custodial y la ventana de 5 días.
-     * Cómo se manejan los reembolsos por timeout y el arbitraje en disputas.
-     * La suite de tests e invariantes matemáticos con Foundry (`forge test`).
-     * La especificación del API y los tipos de integración en TypeScript.
-2. **Superficie de Descubrimiento Orgánico:**
-   * GitHub se convierte en un embudo directo de adquisición técnica:
-     ```text
-     GitHub (castiquark/mercadopleis)
-        ↓
-     README.md (Badges, Quickstart, Invariantes)
-        ↓
-     Architecture & Smart Contracts (/contracts)
-        ↓
-     Base USDC Escrow (0x9E5b...)
-        ↓
-     mercadopleis.club (Producción)
-     ```
-   * Atrae específicamente a **desarrolladores de agentes de IA y builders Web3**, el perfil de mayor valor para la etapa de tracción.
-3. **Contribuciones y Ecosistema:**
-   * Facilita que la comunidad desarrolle integraciones con frameworks de agentes (Cursor, Mastra, LangChain, CrewAI), adaptadores MCP, SDKs en otros lenguajes y mejoras de documentación.
-4. **Transparencia Radical:**
-   * El mensaje *"El contrato está verificado en BaseScan y el protocolo es open source bajo Apache-2.0"* confiere el estándar de legitimidad requerido para manejar transacciones con dinero real.
-
-##### Separación Estricta: Protocolo e Implementación de Referencia (Público) vs. Operación Interna (Privado)
-*Open source ≠ Repositorio público sin filtro.* Mercadopleis establece una separación clara de responsabilidades:
-* **Capa Pública (Código Abierto bajo Licencia Apache-2.0):**
-  * `contracts/`: Smart contract en Solidity (`MarketplaceEscrow.sol`), scripts de despliegue y tests de invariantes con Foundry.
-  * `apps/web/`: Implementación de referencia de la dApp (Next.js 15, Wagmi, Tailwind) y rutas de API (`/api/services`, `/api/orders`).
-  * `packages/`: `@mercadopleis/contracts-abi`, `@mercadopleis/types`, `@mercadopleis/database` (esquema Drizzle).
-  * `specs/` & discovery: `/llms.txt`, `/llms-full.txt`, `/agents.txt`, documentación de arquitectura y protocolos.
-  * `examples/`: Ejemplos de integración autónoma en Viem y TypeScript.
-  * Archivos de gobernanza: `README.md`, `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`.
-* **Capa Privada (Operación Interna no publicada):**
-  * Secretos de despliegue y credenciales de producción (`.env.local`, `.env.production`, connection strings de Neon DB, llaves privadas de deployer/árbitro, RPC credentials, webhook secrets, tokens de servicio).
-  * Base de datos de producción y datos PII de usuarios.
-  * Herramientas internas de administración y paneles de arbitraje confidencial.
-  * Heurísticas propietarias de antifraude y moderación.
-  * Analíticas internas de negocio y métricas de inteligencia comercial.
-
-##### Decisión de Licenciamiento: Apache-2.0
-Se adopta **Apache License 2.0** como licencia oficial del protocolo e implementación de referencia:
-* **Ventaja:** Permite forks, SDKs e integraciones sin restricciones comerciales indebidas (máxima adopción), a la vez que incorpora cláusulas explícitas de protección y concesión recíproca de patentes.
-* **Modelo Arquitectónico:**
-  ```text
-  Mercadopleis Protocol (Open Source — Apache-2.0)
-       ├── Official Marketplace (https://mercadopleis.club)
-       ├── Reference dApp & API (/apps/web)
-       ├── Agent SDK & MCP Server (@mercadopleis/mcp-server)
-       └── Third-Party Integrations & Agent Frameworks
-  ```
-
-##### Higiene de Secretos & Security Posture (`SECURITY.md`)
-* Auditoría de historial Git completada: confirmación de que nunca se commitearon llaves privadas ni credenciales de base de datos (únicamente `.env.example`).
-* Activación de GitHub Secret Scanning y GitHub Security Advisories en el repositorio público.
-* Canal formal de divulgación responsable establecido: `security@mercadopleis.club` con SLA de respuesta de 48 horas.
-
----
-
-#### 2.2. Estrategia de Adquisición Dual Simultánea
-A diferencia de marketplaces tradicionales que buscan masa crítica de usuarios genéricos, la adquisición de Mercadopleis ataca dos perfiles con mensajes diferenciados:
-1. **Compradores Humanos (Builders / Freelancers / Founders):**
-   * *Mensaje:* "Contrata talento técnico y tareas de datos globales en USDC sin comisiones del 20%, con escrow seguro en Base."
-2. **Desarrolladores de Agentes de IA (AI Agent Builders / MCP Devs):**
-   * *Mensaje:* "Conecta tu agente a Mercadopleis y permítele subcontratar trabajo del mundo real (transcripciones, scraping, datasets) con custodia programable."
-
-#### 2.3. Ampliación del Catálogo Semilla hacia 20 Servicios "Agent-Outsourceable"
-Enfocados en tareas digitales concretas que un agente autónomo frecuentemente necesita delegar:
-* **AI & Data:**
-  * Transcripción de audio en español ($20 USDC)
-  * Limpieza y deduplicación de datasets JSONL ($15 USDC)
-  * Validación sintáctica y de esquema JSONL ($12 USDC)
-  * Verificación humana de ground-truth ($10 USDC)
-  * Evaluación y benchmarking de respuestas de LLMs ($15 USDC)
-  * Anotación y etiquetado de imágenes ($15 USDC)
-* **Development & Automation:**
-  * Script en Python para web scraping estructurado ($25 USDC)
-  * Workflow automatizado en n8n / Make con OpenAI o Claude ($35 USDC)
-  * Integración y testeo de Webhook / API ($30 USDC)
-  * Corrección puntual de bugs en TypeScript / Python ($20 USDC)
-  * Revisión básica de Smart Contract en Solidity ($50 USDC)
-* **Research & Intelligence:**
-  * Web research estructurado en Markdown / CSV ($15 USDC)
-  * Benchmarking de competidores o herramientas ($20 USDC)
-  * Research técnico y recopilación cripto ($25 USDC)
-  * Enriquecimiento de leads y extracción de contactos ($20 USDC)
-* **Language & Translation:**
-  * Traducción técnica EN/ES ($10 USDC)
-  * Proofreading y corrección de estilo ($10 USDC)
-  * Anotación semántica bilingüe ($20 USDC)
-
-#### 2.4. Prioridad Tecnológica: Servidor Oficial `@mercadopleis/mcp-server`
-Integración con la arquitectura **Base MCP** promovida por Base para que agentes en Cursor, Claude Desktop o frameworks como Mastra interactúen con herramientas nativas:
-* `search_services(capability, maxPriceUsdc, maxDeliveryDays)`: Consulta el catálogo filtrando por capacidad técnica.
-* `get_service(slugOrId)`: Obtiene la especificación completa, wallet del vendedor y plazo de entrega.
-* `compare_services(capability)`: Compara candidatos por precio, reputación y tiempo de entrega.
-* `create_order(serviceId, buyerWallet)`: Devuelve parámetros para fondear el escrow on-chain.
-* `get_order_status(orderId)`: Monitorea el estado (`FUNDED`, `DELIVERED`, `RELEASED`).
-* `get_delivery(orderId)`: Recupera la entrega y el hash criptográfico SHA-256 para verificación autónoma.
-
-#### 2.5. Video Demo de 30-60 Segundos (Autonomous Hiring)
-Creación y difusión de un video conciso demostrando el ciclo agentic:
-```text
-Usuario: "Consígueme un proveedor para transcribir este audio en español por menos de 25 USDC."
-  ↓
-Agente:
-  → Consulta GET /api/services?capability=spanish-audio-transcription&maxPrice=25
-  → Evalúa candidatos y selecciona el servicio de 20 USDC
-  → Prepara la transacción de escrow en Base
-  → Notifica al usuario / fondea con su wallet
-  → Recibe la entrega y valida el hash SHA-256
-  → Dispara la aprobación y liberación del pago en USDC
-```
-
-#### 2.6. Distribución en Canales de Ecosistema
-* **Farcaster:** Canales clave `/base`, `/agents`, `/build`, `/beyond-ai`.
-* **Base Builders & Ecosystem Hub:** Registro de proyecto en el directorio oficial de proyectos de Base.
-* **X (Twitter):** Hilo técnico analizando el modelo de custodia programable vs. intermediarios Web2.
-* **Reddit Técnico:** `/r/ethereum`, `/r/base`, `/r/localllama`, `/r/sideproject`.
-* **Outreach Directo:** 1-a-1 con desarrolladores de agentes, automatizadores de n8n y creadores de prompts.
-
-#### 2.7. El Ciclo de PMF (Product-Market Fit Loop)
-```text
-agent discovers service
-         ↓
- service gets hired
-         ↓
-  provider delivers
-         ↓
- buyer releases USDC
-         ↓
-  verified review
-         ↓
-another agent discovers
-         ↓
-      repeat
-```
-
-#### 2.8. Métricas de Éxito de la Fase 2:
-| Métrica | Meta Inicial |
-|---|---:|
-| Servicios publicados activos | 20+ |
-| Proveedores únicos activos | 10+ |
-| Wallets compradoras únicas | 10+ |
-| Órdenes reales completadas on-chain | 10+ |
-| Reseñas verificadas | 5+ |
-| Repeat buyers | 2+ |
-| Volumen total transaccionado | $200 – $500 USDC |
-| Tasa de conversión de servicios (≥1 venta) | >30% |
+_El detalle operativo de esta fase se mantiene fuera del repositorio público._
 
 ---
 
