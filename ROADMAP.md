@@ -1,7 +1,8 @@
 # mercadopleis — Roadmap de Producto y Arquitectura
 
 **Documento:** Roadmap Técnico y Estratégico Integrado — *Outsourcing Layer for the AI Economy*  
-**Versión:** 2.1  
+**Versión:** 2.2  
+**Fecha:** 30 de Septiembre de 2026  
 **Estado:** Activo / En Ejecución  
 **Propuesta de Valor:**  
 > **The service marketplace for AI agents and humans.**  
@@ -70,7 +71,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 
 ---
 
-## 📌 Estado Actual del Proyecto (Sprints 0 a 6 — Completados)
+## 📌 Estado Actual del Proyecto (Sprints 0 a 7 — Completados)
 
 | Módulo / Sprint | Alcance Implementado | Estado |
 |---|---|---|
@@ -81,6 +82,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 | **Sprint 4: Ciclo de Órdenes** | Dashboard `/orders`, depósito non-custodial, registro de entregas con hash SHA-256, liberación on-chain y reembolsos por timeout | ✅ Completado |
 | **Sprint 5: Arbitraje & Reviews** | Panel de moderación para rol `arbitrator` (`/admin`), resolución de disputas, sistema de reseñas auténticas con estrellas (1 a 5) | ✅ Completado |
 | **Sprint 6: Mainnet, Agent Surface & Open Source Readiness** | Despliegue en Base Mainnet (`0x9E5b...`), USDC nativo Circle, superficie agentic (`/llms.txt`, `/llms-full.txt`, `/agents.txt`), API `/api/services` con filtro por `capability`, catálogo semilla ($10–$35 USDC) y activos de código abierto (`README.md`, `LICENSE` Apache-2.0, `SECURITY.md`, `CONTRIBUTING.md`, auditoría de secretos limpia) | ✅ Completado |
+| **Sprint 7: Endurecimiento Criptográfico, Indexador Resistente a Fallos & Blindaje Pre-Mainnet** | Eliminación de mocks/hashes demo y wallets fallback; verificación on-chain de recibos vinculada a `chainId` de la orden (`FUNDED`, `DELIVERED`, `RELEASED`, `DISPUTED`, `RESOLVED`); inmutabilidad estricta de `contractOrderId` y bloqueo de transiciones arbitrarias en `PATCH /api/orders/[id]` (estados financieros 100% on-chain); cursor persistente en indexador `/api/sync` y reconciliación automática de `OrderFunded` huérfanos; SIWE estricto (`version: 1`, `domain`, `uri`) con consumo atómico de nonces en SQL (`UPDATE ... RETURNING`); reseñas con SIWE; filtros SQL y subidas protegidas (<25 MB); enlaces dinámicos a BaseScan Mainnet/Sepolia en la UI. | ✅ Completado |
 
 ---
 
@@ -131,6 +133,23 @@ Autonomous Hiring & Settlement en Base Mainnet
   * Cabeceras CORS globales (`*`) y preflight `OPTIONS` habilitado.
 * **1.6. Catálogo Semilla Inicial ($10 a $35 USDC):** ✅ Completado
   * 5 micro-servicios en producción en PostgreSQL Neon (transcripción de audio, curación de datasets JSONL, flujos n8n, red-teaming de prompts, scraping en Python).
+* **1.7. Verificación Criptográfica On-Chain y Blindaje de Estados Financieros (Sprint 7):** ✅ Completado
+  * Eliminación de hashes mock, datos demo y wallets quemadas de fallback.
+  * Verificación obligatoria de recibos y eventos on-chain (`verifyOnChainFunding`, `verifyOnChainDelivery`, `verifyOnChainRelease`, `verifyOnChainDisputeOpen`, `verifyOnChainDisputeResolution`) vinculada estrictamente al `chainId` de la orden (`8453` o `84532`), sin comprobaciones cruzadas ambiguas entre redes.
+  * Inmutabilidad estricta de `contractOrderId`.
+  * Endpoint `PATCH /api/orders/[id]` blindado: los estados financieros de escrow (`FUNDED`, `DISPUTED`, `REFUNDED`, `RESOLVED`) quedan exclusivamente gobernados por eventos del contrato inteligente y el indexador; solo se admite transición a `DELIVERED` o `RELEASED` con prueba criptográfica on-chain en el `chainId` de la orden.
+* **1.8. Indexador Resistente a Fallos y Reconciliación de Eventos Huérfanos (Sprint 7):** ✅ Completado
+  * Indexador (`/api/sync`) con cursor persistente por bloques (`blockchain_transactions`) para los 6 eventos del contrato (`OrderFunded`, `DeliverySubmitted`, `DisputeOpened`, `OrderReleased`, `OrderRefunded`, `DisputeResolved`).
+  * Reconciliación automática y auto-reconstrucción de órdenes ante eventos `OrderFunded` huérfanos (si la blockchain procesa el bloque antes de que el frontend registre la orden).
+  * El endpoint `POST /api/orders` devuelve HTTP 200 con la orden sincronizada si ya fue indexada previamente.
+* **1.9. Seguridad de Identidad SIWE y Almacenamiento Protegido (Sprint 7):** ✅ Completado
+  * Autenticación SIWE (EIP-4361) con nonces durables en PostgreSQL consumidos en una única instrucción SQL atómica (`UPDATE ... RETURNING`), eliminando condiciones de carrera.
+  * Validación estricta de `version: 1`, `domain` (coincidente con el host o `mercadopleis.club`) y autoridad de la URI (`parsedUri.host === parsed.domain`).
+  * Reseñas auténticas protegidas mediante autenticación SIWE obligatoria.
+  * Filtros de servicios (`category`, `capability`, `price`, etc.) delegados a nivel SQL en PostgreSQL con paginación real (`limit`/`offset`).
+  * Endpoint de carga (`/api/upload`) protegido con autenticación de wallet y límite de tamaño de archivo (25 MB) en Neon Object Storage.
+* **1.10. Paridad Multired en Presentación (Sprint 7):** ✅ Completado
+  * La interfaz inspecciona `order.chainId` dinámicamente para generar títulos de línea de tiempo y enlaces a BaseScan precisos (`basescan.org` para Base Mainnet `8453`, `sepolia.basescan.org` para Base Sepolia `84532`).
 
 ---
 
