@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, services, users } from '@mercadopleis/database';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, gte, lte, ilike, or } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 
 const CORS_HEADERS = {
@@ -28,12 +28,101 @@ export async function GET(request: NextRequest) {
   const locality = request.nextUrl.searchParams.get('locality');
   const search = request.nextUrl.searchParams.get('search')?.toLowerCase().trim();
 
-  try {
-    const whereClause = eq(services.isActive, true);
+  // Pagination parameters
+  const limitParam = parseInt(request.nextUrl.searchParams.get('limit') || '20', 10);
+  const limit = isNaN(limitParam) ? 20 : Math.min(Math.max(limitParam, 1), 100);
 
-    const allServices = await db.query.services.findMany({
-      where: whereClause,
+  const offsetParam = parseInt(request.nextUrl.searchParams.get('offset') || '0', 10);
+  const pageParam = parseInt(request.nextUrl.searchParams.get('page') || '1', 10);
+  const offset = !isNaN(offsetParam) && offsetParam > 0
+    ? offsetParam
+    : !isNaN(pageParam) && pageParam > 1
+      ? (pageParam - 1) * limit
+      : 0;
+
+  try {
+    const conditions: any[] = [eq(services.isActive, true)];
+
+    if (category && category !== 'all') {
+      conditions.push(eq(services.category, category));
+    }
+
+    if (minPrice) {
+      const min = parseFloat(minPrice);
+      if (!isNaN(min)) {
+        conditions.push(gte(services.priceUsdc, min.toString()));
+      }
+    }
+
+    if (maxPrice) {
+      const max = parseFloat(maxPrice);
+      if (!isNaN(max)) {
+        conditions.push(lte(services.priceUsdc, max.toString()));
+      }
+    }
+
+    if (maxDeliveryDays) {
+      const maxDays = parseInt(maxDeliveryDays, 10);
+      if (!isNaN(maxDays)) {
+        conditions.push(lte(services.deliveryDays, maxDays));
+      }
+    }
+
+    if (deliveryType && deliveryType !== 'all') {
+      if (deliveryType === 'in_person') {
+        conditions.push(or(eq(services.deliveryType, 'in_person'), eq(services.deliveryType, 'both')));
+      } else if (deliveryType === 'digital') {
+        conditions.push(or(eq(services.deliveryType, 'digital'), eq(services.deliveryType, 'both')));
+      } else {
+        conditions.push(eq(services.deliveryType, deliveryType));
+      }
+    }
+
+    if (country) {
+      conditions.push(ilike(services.country, `%${country.trim()}%`));
+    }
+
+    if (city) {
+      conditions.push(ilike(services.city, `%${city.trim()}%`));
+    }
+
+    if (locality) {
+      conditions.push(ilike(services.locality, `%${locality.trim()}%`));
+    }
+
+    if (search) {
+      const sTerm = `%${search}%`;
+      conditions.push(
+        or(
+          ilike(services.title, sTerm),
+          ilike(services.description, sTerm),
+          ilike(services.locality, sTerm),
+          ilike(services.city, sTerm),
+          ilike(services.country, sTerm)
+        )
+      );
+    }
+
+    if (capability) {
+      const tokens = capability.replace(/[-_]+/g, ' ').split(/\s+/).filter(Boolean);
+      if (tokens.length > 0) {
+        const tokenConditions = tokens.map((token) =>
+          or(
+            ilike(services.title, `%${token}%`),
+            ilike(services.description, `%${token}%`),
+            ilike(services.category, `%${token}%`),
+            ilike(services.slug, `%${token}%`)
+          )
+        );
+        conditions.push(or(...tokenConditions));
+      }
+    }
+
+    const queriedServices = await db.query.services.findMany({
+      where: and(...conditions),
       orderBy: [desc(services.createdAt)],
+      limit,
+      offset,
       with: {
         seller: {
           columns: {
@@ -47,80 +136,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    let filtered = (allServices as any[]) || [];
-
-    if (category && category !== 'all') {
-      filtered = filtered.filter((s: any) => s.category?.toLowerCase() === category.toLowerCase());
-    }
-
-    if (capability) {
-      const tokens = capability.replace(/[-_]+/g, ' ').split(/\s+/).filter(Boolean);
-      filtered = filtered.filter((s: any) => {
-        const text = `${s.title} ${s.description} ${s.category} ${s.slug}`.toLowerCase();
-        return tokens.some((token) => text.includes(token));
-      });
-    }
-
-    if (minPrice) {
-      const min = parseFloat(minPrice);
-      if (!isNaN(min)) {
-        filtered = filtered.filter((s: any) => parseFloat(s.priceUsdc) >= min);
-      }
-    }
-
-    if (maxPrice) {
-      const max = parseFloat(maxPrice);
-      if (!isNaN(max)) {
-        filtered = filtered.filter((s: any) => parseFloat(s.priceUsdc) <= max);
-      }
-    }
-
-    if (maxDeliveryDays) {
-      const maxDays = parseInt(maxDeliveryDays, 10);
-      if (!isNaN(maxDays)) {
-        filtered = filtered.filter((s: any) => s.deliveryDays <= maxDays);
-      }
-    }
-
-    if (deliveryType && deliveryType !== 'all') {
-      filtered = filtered.filter((s: any) => {
-        const type = s.deliveryType || 'digital';
-        if (deliveryType === 'in_person') {
-          return type === 'in_person' || type === 'both';
-        }
-        if (deliveryType === 'digital') {
-          return type === 'digital' || type === 'both';
-        }
-        return type === deliveryType;
-      });
-    }
-
-    if (country) {
-      const cLower = country.toLowerCase().trim();
-      filtered = filtered.filter((s: any) => s.country?.toLowerCase().includes(cLower));
-    }
-
-    if (city) {
-      const cityLower = city.toLowerCase().trim();
-      filtered = filtered.filter((s: any) => s.city?.toLowerCase().includes(cityLower));
-    }
-
-    if (locality) {
-      const locLower = locality.toLowerCase().trim();
-      filtered = filtered.filter((s: any) => s.locality?.toLowerCase().includes(locLower));
-    }
-
-    if (search) {
-      filtered = filtered.filter((s: any) =>
-        s.title?.toLowerCase().includes(search) ||
-        s.description?.toLowerCase().includes(search) ||
-        s.locality?.toLowerCase().includes(search) ||
-        s.city?.toLowerCase().includes(search) ||
-        s.country?.toLowerCase().includes(search)
-      );
-    }
-
-    const formattedServices = filtered.map((s: any) => ({
+    const formattedServices = queriedServices.map((s: any) => ({
       ...s,
       price: {
         amount: s.priceUsdc,
@@ -149,6 +165,11 @@ export async function GET(request: NextRequest) {
           address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
           decimals: 6,
         },
+        pagination: {
+          limit,
+          offset,
+          count: formattedServices.length,
+        },
         count: formattedServices.length,
         services: formattedServices || [],
       },
@@ -162,6 +183,11 @@ export async function GET(request: NextRequest) {
         network: 'Base Mainnet',
         chainId: 8453,
         escrowContract: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
+        pagination: {
+          limit,
+          offset,
+          count: 0,
+        },
         count: 0,
         services: [],
       },
@@ -173,6 +199,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const authUser = getAuthUserFromRequest(request);
+    if (!authUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized: You must authenticate with your wallet via SIWE before publishing a service' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const {
       title,
@@ -193,34 +226,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required service fields' }, { status: 400 });
     }
 
-    let sellerId = authUser?.id;
-
-    if (!sellerId && sellerWallet) {
-      const normalized = sellerWallet.toLowerCase();
-      let user = await db.query.users.findFirst({
-        where: eq(users.walletAddress, normalized),
-      });
-
-      if (!user) {
-        const shortAddr = `${sellerWallet.slice(0, 6)}...${sellerWallet.slice(-4)}`;
-        const randomSuffix = Math.floor(Math.random() * 10000);
-        const [newUser] = await db
-          .insert(users)
-          .values({
-            walletAddress: normalized,
-            username: `user_${sellerWallet.slice(2, 8)}_${randomSuffix}`,
-            displayName: shortAddr,
-            role: 'USER',
-          })
-          .returning();
-        user = newUser;
-      }
-      sellerId = user?.id;
+    // Prevent arbitrary wallet spoofing: sellerWallet must match the authenticated wallet address
+    if (sellerWallet && sellerWallet.toLowerCase() !== authUser.walletAddress.toLowerCase() && authUser.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Forbidden: You cannot publish services under a different wallet address' },
+        { status: 403 }
+      );
     }
 
-    if (!sellerId) {
-      return NextResponse.json({ error: 'Unauthorized or wallet missing' }, { status: 401 });
-    }
+    const sellerId = authUser.id;
 
     const slug = title
       .toLowerCase()
