@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'mercadopleis_super_secret_jwt_key_change_in_production';
 
 import { db, users } from '@mercadopleis/database';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 export interface TokenPayload {
   id: string;
@@ -51,33 +51,35 @@ export async function validateAndConsumeNonce(
   }
 
   const normalized = address.toLowerCase();
-  const user = await db.query.users.findFirst({
-    where: eq(users.walletAddress, normalized),
-  });
-
-  if (!user || !user.nonce) {
-    return { isValid: false, error: 'Nonce expired or not found. Request a new challenge nonce.' };
-  }
-
-  if (user.nonce !== clientNonce) {
-    return { isValid: false, error: 'Provided nonce does not match current challenge for this wallet' };
-  }
 
   // Check timestamp expiration embedded in nonce
-  const parts = user.nonce.split('_');
+  const parts = clientNonce.split('_');
   if (parts.length === 2) {
     const expiresAt = Number(parts[1]);
     if (!isNaN(expiresAt) && Date.now() > expiresAt) {
-      await db.update(users).set({ nonce: null }).where(eq(users.id, user.id));
+      // Invalidate if found in DB
+      await db
+        .update(users)
+        .set({ nonce: null, updatedAt: new Date() })
+        .where(and(eq(users.walletAddress, normalized), eq(users.nonce, clientNonce)));
       return { isValid: false, error: 'Nonce has expired. Please request a new nonce.' };
     }
   }
 
-  // Atomically invalidate nonce after single use to prevent replay attacks
-  await db
+  // Atomically consume nonce in a single SQL operation:
+  // UPDATE users SET nonce = NULL, updatedAt = NOW() WHERE wallet_address = normalized AND nonce = clientNonce RETURNING *
+  const updated = await db
     .update(users)
     .set({ nonce: null, updatedAt: new Date() })
-    .where(eq(users.id, user.id));
+    .where(and(eq(users.walletAddress, normalized), eq(users.nonce, clientNonce)))
+    .returning();
+
+  if (!updated || updated.length === 0) {
+    return {
+      isValid: false,
+      error: 'Nonce invalid, already consumed, or expired. Request a new challenge nonce.',
+    };
+  }
 
   return { isValid: true };
 }

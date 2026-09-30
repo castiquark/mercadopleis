@@ -73,6 +73,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate version (EIP-4361 requires version === '1')
+    if (parsed.version !== '1') {
+      return NextResponse.json(
+        { error: `Unsupported SIWE version: ${parsed.version}. Expected version 1.` },
+        { status: 400 }
+      );
+    }
+
+    // Validate domain
+    const reqHost = (
+      request.headers.get('x-forwarded-host') ||
+      request.headers.get('host') ||
+      ''
+    ).toLowerCase().trim();
+    const reqHostWithoutPort = reqHost.split(':')[0];
+    const parsedDomain = parsed.domain.toLowerCase().trim();
+    const parsedDomainWithoutPort = parsedDomain.split(':')[0];
+
+    const allowedDomains = [
+      'mercadopleis.club',
+      'www.mercadopleis.club',
+      'localhost',
+      '127.0.0.1',
+    ];
+
+    const isDomainAllowed =
+      parsedDomain === reqHost ||
+      parsedDomainWithoutPort === reqHostWithoutPort ||
+      allowedDomains.includes(parsedDomainWithoutPort);
+
+    if (!isDomainAllowed) {
+      return NextResponse.json(
+        { error: `Invalid SIWE domain: ${parsed.domain}. Expected Mercadopleis domain or active host.` },
+        { status: 400 }
+      );
+    }
+
+    // Validate URI authority matches domain
+    let parsedUri: URL;
+    try {
+      parsedUri = new URL(parsed.uri);
+    } catch {
+      return NextResponse.json(
+        { error: `Invalid SIWE URI: ${parsed.uri}. Must be a valid URI.` },
+        { status: 400 }
+      );
+    }
+
+    if (parsedUri.host.toLowerCase() !== parsedDomain) {
+      return NextResponse.json(
+        { error: `SIWE URI authority (${parsedUri.host}) does not match domain (${parsed.domain})` },
+        { status: 400 }
+      );
+    }
+
     // Validate chainId (Base Mainnet 8453 or Base Sepolia 84532)
     if (parsed.chainId !== 8453 && parsed.chainId !== 84532) {
       return NextResponse.json(
