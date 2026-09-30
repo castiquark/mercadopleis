@@ -41,3 +41,9 @@ Thumbs.db
 *.sublime-project
 *.sublime-workspace
 .neon
+
+# Marketing assets & internal launch planning documents
+apps/web/public/marketing/
+MARKETING_LAUNCH_PLAN.md
+PRODUCT_STATUS.md
+

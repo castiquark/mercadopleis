@@ -37,34 +37,6 @@ export interface CategoryInfo {
 
 export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
   {
-    id: 'development',
-    name: 'Desarrollo & Smart Contracts',
-    nameEn: 'Development & Smart Contracts',
-    description: 'Websites, DApps, Solidity, APIs, Backend y Frontend',
-    icon: 'Code',
-  },
-  {
-    id: 'design',
-    name: 'Diseño UI/UX & Creativo',
-    nameEn: 'UI/UX Design & Creative',
-    description: 'Prototipos Figma, landing pages, logos, diseño Web3',
-    icon: 'Palette',
-  },
-  {
-    id: 'marketing',
-    name: 'Marketing & Redes',
-    nameEn: 'Marketing & Social Media',
-    description: 'Community management, crecimiento, campañas Web3, SEO',
-    icon: 'Megaphone',
-  },
-  {
-    id: 'writing_translation',
-    name: 'Redacción & Traducción',
-    nameEn: 'Writing & Translation',
-    description: 'Whitepapers, documentación técnica, artículos y traducciones',
-    icon: 'FileText',
-  },
-  {
     id: 'ai_data',
     name: 'IA, Prompting & Datos',
     nameEn: 'AI, Prompting & Data',
@@ -72,18 +44,46 @@ export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
     icon: 'Bot',
   },
   {
+    id: 'development',
+    name: 'Desarrollo & Automatizaciones',
+    nameEn: 'Development & Automation',
+    description: 'Bots, n8n, Python, APIs, smart contracts, backend y web scraping',
+    icon: 'Code',
+  },
+  {
+    id: 'writing_translation',
+    name: 'Anotación, Redacción & Idiomas',
+    nameEn: 'Annotation, Writing & Languages',
+    description: 'Transcripción, datasets conversacionales, documentación técnica y traducciones',
+    icon: 'FileText',
+  },
+  {
+    id: 'consulting',
+    name: 'Investigación & Estrategia',
+    nameEn: 'Research & Strategy',
+    description: 'Crypto research, benchmarking de IA, arquitectura y asesoría técnica',
+    icon: 'Briefcase',
+  },
+  {
+    id: 'design',
+    name: 'Diseño UI/UX & Creativo',
+    nameEn: 'UI/UX Design & Creative',
+    description: 'Prototipos Figma, landing pages, logos y assets Web3',
+    icon: 'Palette',
+  },
+  {
+    id: 'marketing',
+    name: 'Marketing & Crecimiento',
+    nameEn: 'Marketing & Growth',
+    description: 'Community management, distribución, campañas y SEO',
+    icon: 'Megaphone',
+  },
+  {
     id: 'security_audit',
     name: 'Seguridad & Auditorías',
     nameEn: 'Security & Auditing',
     description: 'Auditorías de contratos, pentesting y análisis de vulnerabilidades',
     icon: 'ShieldCheck',
-  },
-  {
-    id: 'consulting',
-    name: 'Consultoría & Estrategia',
-    nameEn: 'Consulting & Strategy',
-    description: 'Tokenomics, gobernanza, arquitectura y asesoría de producto',
-    icon: 'Briefcase',
   },
   {
     id: 'video_audio',

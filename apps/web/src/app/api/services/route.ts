@@ -3,6 +3,19 @@ import { db, services, users } from '@mercadopleis/database';
 import { eq, desc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
+}
+
 export async function GET(request: NextRequest) {
   const category = request.nextUrl.searchParams.get('category');
   const deliveryType = request.nextUrl.searchParams.get('deliveryType');
@@ -74,10 +87,35 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ services: filtered || [] });
+    return NextResponse.json(
+      {
+        protocol: 'Mercadopleis Escrow Protocol v1',
+        network: 'Base Mainnet',
+        chainId: 8453,
+        escrowContract: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
+        acceptedToken: {
+          symbol: 'USDC',
+          address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+          decimals: 6,
+        },
+        count: filtered.length,
+        services: filtered || [],
+      },
+      { headers: CORS_HEADERS }
+    );
   } catch (err: any) {
     console.warn('Database query notice, returning empty catalog:', err?.message);
-    return NextResponse.json({ services: [] });
+    return NextResponse.json(
+      {
+        protocol: 'Mercadopleis Escrow Protocol v1',
+        network: 'Base Mainnet',
+        chainId: 8453,
+        escrowContract: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
+        count: 0,
+        services: [],
+      },
+      { headers: CORS_HEADERS }
+    );
   }
 }
 

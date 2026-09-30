@@ -17,9 +17,9 @@ export const translations = {
     exploreServices: 'Explorar Servicios',
     
     // Home / Hero
-    heroTitle: 'Marketplace Descentralizado de Servicios en Base',
-    heroSubtitle: 'Contrata talento digital internacional con liquidación instantánea en USDC mediante smart contracts non-custodial.',
-    searchPlaceholder: 'Buscar servicios por título, tecnología o descripción...',
+    heroTitle: 'Servicios para la Economía de IA',
+    heroSubtitle: 'Contrata personas y servicios técnicos para proyectos de IA, flujos automatizados y datasets. Pagos en USDC en Base protegidos por smart contract escrow (0% recargo al comprador, 97% al prestador).',
+    searchPlaceholder: 'Buscar transcripción, datasets, agentes, n8n, scraping, solidity...',
     allCategories: 'Todos',
     catDev: 'Desarrollo',
     catDesign: 'Diseño',
@@ -139,9 +139,9 @@ export const translations = {
     exploreServices: 'Explore Services',
     
     // Home / Hero
-    heroTitle: 'Decentralized Marketplace for Services on Base',
-    heroSubtitle: 'Hire global digital talent with instant USDC settlement secured by non-custodial smart contracts.',
-    searchPlaceholder: 'Search services by title, skills or keywords...',
+    heroTitle: 'Services for the AI Economy',
+    heroSubtitle: 'Hire human talent and technical services for AI models, automated workflows, and research. Settle in USDC on Base with smart contract escrow (0% buyer fee, 97% to the seller).',
+    searchPlaceholder: 'Search transcription, datasets, agents, n8n, scraping, solidity...',
     allCategories: 'All',
     catDev: 'Development',
     catDesign: 'Design',

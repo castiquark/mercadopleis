@@ -108,16 +108,16 @@ export default function HomePage() {
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
             {language === 'en' ? (
               <>
-                Hire global services with the security of a{' '}
+                Services for the{' '}
                 <span className="bg-gradient-to-r from-primary-light via-blue-400 to-accent bg-clip-text text-transparent">
-                  Smart Escrow
+                  AI Economy
                 </span>
               </>
             ) : (
               <>
-                Contrata servicios globales con la seguridad de un{' '}
+                Servicios para la{' '}
                 <span className="bg-gradient-to-r from-primary-light via-blue-400 to-accent bg-clip-text text-transparent">
-                  Smart Escrow
+                  Economía de IA
                 </span>
               </>
             )}
@@ -125,8 +125,8 @@ export default function HomePage() {
 
           <p className="mt-4 text-base text-slate-300 sm:text-lg">
             {language === 'en'
-              ? 'Discover freelancers worldwide. Pay in USDC. Your funds are secured in a non-custodial smart contract and only released when you approve delivery.'
-              : 'Descubre freelancers de todo el mundo. Paga en USDC. Tus fondos se bloquean en un smart contract non-custodial y solo se liberan cuando apruebas la entrega.'}
+              ? 'Hire people and technical services for AI models, automated workflows, and datasets. Pay in USDC. Your funds are secured in a smart contract escrow until you approve the delivery.'
+              : 'Contrata personas y servicios técnicos para modelos de IA, flujos automatizados y datasets. Paga en USDC. Tus fondos se aseguran en un smart contract escrow hasta que apruebas la entrega.'}
           </p>
 
           {/* Search Input */}
@@ -134,7 +134,7 @@ export default function HomePage() {
             <Search className="ml-3 h-5 w-5 text-slate-400" />
             <input
               type="text"
-              placeholder={language === 'en' ? 'Search development, design, marketing...' : 'Buscar desarrollo, diseño, marketing...'}
+              placeholder={language === 'en' ? 'Search transcription, datasets, agents, n8n, scraping, solidity...' : 'Buscar transcripción, datasets, agentes, n8n, scraping, solidity...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-transparent px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none"
@@ -151,22 +151,22 @@ export default function HomePage() {
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface/50 p-4">
           <ShieldCheck className="h-6 w-6 text-accent shrink-0" />
           <div className="text-xs">
-            <p className="font-semibold text-white">{language === 'en' ? '0% Buyer Fee' : '0% Comisión al Comprador'}</p>
-            <p className="text-slate-400">{language === 'en' ? 'Pay the exact price you see, no hidden fees.' : 'Pagas el precio exacto que ves, sin sorpresas.'}</p>
+            <p className="font-semibold text-white">{language === 'en' ? '0% Buyer Fee • Keep 97%' : '0% Recargo Comprador • Cobras 97%'}</p>
+            <p className="text-slate-400">{language === 'en' ? '3% protocol fee vs 20% on Web2 platforms.' : 'Comisión de solo 3% frente al 20% de plataformas Web2.'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface/50 p-4">
           <CheckCircle className="h-6 w-6 text-primary-light shrink-0" />
           <div className="text-xs">
-            <p className="font-semibold text-white">{language === 'en' ? '5-Day Guarantee' : 'Garantía de 5 Días'}</p>
-            <p className="text-slate-400">{language === 'en' ? 'Sufficient time to review deliverables before releasing funds.' : 'Tiempo suficiente para revisar entregas antes de liberar.'}</p>
+            <p className="font-semibold text-white">{language === 'en' ? 'Non-Custodial Escrow' : 'Escrow No Custodial'}</p>
+            <p className="text-slate-400">{language === 'en' ? 'USDC locked on Base. 5-day review window before release.' : 'USDC en Base. 5 días de revisión garantizada antes de liberar.'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface/50 p-4">
           <Zap className="h-6 w-6 text-amber-400 shrink-0" />
           <div className="text-xs">
-            <p className="font-semibold text-white">{language === 'en' ? 'Timeout Refund' : 'Reembolso por Timeout'}</p>
-            <p className="text-slate-400">{language === 'en' ? 'If freelancer fails to deliver in time, claim 100% direct refund.' : 'Si el vendedor no entrega, recuperas el 100% directo.'}</p>
+            <p className="font-semibold text-white">{language === 'en' ? 'Human + Agent Services' : 'Servicios para Humanos y Agentes'}</p>
+            <p className="text-slate-400">{language === 'en' ? 'Cryptographic SHA-256 deliverable proof onchain.' : 'Entrega con comprobante criptográfico SHA-256 en Base.'}</p>
           </div>
         </div>
       </section>

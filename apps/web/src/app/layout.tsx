@@ -6,8 +6,8 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'mercadopleis — Marketplace Internacional de Servicios en Base con USDC Escrow',
-  description: 'Descubre, contrata y liquida servicios digitales globales mediante smart contracts y escrow non-custodial.',
+  title: 'mercadopleis — Services for the AI Economy | Smart Escrow on Base',
+  description: 'Decentralized marketplace for AI data annotation, automated workflows, and technical micro-services. Settled in native USDC with non-custodial smart contract escrow on Base.',
 };
 
 export const viewport: Viewport = {
