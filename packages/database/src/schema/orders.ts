@@ -8,7 +8,7 @@ export const orders = pgTable('orders', {
   serviceId: uuid('service_id').references(() => services.id).notNull(),
   buyerId: uuid('buyer_id').references(() => users.id).notNull(),
   sellerId: uuid('seller_id').references(() => users.id).notNull(),
-  chainId: integer('chain_id').notNull().default(84532),
+  chainId: integer('chain_id').notNull().default(8453),
   grossAmountUsdc: numeric('gross_amount_usdc', { precision: 12, scale: 2 }).notNull(),
   platformFeeBps: integer('platform_fee_bps').notNull().default(300),
   platformFeeUsdc: numeric('platform_fee_usdc', { precision: 12, scale: 2 }).notNull(),

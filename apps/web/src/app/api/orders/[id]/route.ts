@@ -7,44 +7,118 @@ import { base, baseSepolia } from 'viem/chains';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 
-async function verifyOnChainRelease(txHash: `0x${string}`, contractOrderId: number | null): Promise<boolean> {
-  const mainnetRpc = process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org';
-  const mainnetClient = createPublicClient({ chain: base, transport: http(mainnetRpc) });
+async function verifyOnChainDelivery(
+  txHash: `0x${string}`,
+  contractOrderId: number,
+  expectedSellerWallet: string,
+  expectedDeliveryHash: string
+): Promise<boolean> {
+  if (!contractOrderId || contractOrderId <= 0) return false;
 
-  try {
-    const receipt = await mainnetClient.getTransactionReceipt({ hash: txHash });
-    if (receipt.status === 'success') {
-      const logs = parseEventLogs({
-        abi: MarketplaceEscrowAbi,
-        logs: receipt.logs,
-        eventName: 'OrderReleased',
-      });
-      if (logs.length > 0) {
-        if (!contractOrderId || Number(logs[0].args.orderId) === contractOrderId) {
-          return true;
-        }
-      }
-    }
-  } catch (mainnetErr) {
-    // If not on mainnet, fallback to check on Base Sepolia
+  const chainsToTry = [
+    {
+      chain: base,
+      escrow: ESCROW_ADDRESSES[8453],
+      rpc: process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org',
+    },
+    {
+      chain: baseSepolia,
+      escrow: ESCROW_ADDRESSES[84532],
+      rpc: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
+    },
+  ];
+
+  for (const { chain, escrow, rpc } of chainsToTry) {
     try {
-      const sepoliaRpc = process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org';
-      const sepoliaClient = createPublicClient({ chain: baseSepolia, transport: http(sepoliaRpc) });
-      const receipt = await sepoliaClient.getTransactionReceipt({ hash: txHash });
-      if (receipt.status === 'success') {
+      const client = createPublicClient({ chain, transport: http(rpc) });
+      const receipt = await client.getTransactionReceipt({ hash: txHash });
+
+      if (receipt && receipt.status === 'success') {
+        if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
+          continue;
+        }
+
         const logs = parseEventLogs({
           abi: MarketplaceEscrowAbi,
           logs: receipt.logs,
-          eventName: 'OrderReleased',
+          eventName: 'DeliverySubmitted',
         });
+
         if (logs.length > 0) {
-          if (!contractOrderId || Number(logs[0].args.orderId) === contractOrderId) {
+          const log = logs[0];
+          if (
+            log.address.toLowerCase() === escrow.toLowerCase() &&
+            Number(log.args.orderId) === contractOrderId &&
+            log.args.seller.toLowerCase() === expectedSellerWallet.toLowerCase() &&
+            log.args.deliveryHash.toLowerCase() === expectedDeliveryHash.toLowerCase()
+          ) {
             return true;
           }
         }
       }
     } catch {
-      return false;
+      // Continue to next candidate
+    }
+  }
+
+  return false;
+}
+
+async function verifyOnChainRelease(
+  txHash: `0x${string}`,
+  contractOrderId: number,
+  expectedGrossAmountUsdc?: number
+): Promise<boolean> {
+  if (!contractOrderId || contractOrderId <= 0) return false;
+
+  const chainsToTry = [
+    {
+      chain: base,
+      escrow: ESCROW_ADDRESSES[8453],
+      rpc: process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org',
+    },
+    {
+      chain: baseSepolia,
+      escrow: ESCROW_ADDRESSES[84532],
+      rpc: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
+    },
+  ];
+
+  for (const { chain, escrow, rpc } of chainsToTry) {
+    try {
+      const client = createPublicClient({ chain, transport: http(rpc) });
+      const receipt = await client.getTransactionReceipt({ hash: txHash });
+
+      if (receipt && receipt.status === 'success') {
+        if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
+          continue;
+        }
+
+        const logs = parseEventLogs({
+          abi: MarketplaceEscrowAbi,
+          logs: receipt.logs,
+          eventName: 'OrderReleased',
+        });
+
+        if (logs.length > 0) {
+          const log = logs[0];
+          if (
+            log.address.toLowerCase() === escrow.toLowerCase() &&
+            Number(log.args.orderId) === contractOrderId
+          ) {
+            if (expectedGrossAmountUsdc !== undefined) {
+              const totalPayout = log.args.sellerPayout + log.args.platformFee;
+              const expectedRaw = BigInt(Math.round(expectedGrossAmountUsdc * 1_000_000));
+              if (totalPayout !== expectedRaw) {
+                return false;
+              }
+            }
+            return true;
+          }
+        }
+      }
+    } catch {
+      // Continue to next candidate
     }
   }
 
@@ -112,6 +186,10 @@ export async function PATCH(
 
     const existingOrder = await db.query.orders.findFirst({
       where: eq(orders.id, id),
+      with: {
+        seller: true,
+        buyer: true,
+      },
     });
 
     if (!existingOrder) {
@@ -126,13 +204,55 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden: No tienes autorización para modificar esta orden' }, { status: 403 });
     }
 
-    if (status === 'DELIVERED' && !isSeller && !isAdmin) {
-      return NextResponse.json({ error: 'Forbidden: Solo el prestador puede marcar la orden como entregada' }, { status: 403 });
+    const resolvedDeliveryUrl = deliverableUrl ?? deliveryUrl;
+    const resolvedDeliveryHash = deliverableHash ?? deliveryHash;
+
+    if (status === 'DELIVERED') {
+      if (!isSeller && !isAdmin) {
+        return NextResponse.json({ error: 'Forbidden: Solo el prestador puede marcar la orden como entregada' }, { status: 403 });
+      }
+
+      if (!existingOrder.contractOrderId) {
+        return NextResponse.json({ error: 'La orden carece de contractOrderId on-chain' }, { status: 400 });
+      }
+
+      const deliveryTx = txHash ?? body.txHashDelivery;
+      if (!deliveryTx || !deliveryTx.startsWith('0x') || deliveryTx.length !== 66) {
+        return NextResponse.json(
+          { error: 'Valid on-chain transaction hash required to verify delivery' },
+          { status: 400 }
+        );
+      }
+
+      if (!resolvedDeliveryHash || !resolvedDeliveryHash.startsWith('0x') || resolvedDeliveryHash.length !== 66) {
+        return NextResponse.json(
+          { error: 'Valid 32-byte cryptographic deliveryHash required' },
+          { status: 400 }
+        );
+      }
+
+      const isValidDelivery = await verifyOnChainDelivery(
+        deliveryTx as `0x${string}`,
+        existingOrder.contractOrderId,
+        existingOrder.seller.walletAddress,
+        resolvedDeliveryHash
+      );
+
+      if (!isValidDelivery) {
+        return NextResponse.json(
+          { error: 'Transaction verification failed: DeliverySubmitted event not confirmed on Base for this order' },
+          { status: 400 }
+        );
+      }
     }
 
     if (status === 'RELEASED') {
       if (!isBuyer && !isAdmin) {
         return NextResponse.json({ error: 'Forbidden: Solo el comprador puede aprobar la entrega y liberar fondos' }, { status: 403 });
+      }
+
+      if (!existingOrder.contractOrderId) {
+        return NextResponse.json({ error: 'La orden carece de contractOrderId on-chain' }, { status: 400 });
       }
 
       const releaseTx = txHashRelease ?? txHash;
@@ -143,17 +263,20 @@ export async function PATCH(
         );
       }
 
-      const isValidOnChain = await verifyOnChainRelease(releaseTx as `0x${string}`, existingOrder.contractOrderId);
+      const isValidOnChain = await verifyOnChainRelease(
+        releaseTx as `0x${string}`,
+        existingOrder.contractOrderId,
+        parseFloat(existingOrder.grossAmountUsdc)
+      );
+
       if (!isValidOnChain) {
         return NextResponse.json(
-          { error: 'Transaction verification failed: OrderReleased event not confirmed on Base' },
+          { error: 'Transaction verification failed: OrderReleased event not confirmed on Base with valid payouts' },
           { status: 400 }
         );
       }
     }
 
-    const resolvedDeliveryUrl = deliverableUrl ?? deliveryUrl;
-    const resolvedDeliveryHash = deliverableHash ?? deliveryHash;
     const resolvedTxHashRelease = txHashRelease ?? (status === 'RELEASED' ? txHash : undefined);
 
     // Ensure contractOrderId cannot be overwritten if already set unless by admin
