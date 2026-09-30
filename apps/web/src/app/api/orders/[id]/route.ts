@@ -11,54 +11,47 @@ async function verifyOnChainDelivery(
   txHash: `0x${string}`,
   contractOrderId: number,
   expectedSellerWallet: string,
-  expectedDeliveryHash: string
+  expectedDeliveryHash: string,
+  targetChainId: number
 ): Promise<boolean> {
   if (!contractOrderId || contractOrderId <= 0) return false;
 
-  const chainsToTry = [
-    {
-      chain: base,
-      escrow: ESCROW_ADDRESSES[8453],
-      rpc: process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org',
-    },
-    {
-      chain: baseSepolia,
-      escrow: ESCROW_ADDRESSES[84532],
-      rpc: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
-    },
-  ];
+  const isSepolia = targetChainId === 84532;
+  const chain = isSepolia ? baseSepolia : base;
+  const escrow = ESCROW_ADDRESSES[isSepolia ? 84532 : 8453];
+  const rpc = isSepolia
+    ? (process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org')
+    : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
 
-  for (const { chain, escrow, rpc } of chainsToTry) {
-    try {
-      const client = createPublicClient({ chain, transport: http(rpc) });
-      const receipt = await client.getTransactionReceipt({ hash: txHash });
+  try {
+    const client = createPublicClient({ chain, transport: http(rpc) });
+    const receipt = await client.getTransactionReceipt({ hash: txHash });
 
-      if (receipt && receipt.status === 'success') {
-        if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
-          continue;
-        }
+    if (receipt && receipt.status === 'success') {
+      if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
+        return false;
+      }
 
-        const logs = parseEventLogs({
-          abi: MarketplaceEscrowAbi,
-          logs: receipt.logs,
-          eventName: 'DeliverySubmitted',
-        });
+      const logs = parseEventLogs({
+        abi: MarketplaceEscrowAbi,
+        logs: receipt.logs,
+        eventName: 'DeliverySubmitted',
+      });
 
-        if (logs.length > 0) {
-          const log = logs[0];
-          if (
-            log.address.toLowerCase() === escrow.toLowerCase() &&
-            Number(log.args.orderId) === contractOrderId &&
-            log.args.seller.toLowerCase() === expectedSellerWallet.toLowerCase() &&
-            log.args.deliveryHash.toLowerCase() === expectedDeliveryHash.toLowerCase()
-          ) {
-            return true;
-          }
+      if (logs.length > 0) {
+        const log = logs[0];
+        if (
+          log.address.toLowerCase() === escrow.toLowerCase() &&
+          Number(log.args.orderId) === contractOrderId &&
+          log.args.seller.toLowerCase() === expectedSellerWallet.toLowerCase() &&
+          log.args.deliveryHash.toLowerCase() === expectedDeliveryHash.toLowerCase()
+        ) {
+          return true;
         }
       }
-    } catch {
-      // Continue to next candidate
     }
+  } catch {
+    return false;
   }
 
   return false;
@@ -67,59 +60,50 @@ async function verifyOnChainDelivery(
 async function verifyOnChainRelease(
   txHash: `0x${string}`,
   contractOrderId: number,
-  expectedGrossAmountUsdc?: number
+  expectedGrossAmountUsdc: number,
+  targetChainId: number
 ): Promise<boolean> {
   if (!contractOrderId || contractOrderId <= 0) return false;
 
-  const chainsToTry = [
-    {
-      chain: base,
-      escrow: ESCROW_ADDRESSES[8453],
-      rpc: process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org',
-    },
-    {
-      chain: baseSepolia,
-      escrow: ESCROW_ADDRESSES[84532],
-      rpc: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
-    },
-  ];
+  const isSepolia = targetChainId === 84532;
+  const chain = isSepolia ? baseSepolia : base;
+  const escrow = ESCROW_ADDRESSES[isSepolia ? 84532 : 8453];
+  const rpc = isSepolia
+    ? (process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org')
+    : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
 
-  for (const { chain, escrow, rpc } of chainsToTry) {
-    try {
-      const client = createPublicClient({ chain, transport: http(rpc) });
-      const receipt = await client.getTransactionReceipt({ hash: txHash });
+  try {
+    const client = createPublicClient({ chain, transport: http(rpc) });
+    const receipt = await client.getTransactionReceipt({ hash: txHash });
 
-      if (receipt && receipt.status === 'success') {
-        if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
-          continue;
-        }
+    if (receipt && receipt.status === 'success') {
+      if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
+        return false;
+      }
 
-        const logs = parseEventLogs({
-          abi: MarketplaceEscrowAbi,
-          logs: receipt.logs,
-          eventName: 'OrderReleased',
-        });
+      const logs = parseEventLogs({
+        abi: MarketplaceEscrowAbi,
+        logs: receipt.logs,
+        eventName: 'OrderReleased',
+      });
 
-        if (logs.length > 0) {
-          const log = logs[0];
-          if (
-            log.address.toLowerCase() === escrow.toLowerCase() &&
-            Number(log.args.orderId) === contractOrderId
-          ) {
-            if (expectedGrossAmountUsdc !== undefined) {
-              const totalPayout = log.args.sellerPayout + log.args.platformFee;
-              const expectedRaw = BigInt(Math.round(expectedGrossAmountUsdc * 1_000_000));
-              if (totalPayout !== expectedRaw) {
-                return false;
-              }
-            }
-            return true;
+      if (logs.length > 0) {
+        const log = logs[0];
+        if (
+          log.address.toLowerCase() === escrow.toLowerCase() &&
+          Number(log.args.orderId) === contractOrderId
+        ) {
+          const totalPayout = log.args.sellerPayout + log.args.platformFee;
+          const expectedRaw = BigInt(Math.round(expectedGrossAmountUsdc * 1_000_000));
+          if (totalPayout !== expectedRaw) {
+            return false;
           }
+          return true;
         }
       }
-    } catch {
-      // Continue to next candidate
     }
+  } catch {
+    return false;
   }
 
   return false;
@@ -206,94 +190,125 @@ export async function PATCH(
 
     const resolvedDeliveryUrl = deliverableUrl ?? deliveryUrl;
     const resolvedDeliveryHash = deliverableHash ?? deliveryHash;
+    const targetChainId = existingOrder.chainId || CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID;
 
-    if (status === 'DELIVERED') {
-      if (!isSeller && !isAdmin) {
-        return NextResponse.json({ error: 'Forbidden: Solo el prestador puede marcar la orden como entregada' }, { status: 403 });
-      }
+    // Strict status transition rules:
+    // PATCH /api/orders/[id] cannot be used to arbitrarily set financial statuses.
+    // Escrow states (FUNDED, DISPUTED, REFUNDED, RESOLVED) are strictly governed by smart contract events and dispute routes.
+    let targetStatus = existingOrder.status;
 
-      if (!existingOrder.contractOrderId) {
-        return NextResponse.json({ error: 'La orden carece de contractOrderId on-chain' }, { status: 400 });
-      }
-
-      const deliveryTx = txHash ?? body.txHashDelivery;
-      if (!deliveryTx || !deliveryTx.startsWith('0x') || deliveryTx.length !== 66) {
+    if (status !== undefined && status !== existingOrder.status) {
+      if (status !== 'DELIVERED' && status !== 'RELEASED') {
         return NextResponse.json(
-          { error: 'Valid on-chain transaction hash required to verify delivery' },
+          {
+            error: `Forbidden status modification: '${status}' cannot be set directly via PATCH /api/orders. Escrow states (FUNDED, DISPUTED, REFUNDED, RESOLVED) are strictly derived from on-chain smart contract events.`,
+          },
           { status: 400 }
         );
       }
 
-      if (!resolvedDeliveryHash || !resolvedDeliveryHash.startsWith('0x') || resolvedDeliveryHash.length !== 66) {
-        return NextResponse.json(
-          { error: 'Valid 32-byte cryptographic deliveryHash required' },
-          { status: 400 }
+      if (status === 'DELIVERED') {
+        if (!isSeller && !isAdmin) {
+          return NextResponse.json({ error: 'Forbidden: Solo el prestador puede marcar la orden como entregada' }, { status: 403 });
+        }
+
+        if (existingOrder.status !== 'FUNDED') {
+          return NextResponse.json(
+            { error: `Cannot transition from '${existingOrder.status}' to DELIVERED (order must be FUNDED)` },
+            { status: 400 }
+          );
+        }
+
+        if (!existingOrder.contractOrderId) {
+          return NextResponse.json({ error: 'La orden carece de contractOrderId on-chain' }, { status: 400 });
+        }
+
+        const deliveryTx = txHash ?? body.txHashDelivery;
+        if (!deliveryTx || !deliveryTx.startsWith('0x') || deliveryTx.length !== 66) {
+          return NextResponse.json(
+            { error: 'Valid on-chain transaction hash required to verify delivery' },
+            { status: 400 }
+          );
+        }
+
+        if (!resolvedDeliveryHash || !resolvedDeliveryHash.startsWith('0x') || resolvedDeliveryHash.length !== 66) {
+          return NextResponse.json(
+            { error: 'Valid 32-byte cryptographic deliveryHash required' },
+            { status: 400 }
+          );
+        }
+
+        const isValidDelivery = await verifyOnChainDelivery(
+          deliveryTx as `0x${string}`,
+          existingOrder.contractOrderId,
+          existingOrder.seller.walletAddress,
+          resolvedDeliveryHash,
+          targetChainId
         );
+
+        if (!isValidDelivery) {
+          return NextResponse.json(
+            { error: `Transaction verification failed: DeliverySubmitted event not confirmed on chain ${targetChainId} for this order` },
+            { status: 400 }
+          );
+        }
+
+        targetStatus = 'DELIVERED';
       }
 
-      const isValidDelivery = await verifyOnChainDelivery(
-        deliveryTx as `0x${string}`,
-        existingOrder.contractOrderId,
-        existingOrder.seller.walletAddress,
-        resolvedDeliveryHash
-      );
+      if (status === 'RELEASED') {
+        if (!isBuyer && !isAdmin) {
+          return NextResponse.json({ error: 'Forbidden: Solo el comprador puede aprobar la entrega y liberar fondos' }, { status: 403 });
+        }
 
-      if (!isValidDelivery) {
-        return NextResponse.json(
-          { error: 'Transaction verification failed: DeliverySubmitted event not confirmed on Base for this order' },
-          { status: 400 }
+        if (existingOrder.status !== 'DELIVERED') {
+          return NextResponse.json(
+            { error: `Cannot release order in status '${existingOrder.status}' (deliverable must be submitted first)` },
+            { status: 400 }
+          );
+        }
+
+        if (!existingOrder.contractOrderId) {
+          return NextResponse.json({ error: 'La orden carece de contractOrderId on-chain' }, { status: 400 });
+        }
+
+        const releaseTx = txHashRelease ?? txHash;
+        if (!releaseTx || !releaseTx.startsWith('0x') || releaseTx.length !== 66) {
+          return NextResponse.json(
+            { error: 'Valid on-chain transaction hash required to release escrow' },
+            { status: 400 }
+          );
+        }
+
+        const isValidOnChain = await verifyOnChainRelease(
+          releaseTx as `0x${string}`,
+          existingOrder.contractOrderId,
+          parseFloat(existingOrder.grossAmountUsdc),
+          targetChainId
         );
+
+        if (!isValidOnChain) {
+          return NextResponse.json(
+            { error: `Transaction verification failed: OrderReleased event not confirmed on chain ${targetChainId} with matching payouts` },
+            { status: 400 }
+          );
+        }
+
+        targetStatus = 'RELEASED';
       }
     }
 
-    if (status === 'RELEASED') {
-      if (!isBuyer && !isAdmin) {
-        return NextResponse.json({ error: 'Forbidden: Solo el comprador puede aprobar la entrega y liberar fondos' }, { status: 403 });
-      }
-
-      if (!existingOrder.contractOrderId) {
-        return NextResponse.json({ error: 'La orden carece de contractOrderId on-chain' }, { status: 400 });
-      }
-
-      const releaseTx = txHashRelease ?? txHash;
-      if (!releaseTx || !releaseTx.startsWith('0x') || releaseTx.length !== 66) {
-        return NextResponse.json(
-          { error: 'Valid on-chain transaction hash required to release escrow' },
-          { status: 400 }
-        );
-      }
-
-      const isValidOnChain = await verifyOnChainRelease(
-        releaseTx as `0x${string}`,
-        existingOrder.contractOrderId,
-        parseFloat(existingOrder.grossAmountUsdc)
-      );
-
-      if (!isValidOnChain) {
-        return NextResponse.json(
-          { error: 'Transaction verification failed: OrderReleased event not confirmed on Base with valid payouts' },
-          { status: 400 }
-        );
-      }
-    }
-
-    const resolvedTxHashRelease = txHashRelease ?? (status === 'RELEASED' ? txHash : undefined);
-
-    // Ensure contractOrderId cannot be overwritten if already set unless by admin
-    const newContractOrderId = onChainOrderId !== undefined && (!existingOrder.contractOrderId || isAdmin)
-      ? Number(onChainOrderId)
-      : existingOrder.contractOrderId;
+    const resolvedTxHashRelease = txHashRelease ?? (targetStatus === 'RELEASED' ? txHash : undefined);
 
     const [updatedOrder] = await db
       .update(orders)
       .set({
-        status: status || existingOrder.status,
-        contractOrderId: newContractOrderId,
+        status: targetStatus,
         deliveryReferenceUrl: resolvedDeliveryUrl !== undefined ? resolvedDeliveryUrl : existingOrder.deliveryReferenceUrl,
         deliveryHash: resolvedDeliveryHash !== undefined ? resolvedDeliveryHash : existingOrder.deliveryHash,
         txHashRelease: resolvedTxHashRelease !== undefined ? resolvedTxHashRelease : existingOrder.txHashRelease,
-        deliveredAt: status === 'DELIVERED' ? new Date() : existingOrder.deliveredAt,
-        releasedAt: status === 'RELEASED' ? new Date() : existingOrder.releasedAt,
+        deliveredAt: targetStatus === 'DELIVERED' ? (existingOrder.deliveredAt || new Date()) : existingOrder.deliveredAt,
+        releasedAt: targetStatus === 'RELEASED' ? (existingOrder.releasedAt || new Date()) : existingOrder.releasedAt,
         updatedAt: new Date(),
       })
       .where(eq(orders.id, id))

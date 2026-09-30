@@ -19,67 +19,83 @@ interface VerifiedFunding {
   error?: string;
 }
 
-async function verifyOnChainFunding(txHash: `0x${string}`): Promise<VerifiedFunding> {
-  const chainsToTry = [
-    {
-      chain: base,
-      escrow: ESCROW_ADDRESSES[8453],
-      rpc: process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org',
-    },
-    {
-      chain: baseSepolia,
-      escrow: ESCROW_ADDRESSES[84532],
-      rpc: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
-    },
-  ];
+async function verifyOnChainFunding(
+  txHash: `0x${string}`,
+  requestedChainId?: number
+): Promise<VerifiedFunding> {
+  const targetChainId = requestedChainId === 84532 ? 84532 : 8453;
+  const isSepolia = targetChainId === 84532;
+  const chain = isSepolia ? baseSepolia : base;
+  const escrow = ESCROW_ADDRESSES[targetChainId];
+  const rpc = isSepolia
+    ? (process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org')
+    : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
 
-  for (const { chain, escrow, rpc } of chainsToTry) {
-    try {
-      const client = createPublicClient({ chain, transport: http(rpc) });
-      const receipt = await client.getTransactionReceipt({ hash: txHash });
+  try {
+    const client = createPublicClient({ chain, transport: http(rpc) });
+    const receipt = await client.getTransactionReceipt({ hash: txHash });
 
-      if (receipt && receipt.status === 'success') {
-        if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
-          continue;
-        }
+    if (receipt && receipt.status === 'success') {
+      if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
+        return {
+          isValid: false,
+          chainId: targetChainId,
+          orderId: 0,
+          buyer: '',
+          seller: '',
+          token: '',
+          amount: 0n,
+          deadline: 0,
+          error: `Transaction was not sent to valid escrow contract (${escrow}) on chain ${targetChainId}`,
+        };
+      }
 
-        const logs = parseEventLogs({
-          abi: MarketplaceEscrowAbi,
-          logs: receipt.logs,
-          eventName: 'OrderFunded',
-        });
+      const logs = parseEventLogs({
+        abi: MarketplaceEscrowAbi,
+        logs: receipt.logs,
+        eventName: 'OrderFunded',
+      });
 
-        if (logs.length > 0) {
-          const log = logs[0];
-          if (log.address.toLowerCase() === escrow.toLowerCase()) {
-            return {
-              isValid: true,
-              chainId: chain.id,
-              orderId: Number(log.args.orderId),
-              buyer: log.args.buyer,
-              seller: log.args.seller,
-              token: log.args.token,
-              amount: log.args.amount,
-              deadline: Number(log.args.deadline),
-            };
-          }
+      if (logs.length > 0) {
+        const log = logs[0];
+        if (log.address.toLowerCase() === escrow.toLowerCase()) {
+          return {
+            isValid: true,
+            chainId: chain.id,
+            orderId: Number(log.args.orderId),
+            buyer: log.args.buyer,
+            seller: log.args.seller,
+            token: log.args.token,
+            amount: log.args.amount,
+            deadline: Number(log.args.deadline),
+          };
         }
       }
-    } catch {
-      // Continue to next network candidate
     }
+  } catch (err: any) {
+    return {
+      isValid: false,
+      chainId: targetChainId,
+      orderId: 0,
+      buyer: '',
+      seller: '',
+      token: '',
+      amount: 0n,
+      deadline: 0,
+      error: `Could not verify transaction receipt on chain ${targetChainId}: ${err?.message}`,
+    };
   }
 
   return {
     isValid: false,
-    chainId: 0,
+    chainId: targetChainId,
     orderId: 0,
     buyer: '',
     seller: '',
     token: '',
     amount: 0n,
     deadline: 0,
-    error: 'Funding transaction or OrderFunded event not confirmed on Base Mainnet or Sepolia',
+    error: `Funding transaction or OrderFunded event not confirmed on chain ${targetChainId}`,
   };
 }
 
@@ -94,7 +110,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { serviceId, contractOrderId, txHashFunding, buyerWallet } = body;
+    const { serviceId, contractOrderId, txHashFunding, chainId } = body;
 
     if (!serviceId || !txHashFunding || contractOrderId === undefined) {
       return NextResponse.json(
@@ -123,8 +139,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Service seller has no associated wallet address' }, { status: 500 });
     }
 
-    // Verify on-chain funding event
-    const verification = await verifyOnChainFunding(txHashFunding as `0x${string}`);
+    const targetChainId = Number(chainId) === 84532 ? 84532 : 8453;
+
+    // Verify on-chain funding event strictly on targetChainId
+    const verification = await verifyOnChainFunding(txHashFunding as `0x${string}`, targetChainId);
     if (!verification.isValid) {
       return NextResponse.json({ error: verification.error || 'On-chain funding verification failed' }, { status: 400 });
     }
@@ -158,15 +176,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if this contractOrderId is already registered to avoid duplicates
+    // Check if this contractOrderId is already registered in DB
     const existingOrder = await db.query.orders.findFirst({
       where: eq(orders.contractOrderId, verification.orderId),
     });
 
     if (existingOrder) {
+      if (existingOrder.serviceId !== service.id) {
+        await db
+          .update(orders)
+          .set({ serviceId: service.id, updatedAt: new Date() })
+          .where(eq(orders.id, existingOrder.id));
+        existingOrder.serviceId = service.id;
+      }
       return NextResponse.json(
-        { error: 'Order already registered in system', order: existingOrder },
-        { status: 409 }
+        { message: 'Order already registered and synchronized in system', order: existingOrder },
+        { status: 200 }
       );
     }
 

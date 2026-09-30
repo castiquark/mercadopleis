@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 
 async function verifyOnChainDisputeResolution(
   txHash: `0x${string}`,
-  contractOrderId: number
+  contractOrderId: number,
+  targetChainId: number
 ): Promise<{
   isValid: boolean;
   sellerPayoutUsdc: string;
@@ -18,53 +19,51 @@ async function verifyOnChainDisputeResolution(
   platformFeeUsdc: string;
   error?: string;
 }> {
-  const chainsToTry = [
-    {
-      chain: base,
-      escrow: ESCROW_ADDRESSES[8453],
-      rpc: process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org',
-    },
-    {
-      chain: baseSepolia,
-      escrow: ESCROW_ADDRESSES[84532],
-      rpc: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
-    },
-  ];
+  const isSepolia = targetChainId === 84532;
+  const chain = isSepolia ? baseSepolia : base;
+  const escrow = ESCROW_ADDRESSES[isSepolia ? 84532 : 8453];
+  const rpc = isSepolia
+    ? (process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org')
+    : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
 
-  for (const { chain, escrow, rpc } of chainsToTry) {
-    try {
-      const client = createPublicClient({ chain, transport: http(rpc) });
-      const receipt = await client.getTransactionReceipt({ hash: txHash });
+  try {
+    const client = createPublicClient({ chain, transport: http(rpc) });
+    const receipt = await client.getTransactionReceipt({ hash: txHash });
 
-      if (receipt && receipt.status === 'success') {
-        if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
-          continue;
-        }
+    if (receipt && receipt.status === 'success') {
+      if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
+        return {
+          isValid: false,
+          sellerPayoutUsdc: '0',
+          buyerRefundUsdc: '0',
+          platformFeeUsdc: '0',
+          error: `Transaction was not sent to valid escrow contract on chain ${targetChainId}`,
+        };
+      }
 
-        const logs = parseEventLogs({
-          abi: MarketplaceEscrowAbi,
-          logs: receipt.logs,
-          eventName: 'DisputeResolved',
-        });
+      const logs = parseEventLogs({
+        abi: MarketplaceEscrowAbi,
+        logs: receipt.logs,
+        eventName: 'DisputeResolved',
+      });
 
-        if (logs.length > 0) {
-          const log = logs[0];
-          if (
-            log.address.toLowerCase() === escrow.toLowerCase() &&
-            Number(log.args.orderId) === contractOrderId
-          ) {
-            return {
-              isValid: true,
-              sellerPayoutUsdc: formatUnits(log.args.sellerPayout, 6),
-              buyerRefundUsdc: formatUnits(log.args.buyerRefund, 6),
-              platformFeeUsdc: formatUnits(log.args.platformFee, 6),
-            };
-          }
+      if (logs.length > 0) {
+        const log = logs[0];
+        if (
+          log.address.toLowerCase() === escrow.toLowerCase() &&
+          Number(log.args.orderId) === contractOrderId
+        ) {
+          return {
+            isValid: true,
+            sellerPayoutUsdc: formatUnits(log.args.sellerPayout, 6),
+            buyerRefundUsdc: formatUnits(log.args.buyerRefund, 6),
+            platformFeeUsdc: formatUnits(log.args.platformFee, 6),
+          };
         }
       }
-    } catch {
-      // Continue to next candidate
     }
+  } catch {
+    // Error querying RPC
   }
 
   return {
@@ -72,7 +71,7 @@ async function verifyOnChainDisputeResolution(
     sellerPayoutUsdc: '0',
     buyerRefundUsdc: '0',
     platformFeeUsdc: '0',
-    error: 'DisputeResolved event not found or transaction not confirmed on Base',
+    error: `DisputeResolved event not found or transaction not confirmed on chain ${targetChainId}`,
   };
 }
 
@@ -120,9 +119,11 @@ export async function POST(
     }
 
     // Verify on-chain execution of MarketplaceEscrow.resolveDispute()
+    const targetChainId = dispute.order.chainId || 8453;
     const verification = await verifyOnChainDisputeResolution(
       resolutionTx as `0x${string}`,
-      dispute.order.contractOrderId
+      dispute.order.contractOrderId,
+      targetChainId
     );
 
     if (!verification.isValid) {

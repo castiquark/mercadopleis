@@ -11,51 +11,44 @@ export const dynamic = 'force-dynamic';
 async function verifyOnChainDisputeOpen(
   txHash: `0x${string}`,
   contractOrderId: number,
-  expectedInitiatorWallet: string
+  expectedInitiatorWallet: string,
+  targetChainId: number
 ): Promise<boolean> {
-  const chainsToTry = [
-    {
-      chain: base,
-      escrow: ESCROW_ADDRESSES[8453],
-      rpc: process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org',
-    },
-    {
-      chain: baseSepolia,
-      escrow: ESCROW_ADDRESSES[84532],
-      rpc: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
-    },
-  ];
+  const isSepolia = targetChainId === 84532;
+  const chain = isSepolia ? baseSepolia : base;
+  const escrow = ESCROW_ADDRESSES[isSepolia ? 84532 : 8453];
+  const rpc = isSepolia
+    ? (process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org')
+    : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
 
-  for (const { chain, escrow, rpc } of chainsToTry) {
-    try {
-      const client = createPublicClient({ chain, transport: http(rpc) });
-      const receipt = await client.getTransactionReceipt({ hash: txHash });
+  try {
+    const client = createPublicClient({ chain, transport: http(rpc) });
+    const receipt = await client.getTransactionReceipt({ hash: txHash });
 
-      if (receipt && receipt.status === 'success') {
-        if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
-          continue;
-        }
+    if (receipt && receipt.status === 'success') {
+      if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
+        return false;
+      }
 
-        const logs = parseEventLogs({
-          abi: MarketplaceEscrowAbi,
-          logs: receipt.logs,
-          eventName: 'DisputeOpened',
-        });
+      const logs = parseEventLogs({
+        abi: MarketplaceEscrowAbi,
+        logs: receipt.logs,
+        eventName: 'DisputeOpened',
+      });
 
-        if (logs.length > 0) {
-          const log = logs[0];
-          if (
-            log.address.toLowerCase() === escrow.toLowerCase() &&
-            Number(log.args.orderId) === contractOrderId &&
-            log.args.openedBy.toLowerCase() === expectedInitiatorWallet.toLowerCase()
-          ) {
-            return true;
-          }
+      if (logs.length > 0) {
+        const log = logs[0];
+        if (
+          log.address.toLowerCase() === escrow.toLowerCase() &&
+          Number(log.args.orderId) === contractOrderId &&
+          log.args.openedBy.toLowerCase() === expectedInitiatorWallet.toLowerCase()
+        ) {
+          return true;
         }
       }
-    } catch {
-      // Continue to next candidate
     }
+  } catch {
+    return false;
   }
 
   return false;
@@ -154,15 +147,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const targetChainId = order.chainId || 8453;
     const isValidOnChain = await verifyOnChainDisputeOpen(
       disputeTx as `0x${string}`,
       order.contractOrderId,
-      authUser.walletAddress
+      authUser.walletAddress,
+      targetChainId
     );
 
     if (!isValidOnChain) {
       return NextResponse.json(
-        { error: 'Transaction verification failed: DisputeOpened event not confirmed on Base for this order' },
+        { error: `Transaction verification failed: DisputeOpened event not confirmed on chain ${targetChainId} for this order` },
         { status: 400 }
       );
     }
