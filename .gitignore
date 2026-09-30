@@ -35,15 +35,18 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
-# IDE
+# IDE & agent workspace customizations
 .idea
 .vscode
 *.sublime-project
 *.sublime-workspace
 .neon
+.agents/
 
 # Marketing assets & internal launch planning documents
 apps/web/public/marketing/
 MARKETING_LAUNCH_PLAN.md
 PRODUCT_STATUS.md
+crypto_service_marketplace_product_architecture.md
+sprint_0_specification.md
 

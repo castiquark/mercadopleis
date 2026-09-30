@@ -13,12 +13,9 @@
 * [LICENSE](./LICENSE) — Licencia de Código Abierto (Apache License 2.0)  
 * [SECURITY.md](./SECURITY.md) — Política de Seguridad, Invariantes y Divulgación Responsable  
 * [CONTRIBUTING.md](./CONTRIBUTING.md) — Guía de Contribución y Entorno de Desarrollo Local  
-* [MARKETING_LAUNCH_PLAN.md](./MARKETING_LAUNCH_PLAN.md) — Plan Estratégico de Lanzamiento, Tracción Semilla y Economía de Agentes  
-* [PRODUCT_STATUS.md](./PRODUCT_STATUS.md) — Estado Actual del Producto, Contratos y Catálogo  
 * [/llms.txt](./apps/web/public/llms.txt) — Índice Curado para Modelos y Agentes LLM  
 * [/llms-full.txt](./apps/web/public/llms-full.txt) — Manual de Integración Completo (Solidity, Viem, Endpoints)  
 * [/agents.txt](./apps/web/public/agents.txt) — Manifiesto de Identidad y Capacidades de Agentes  
-* [crypto_service_marketplace_product_architecture.md](./crypto_service_marketplace_product_architecture.md) — Arquitectura de Dominio y Contratos  
 
 ---
 
@@ -155,7 +152,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 
 ### 🎯 Fase 2: GTM, Tracción Semilla & Agent Economy Wedge (Semanas 1 a 4)
 
-**Objetivo:** Activar el flywheel de transacciones reales adquiriendo simultáneamente **clientes humanos y desarrolladores de agentes de IA**, apalancando la infraestructura de Base (agent wallets, Base MCP y pagos en USDC), según [`MARKETING_LAUNCH_PLAN.md`](./MARKETING_LAUNCH_PLAN.md).
+**Objetivo:** Activar el flywheel de transacciones reales adquiriendo simultáneamente **clientes humanos y desarrolladores de agentes de IA**, apalancando la infraestructura de Base (agent wallets, Base MCP y pagos en USDC), según el plan estratégico de lanzamiento y tracción.
 
 #### 2.1. Estrategia Open Source: Protocolo Abierto & Repositorio Público como Canal de Adquisición y Confianza
 
