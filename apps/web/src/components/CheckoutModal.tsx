@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { Service, MARKETPLACE_CATEGORIES } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
-import { parseUnits, formatUnits } from 'viem';
+import { useAccount, useWriteContract, useReadContract, usePublicClient } from 'wagmi';
+import { parseUnits, formatUnits, parseEventLogs } from 'viem';
 import { Erc20Abi, MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { Shield, Clock, CheckCircle2, AlertCircle, X, ExternalLink, Droplet, MapPin } from 'lucide-react';
@@ -48,6 +48,7 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
     args: address ? [address] : undefined,
   });
 
+  const publicClient = usePublicClient();
   const { writeContractAsync: writeApprove } = useWriteContract();
   const { writeContractAsync: writeFund } = useWriteContract();
 
@@ -68,62 +69,100 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
     try {
       setErrorMessage(null);
 
-      const sellerWallet = (service.seller?.walletAddress || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8') as `0x${string}`;
-      let fundTx = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-
-      // Step 1: Approve USDC if needed on real deployed contract
-      if (escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
-        if (needsApproval) {
-          setStep('approving');
-          const approveTx = await writeApprove({
-            address: usdcAddress,
-            abi: Erc20Abi,
-            functionName: 'approve',
-            args: [escrowAddress, rawAmount],
-          });
-          console.log('Approve tx submitted:', approveTx);
-          await refetchAllowance();
-        }
-
-        // Step 2: Fund Escrow Order on chain
-        setStep('funding');
-        fundTx = await writeFund({
-          address: escrowAddress,
-          abi: MarketplaceEscrowAbi,
-          functionName: 'createAndFundOrder',
-          args: [
-            sellerWallet,
-            usdcAddress,
-            rawAmount,
-            BigInt(service.deliveryDays),
-          ],
-        });
-      } else {
-        setStep('funding');
-        // Simulated block confirmation delay for realistic escrow UX
-        await new Promise((resolve) => setTimeout(resolve, 800));
+      if (!address || !isConnected) {
+        throw new Error(
+          language === 'en'
+            ? 'Please connect your Web3 wallet to proceed.'
+            : 'Por favor conecta tu wallet Web3 para continuar.'
+        );
       }
 
-      const generatedContractOrderId = Math.floor(100 + Math.random() * 900);
+      if (!escrowAddress || escrowAddress === '0x0000000000000000000000000000000000000000') {
+        throw new Error(
+          language === 'en'
+            ? 'No escrow contract configured for this network. Please switch to Base Mainnet or Base Sepolia.'
+            : 'No hay contrato de escrow configurado para esta red. Por favor cambia a Base Mainnet o Base Sepolia.'
+        );
+      }
 
-      // Step 3: Persist Order in PostgreSQL backend
+      const sellerWallet = (service.seller?.walletAddress || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8') as `0x${string}`;
+
+      // Step 1: Approve USDC if needed on real deployed contract
+      if (needsApproval) {
+        setStep('approving');
+        const approveTx = await writeApprove({
+          address: usdcAddress,
+          abi: Erc20Abi,
+          functionName: 'approve',
+          args: [escrowAddress, rawAmount],
+        });
+        console.log('[Escrow] Approve tx submitted:', approveTx);
+        if (publicClient) {
+          await publicClient.waitForTransactionReceipt({ hash: approveTx });
+        }
+        await refetchAllowance();
+      }
+
+      // Step 2: Fund Escrow Order on chain (No simulated fallback)
+      setStep('funding');
+      const fundTx = await writeFund({
+        address: escrowAddress,
+        abi: MarketplaceEscrowAbi,
+        functionName: 'createAndFundOrder',
+        args: [
+          sellerWallet,
+          usdcAddress,
+          rawAmount,
+          BigInt(service.deliveryDays),
+        ],
+      });
+      console.log('[Escrow] Order funded tx submitted:', fundTx);
+
+      // Step 3: Wait for transaction confirmation & parse authoritative OrderFunded event
+      if (!publicClient) {
+        throw new Error(
+          language === 'en'
+            ? 'Network client unavailable to verify transaction receipt.'
+            : 'Cliente de red no disponible para verificar el recibo de la transacción.'
+        );
+      }
+
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: fundTx });
+      const logs = parseEventLogs({
+        abi: MarketplaceEscrowAbi,
+        logs: receipt.logs,
+        eventName: 'OrderFunded',
+      });
+
+      if (!logs.length || logs[0].args?.orderId === undefined) {
+        throw new Error(
+          language === 'en'
+            ? 'Transaction confirmed on Base, but could not decode OrderFunded event. Please check BaseScan.'
+            : 'Transacción confirmada en Base, pero no se pudo decodificar el evento OrderFunded. Por favor revisa en BaseScan.'
+        );
+      }
+
+      const realContractOrderId = Number(logs[0].args.orderId);
+      console.log(`[Escrow] Confirmed on-chain Order ID: ${realContractOrderId} (tx: ${fundTx})`);
+
+      // Step 4: Persist real on-chain Order in PostgreSQL backend
       try {
         const { createOrder } = await import('@/lib/api');
         await createOrder({
           serviceId: service.id,
-          contractOrderId: generatedContractOrderId,
+          contractOrderId: realContractOrderId,
           txHashFunding: fundTx,
           buyerWallet: address,
         });
       } catch (dbErr) {
-        console.warn('[Escrow] Backend registration notice:', dbErr);
+        console.warn('[Escrow] Backend registration notice (funds are safe on-chain):', dbErr);
       }
 
-      // Local storage fallback for instant reactivity
+      // Local storage cache with real on-chain contractOrderId
       const localOrders = JSON.parse(localStorage.getItem('mercadopleis_custom_orders') || '[]');
       const newLocalOrder = {
         id: `ord-${Date.now()}`,
-        contractOrderId: generatedContractOrderId,
+        contractOrderId: realContractOrderId,
         serviceTitle: service.title,
         role: 'buyer',
         amountUsdc: service.priceUsdc,
@@ -132,13 +171,13 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
         status: 'FUNDED',
         deadlineTimestamp: Math.floor(Date.now() / 1000) + service.deliveryDays * 86400,
         sellerAddress: sellerWallet,
-        buyerAddress: address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+        buyerAddress: address,
         txHashFunding: fundTx,
       };
       localStorage.setItem('mercadopleis_custom_orders', JSON.stringify([newLocalOrder, ...localOrders]));
 
       setStep('success');
-      setTimeout(() => onSuccess(), 2000);
+      setTimeout(() => onSuccess(realContractOrderId.toString()), 2000);
     } catch (err: any) {
       if (isUserRejection(err)) {
         console.info('[Wallet] Transacción o firma cancelada por el usuario en su wallet.');
