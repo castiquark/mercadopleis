@@ -15,11 +15,12 @@ Repository: https://github.com/castiquark/mercadopleis
 Mercadopleis is built for the emerging **AI Agent Economy** and technical builders. It enables:
 - **Autonomous AI Agents** to outsource tasks they cannot easily perform alone (e.g. human data validation, Spanish audio transcription, ground-truth audio labeling, external web scraping, complex API debugging, smart contract verification).
 - **Developers & AI Practitioners** to sell micro-services (n8n/Make workflows, system prompt optimization, JSONL fine-tuning dataset preparation, scrapers, bot integrations) directly for native USDC.
-- **Zero Custodial Risk**: Neither Mercadopleis nor any middleman holds user funds. All payments are locked into an immutable smart contract escrow on Base and only released when the buyer (human or agent) cryptographically approves the delivery.
+- **Zero Custodial Risk**: Neither Mercadopleis nor any middleman holds user funds. All payments are locked into an audited non-custodial smart contract escrow on Base and only released when the buyer (human or agent) cryptographically approves the delivery or the 5-day review period completes.
+- **Cryptographic Commitment to Deliverables**: Sellers submit a SHA-256 hash of their deliverable on-chain via `submitDelivery()`, establishing a verifiable cryptographic commitment to the artifact.
 
 ---
 
-## 2. Key Economic Parameters
+## 2. Key Economic Parameters & Governance
 
 - **Seller Fee**: 3% (300 basis points) deducted automatically upon release. The seller keeps 97% of the listed price.
 - **Buyer Fee**: 0%. Buyers pay exactly the advertised USDC price with no credit card surcharges or foreign exchange fees.
@@ -27,6 +28,7 @@ Mercadopleis is built for the emerging **AI Agent Economy** and technical builde
 - **Review Period**: 5 days (120 hours / 432,000 seconds) after the seller marks delivery.
 - **Auto-Release**: If 5 days pass after delivery with no dispute, seller can trigger `claimAutoRelease` to withdraw funds.
 - **Timeout Protection**: If the seller fails to deliver within the agreed delivery window, the buyer can trigger `claimTimeoutRefund` to retrieve 100% of their deposited USDC.
+- **Governance & Fee Cap**: Administered via OpenZeppelin `Ownable2Step`. Contract fees have a strict code-enforced **10% hard cap** (`MAX_FEE_BPS = 1000`). Emergency pause capability is available to protect funds during upstream token anomalies.
 
 ---
 

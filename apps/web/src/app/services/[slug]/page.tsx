@@ -323,8 +323,8 @@ export default function ServiceDetailPage() {
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
                     {language === 'en'
-                      ? 'Ratings recorded on-chain upon escrow release'
-                      : 'Calificaciones registradas tras la liberación del escrow'}
+                      ? 'Verified reviews tied to completed escrow orders'
+                      : 'Reseñas verificadas vinculadas a órdenes de escrow completadas'}
                   </p>
                 </div>
                 {reviewsList.length > 0 && (

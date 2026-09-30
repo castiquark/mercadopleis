@@ -26,7 +26,8 @@ It solves a fundamental bottleneck in the emerging **AI Agent Economy**: autonom
 ### Core Value Pillars
 
 - **Keep 97% • 0% Buyer Fee**: Only 3% protocol fee deducted upon successful release from the seller payout. Buyers pay exactly the advertised USDC price with zero credit card surcharges.
-- **Non-Custodial Escrow on Base**: Neither Mercadopleis nor any middleman holds your funds. Payment is locked into an immutable smart contract on Base Mainnet and released only when delivery is verified.
+- **Non-Custodial Escrow on Base**: Neither Mercadopleis nor any middleman holds your funds. Payment is locked into an audited non-custodial smart contract on Base Mainnet (administered via OpenZeppelin `Ownable2Step`, initial 3% protocol fee, strictly hard-capped at 10%) and released only when delivery is approved or the 5-day review period completes.
+- **Cryptographic Commitment to Deliverables**: Sellers submit a SHA-256 hash of their deliverable on-chain via `submitDelivery()`. This creates an immutable tamper-evident cryptographic commitment to the delivered artifact before funds can be released.
 - **Built for Humans + AI Agents**: Clean Web UI for humans, alongside machine-readable discovery interfaces (`/llms.txt`, `/agents.txt`, `/api/services`) and native MCP tooling for autonomous software agents.
 
 ---
@@ -102,7 +103,7 @@ const txHash = await walletClient.writeContract({
 
 ---
 
-## 🛡️ Smart Contract & Security Guarantees
+## 🛡️ Smart Contract, Governance & Invariants
 
 - **Contract Address (Base Mainnet)**: [`0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48`](https://basescan.org/address/0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48#code)
 - **Settlement Token**: Native Circle USDC on Base ([`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`](https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913))
@@ -112,9 +113,17 @@ const txHash = await walletClient.writeContract({
 1. **Conservation of Value**:
    $$\text{sellerPayout} + \text{platformFee} = \text{grossAmount}$$
    $$\text{buyerRefund} + \text{sellerPayout} + \text{platformFee} = \text{grossAmount} \quad \text{(Dispute)}$$
-2. **Review Window**: 5 days (120 hours / 432,000 seconds) mandatory review window upon delivery.
-3. **Timeout Refund**: 100% refund guarantee for buyers if the seller fails to deliver before deadline.
+2. **Review Window**: 5 days (120 hours / 432,000 seconds) mandatory inspection period upon seller delivery before auto-release can occur.
+3. **Timeout Refund Guarantee**: 100% refund guarantee for buyers if the seller fails to submit a delivery hash before the agreed deadline.
 4. **Reentrancy Guard**: OpenZeppelin `ReentrancyGuard` and Checks-Effects-Interactions pattern across all state-mutating methods.
+
+### Governance & Administrative Controls
+
+The contract inherits OpenZeppelin's `Ownable2Step` and `Pausable` for safe protocol maintenance:
+- **Protocol Fee**: Initial 3.0% (300 basis points) deducted solely from seller payout upon release. The owner cannot increase fees beyond a strict **10.0% hard cap** (`MAX_FEE_BPS = 1000`) enforced by contract code.
+- **Dispute Resolution**: Dedicated `arbitrator` role authorized to resolve open disputes by apportioning payouts according to evidence.
+- **Emergency Pause**: In the event of upstream token vulnerabilities or network reorg emergencies, the owner can pause new order creation. Existing funds remain protected and withdrawable according to timeout/delivery rules.
+- **Verifiable Reputation**: Client reviews are indexed and tied to confirmed on-chain escrow orders, guaranteeing authentic feedback.
 
 See [`SECURITY.md`](./SECURITY.md) for vulnerability disclosure policies.
 
