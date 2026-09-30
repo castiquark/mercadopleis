@@ -289,24 +289,25 @@ export async function submitReview(reviewData: {
   orderId: string;
   rating: number;
   comment: string;
-  reviewerWallet?: string;
 }) {
   const token = getAuthToken();
-  if (!token && !reviewData.reviewerWallet) {
-    throw new Error('Debes conectar tu wallet para calificar el servicio');
+  if (!token) {
+    throw new Error('Debes iniciar sesión con tu wallet vía SIWE para calificar el servicio');
   }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
   };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   const res = await fetch(`${API_URL}/reviews`, {
     method: 'POST',
     headers,
-    body: JSON.stringify(reviewData),
+    body: JSON.stringify({
+      orderId: reviewData.orderId,
+      rating: reviewData.rating,
+      comment: reviewData.comment,
+    }),
   });
 
   if (!res.ok) {

@@ -4,6 +4,51 @@ import { db, users } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { validateAndConsumeNonce, signUserToken } from '@/lib/serverAuth';
 
+interface ParsedSiweMessage {
+  domain: string;
+  address: string;
+  uri: string;
+  version: string;
+  chainId: number;
+  nonce: string;
+  issuedAt: string;
+  expirationTime?: string;
+}
+
+function parseSiweMessage(message: string): ParsedSiweMessage | null {
+  try {
+    const headerMatch = message.match(/^([^\n]+) wants you to sign in with your Ethereum account:\n(0x[a-fA-F0-9]{40})/);
+    if (!headerMatch) return null;
+
+    const domain = headerMatch[1].trim();
+    const address = headerMatch[2].trim();
+
+    const uriMatch = message.match(/\nURI:\s*([^\n]+)/);
+    const versionMatch = message.match(/\nVersion:\s*([^\n]+)/);
+    const chainIdMatch = message.match(/\nChain ID:\s*([^\n]+)/);
+    const nonceMatch = message.match(/\nNonce:\s*([^\n]+)/);
+    const issuedAtMatch = message.match(/\nIssued At:\s*([^\n]+)/);
+    const expirationMatch = message.match(/\nExpiration Time:\s*([^\n]+)/);
+
+    if (!uriMatch || !versionMatch || !chainIdMatch || !nonceMatch || !issuedAtMatch) {
+      return null;
+    }
+
+    return {
+      domain,
+      address,
+      uri: uriMatch[1].trim(),
+      version: versionMatch[1].trim(),
+      chainId: parseInt(chainIdMatch[1].trim(), 10),
+      nonce: nonceMatch[1].trim(),
+      issuedAt: issuedAtMatch[1].trim(),
+      expirationTime: expirationMatch ? expirationMatch[1].trim() : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -14,11 +59,51 @@ export async function POST(request: NextRequest) {
     }
 
     const normalized = address.toLowerCase();
-    const nonceValid = validateAndConsumeNonce(normalized);
-    if (!nonceValid) {
-      return NextResponse.json({ error: 'Nonce expired or not found. Request a new nonce.' }, { status: 400 });
+
+    // 1. Strict EIP-4361 SIWE message validation
+    const parsed = parseSiweMessage(message);
+    if (!parsed) {
+      return NextResponse.json({ error: 'Malformed EIP-4361 SIWE message format' }, { status: 400 });
     }
 
+    if (parsed.address.toLowerCase() !== normalized) {
+      return NextResponse.json(
+        { error: 'SIWE message address does not match signing wallet' },
+        { status: 400 }
+      );
+    }
+
+    // Validate chainId (Base Mainnet 8453 or Base Sepolia 84532)
+    if (parsed.chainId !== 8453 && parsed.chainId !== 84532) {
+      return NextResponse.json(
+        { error: `Unsupported SIWE chainId: ${parsed.chainId}. Expected 8453 or 84532.` },
+        { status: 400 }
+      );
+    }
+
+    // Validate timestamp (not in future by >60s, not older than 10m)
+    const issuedAtMs = Date.parse(parsed.issuedAt);
+    if (isNaN(issuedAtMs)) {
+      return NextResponse.json({ error: 'Invalid SIWE issuedAt timestamp' }, { status: 400 });
+    }
+    const now = Date.now();
+    if (issuedAtMs > now + 60 * 1000) {
+      return NextResponse.json({ error: 'SIWE message issuedAt timestamp is in the future' }, { status: 400 });
+    }
+    if (now - issuedAtMs > 10 * 60 * 1000) {
+      return NextResponse.json({ error: 'SIWE message has expired (>10 minutes old)' }, { status: 400 });
+    }
+
+    // 2. Validate & atomically consume durable nonce from PostgreSQL
+    const nonceResult = await validateAndConsumeNonce(normalized, parsed.nonce);
+    if (!nonceResult.isValid) {
+      return NextResponse.json(
+        { error: nonceResult.error || 'Nonce expired or invalid. Request a new challenge nonce.' },
+        { status: 400 }
+      );
+    }
+
+    // 3. Cryptographic signature verification
     const isValid = await verifyMessage({
       address: address as `0x${string}`,
       message,

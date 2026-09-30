@@ -7,6 +7,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Valid wallet address required' }, { status: 400 });
   }
 
-  const nonce = generateNonceForAddress(address);
+  const nonce = await generateNonceForAddress(address);
   return NextResponse.json({ nonce });
 }

@@ -166,7 +166,6 @@ export default function OrdersDashboardPage() {
         orderId: activeReviewModalOrder.id,
         rating: reviewRating,
         comment: reviewComment.trim(),
-        reviewerWallet: address,
       });
 
       const updatedOrderId = activeReviewModalOrder.id;

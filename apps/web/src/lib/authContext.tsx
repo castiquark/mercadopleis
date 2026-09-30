@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const statement = 'Iniciar sesión en mercadopleis con tu wallet criptográfica.';
       const issuedAt = new Date().toISOString();
 
-      const message = `${domain} wants you to sign in with your Ethereum account:\n${address}\n\n${statement}\n\nURI: ${origin}\nVersion: 1\nChain ID: ${chainId || 84532}\nNonce: ${nonce}\nIssued At: ${issuedAt}`;
+      const message = `${domain} wants you to sign in with your Ethereum account:\n${address}\n\n${statement}\n\nURI: ${origin}\nVersion: 1\nChain ID: ${chainId || 8453}\nNonce: ${nonce}\nIssued At: ${issuedAt}`;
 
       // 3. Request wallet cryptographic signature
       const signature = await signMessageAsync({ message });

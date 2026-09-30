@@ -5,33 +5,16 @@ import { getAuthUserFromRequest } from '@/lib/serverAuth';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { orderId, rating, comment, reviewerWallet } = body;
-
     const authUser = getAuthUserFromRequest(request);
-    let reviewerUserId = authUser?.id;
-
-    if (!reviewerUserId && reviewerWallet) {
-      const lowerWallet = reviewerWallet.toLowerCase();
-      let user = await db.query.users.findFirst({
-        where: eq(users.walletAddress, lowerWallet),
-      });
-      if (!user) {
-        const [created] = await db
-          .insert(users)
-          .values({
-            walletAddress: lowerWallet,
-            displayName: `0x${lowerWallet.slice(2, 6)}...${lowerWallet.slice(-4)}`,
-          })
-          .returning();
-        user = created;
-      }
-      reviewerUserId = user?.id;
+    if (!authUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Debes iniciar sesión con tu wallet vía SIWE para calificar' },
+        { status: 401 }
+      );
     }
 
-    if (!reviewerUserId) {
-      return NextResponse.json({ error: 'Unauthorized: Conecta tu wallet o inicia sesión con SIWE para calificar' }, { status: 401 });
-    }
+    const body = await request.json();
+    const { orderId, rating, comment } = body;
 
     if (!orderId || !rating || !comment) {
       return NextResponse.json({ error: 'orderId, rating, and comment are required' }, { status: 400 });
@@ -51,13 +34,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    const isBuyer = 
-      order.buyerId === reviewerUserId ||
-      (reviewerWallet && order.buyer?.walletAddress?.toLowerCase() === reviewerWallet.toLowerCase()) ||
-      (authUser && order.buyer?.walletAddress?.toLowerCase() === authUser.walletAddress.toLowerCase());
+    const isBuyer =
+      order.buyerId === authUser.id ||
+      (order.buyer?.walletAddress && order.buyer.walletAddress.toLowerCase() === authUser.walletAddress.toLowerCase());
 
     if (!isBuyer) {
-      return NextResponse.json({ error: 'Only the buyer can review this order' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden: Solo el comprador de la orden puede calificar este servicio' }, { status: 403 });
     }
 
     if (order.status !== 'RELEASED') {
@@ -76,7 +58,7 @@ export async function POST(request: NextRequest) {
       .insert(reviews)
       .values({
         orderId,
-        reviewerId: reviewerUserId,
+        reviewerId: authUser.id,
         reviewedUserId: order.sellerId,
         rating: ratingNum,
         comment,
