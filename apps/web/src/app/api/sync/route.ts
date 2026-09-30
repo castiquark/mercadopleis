@@ -1,12 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPublicClient, http, parseAbiItem, formatUnits } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
-import { db, orders, disputes, blockchainTransactions, users } from '@mercadopleis/database';
+import { db, orders, disputes, blockchainTransactions, users, services } from '@mercadopleis/database';
 import { eq, desc } from 'drizzle-orm';
 import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 
 export const dynamic = 'force-dynamic';
+
+async function ensureUserForWallet(walletAddress: string) {
+  const normalized = walletAddress.toLowerCase();
+  const existing = await db.query.users.findFirst({
+    where: eq(users.walletAddress, normalized),
+  });
+  if (existing) return existing;
+
+  const shortAddr = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
+  const randomSuffix = Math.floor(Math.random() * 10000);
+  const [created] = await db
+    .insert(users)
+    .values({
+      walletAddress: normalized,
+      username: `user_${walletAddress.slice(2, 8)}_${randomSuffix}`,
+      displayName: shortAddr,
+      role: 'USER',
+    })
+    .returning();
+  return created;
+}
+
+async function ensureServiceForSeller(sellerId: string, grossAmountUsdc: string, orderId: number) {
+  const existing = await db.query.services.findFirst({
+    where: eq(services.sellerId, sellerId),
+  });
+  if (existing) return existing;
+
+  const randomSuffix = Math.floor(Math.random() * 10000);
+  const [created] = await db
+    .insert(services)
+    .values({
+      sellerId,
+      title: `Servicio Escrow On-Chain (#${orderId})`,
+      slug: `servicio-escrow-${orderId}-${randomSuffix}`,
+      description: `Servicio autoconciliado desde evento on-chain de contrato Escrow (#${orderId}).`,
+      category: 'desarrollo',
+      priceUsdc: grossAmountUsdc,
+      deliveryDays: 7,
+      deliveryType: 'digital',
+      isActive: true,
+    })
+    .returning();
+  return created;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -115,16 +160,59 @@ export async function GET(request: NextRequest) {
     // Reconcile OrderFunded
     for (const log of orderFundedLogs) {
       const orderId = Number((log.args as any).orderId);
-      const existing = await db.query.orders.findFirst({
+      const buyerAddr = String((log.args as any).buyer || '').toLowerCase();
+      const sellerAddr = String((log.args as any).seller || '').toLowerCase();
+      const rawAmount = (log.args as any).amount;
+      const deadline = Number((log.args as any).deadline);
+
+      let existing = await db.query.orders.findFirst({
         where: eq(orders.contractOrderId, orderId),
       });
-      if (existing) {
+
+      if (!existing && buyerAddr && sellerAddr) {
+        // Orphaned OrderFunded event: indexer processed block before frontend registration
+        try {
+          const buyerUser = await ensureUserForWallet(buyerAddr);
+          const sellerUser = await ensureUserForWallet(sellerAddr);
+          const grossAmountNum = Number(rawAmount) / 1e6;
+          const grossAmountStr = grossAmountNum.toFixed(2);
+          const platformFeeNum = (grossAmountNum * 300) / 10000;
+          const sellerAmountNum = grossAmountNum - platformFeeNum;
+
+          const candidateService = await ensureServiceForSeller(sellerUser.id, grossAmountStr, orderId);
+
+          const [createdOrder] = await db
+            .insert(orders)
+            .values({
+              contractOrderId: orderId,
+              serviceId: candidateService.id,
+              buyerId: buyerUser.id,
+              sellerId: sellerUser.id,
+              chainId: targetChainId,
+              grossAmountUsdc: grossAmountStr,
+              platformFeeBps: 300,
+              platformFeeUsdc: platformFeeNum.toFixed(2),
+              sellerAmountUsdc: sellerAmountNum.toFixed(2),
+              status: 'FUNDED',
+              deadlineTimestamp: deadline || (Math.floor(Date.now() / 1000) + 7 * 86400),
+              txHashFunding: log.transactionHash,
+            })
+            .returning();
+
+          existing = createdOrder;
+        } catch (orphanErr) {
+          console.error(`Failed to reconcile orphaned OrderFunded #${orderId}:`, orphanErr);
+        }
+      } else if (existing) {
         if (existing.status === 'CREATED') {
           await db
             .update(orders)
             .set({ status: 'FUNDED', txHashFunding: log.transactionHash, updatedAt: new Date() })
             .where(eq(orders.id, existing.id));
         }
+      }
+
+      if (existing) {
         await db.insert(blockchainTransactions).values({
           orderId: existing.id,
           txHash: log.transactionHash,
