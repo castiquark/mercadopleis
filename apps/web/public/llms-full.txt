@@ -54,7 +54,7 @@ function createAndFundOrder(
 
 // 2. Submit delivery (called by Seller)
 // deliveryHash is SHA-256 hash of the final deliverable file/repo/payload
-function deliverOrder(
+function submitDelivery(
     uint256 orderId,
     bytes32 deliveryHash
 ) external;
