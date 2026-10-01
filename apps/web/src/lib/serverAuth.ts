@@ -1,7 +1,24 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mercadopleis_super_secret_jwt_key_change_in_production';
+const INSECURE_SECRETS = new Set([
+  'mercadopleis_super_secret_jwt_key_change_in_production',
+  'mercadopleis_development_jwt_secret_key_123',
+  'change_me',
+]);
+
+// Resolved lazily so `next build` does not require the secret, but any request
+// that signs or verifies a token fails closed when it is missing or a known placeholder.
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (process.env.NODE_ENV === 'production') {
+    if (!secret || secret.length < 32 || INSECURE_SECRETS.has(secret)) {
+      throw new Error('JWT_SECRET must be set to a random value of at least 32 characters in production');
+    }
+    return secret;
+  }
+  return secret || 'dev-only-insecure-jwt-secret-do-not-use-in-production';
+}
 
 import { db, users } from '@mercadopleis/database';
 import { eq, and } from 'drizzle-orm';
@@ -85,7 +102,7 @@ export async function validateAndConsumeNonce(
 }
 
 export function signUserToken(user: TokenPayload): string {
-  return jwt.sign(user, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(user, getJwtSecret(), { expiresIn: '7d' });
 }
 
 export function getAuthUserFromRequest(request: Request): TokenPayload | null {
@@ -96,7 +113,7 @@ export function getAuthUserFromRequest(request: Request): TokenPayload | null {
 
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as TokenPayload;
     return decoded;
   } catch (err) {
     return null;
