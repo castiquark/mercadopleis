@@ -177,6 +177,16 @@ forge test -vvv
 
 ---
 
+## 📬 Contact
+
+| Purpose | Address |
+|---|---|
+| General, partnerships, builders | [hello@mercadopleis.club](mailto:hello@mercadopleis.club) |
+| Order, payment or dispute help | [support@mercadopleis.club](mailto:support@mercadopleis.club) |
+| Security vulnerability reports | [security@mercadopleis.club](mailto:security@mercadopleis.club) (see [SECURITY.md](./SECURITY.md)) |
+
+---
+
 ## ⚖️ License
 
 Mercadopleis is open-source software licensed under the [Apache License 2.0](./LICENSE).
