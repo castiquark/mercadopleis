@@ -123,7 +123,6 @@ export async function fetchMyOrders(role?: 'buyer' | 'seller', walletAddress?: s
     const endpoint = API_URL.startsWith('http') ? `${API_URL}/orders/my` : `${base}${API_URL}/orders/my`;
     const url = new URL(endpoint);
     if (role) url.searchParams.append('role', role);
-    if (walletAddress) url.searchParams.append('address', walletAddress);
 
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;

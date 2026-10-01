@@ -1,24 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, orders, users } from '@mercadopleis/database';
+import { db, orders } from '@mercadopleis/database';
 import { eq, or, desc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 
 export async function GET(request: NextRequest) {
+  // Orders include private data (delivery links, dispute evidence): authenticated users only,
+  // and only their own. A wallet address query param is never trusted.
   const authUser = getAuthUserFromRequest(request);
-  const addressParam = request.nextUrl.searchParams.get('address');
-
-  let targetUserId = authUser?.id;
-
-  if (!targetUserId && addressParam) {
-    const user = await db.query.users.findFirst({
-      where: eq(users.walletAddress, addressParam.toLowerCase()),
-    });
-    targetUserId = user?.id;
+  if (!authUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  if (!targetUserId) {
-    return NextResponse.json({ orders: [] });
-  }
+  const targetUserId = authUser.id;
 
   try {
     const role = request.nextUrl.searchParams.get('role'); // 'buyer' | 'seller' | undefined
