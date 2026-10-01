@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Typecheck, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck shared packages
+        run: |
+          pnpm --filter @mercadopleis/types build
+          pnpm --filter @mercadopleis/contracts-abi build
+          pnpm --filter @mercadopleis/mcp-server lint
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Typecheck and build web app
+        run: |
+          pnpm --filter @mercadopleis/web exec tsc --noEmit
+          pnpm --filter @mercadopleis/web build
+
+  contracts:
+    name: Foundry tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - run: forge test -vv

@@ -3,51 +3,7 @@ import { verifyMessage } from 'viem';
 import { db, users } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { validateAndConsumeNonce, signUserToken } from '@/lib/serverAuth';
-
-interface ParsedSiweMessage {
-  domain: string;
-  address: string;
-  uri: string;
-  version: string;
-  chainId: number;
-  nonce: string;
-  issuedAt: string;
-  expirationTime?: string;
-}
-
-function parseSiweMessage(message: string): ParsedSiweMessage | null {
-  try {
-    const headerMatch = message.match(/^([^\n]+) wants you to sign in with your Ethereum account:\n(0x[a-fA-F0-9]{40})/);
-    if (!headerMatch) return null;
-
-    const domain = headerMatch[1].trim();
-    const address = headerMatch[2].trim();
-
-    const uriMatch = message.match(/\nURI:\s*([^\n]+)/);
-    const versionMatch = message.match(/\nVersion:\s*([^\n]+)/);
-    const chainIdMatch = message.match(/\nChain ID:\s*([^\n]+)/);
-    const nonceMatch = message.match(/\nNonce:\s*([^\n]+)/);
-    const issuedAtMatch = message.match(/\nIssued At:\s*([^\n]+)/);
-    const expirationMatch = message.match(/\nExpiration Time:\s*([^\n]+)/);
-
-    if (!uriMatch || !versionMatch || !chainIdMatch || !nonceMatch || !issuedAtMatch) {
-      return null;
-    }
-
-    return {
-      domain,
-      address,
-      uri: uriMatch[1].trim(),
-      version: versionMatch[1].trim(),
-      chainId: parseInt(chainIdMatch[1].trim(), 10),
-      nonce: nonceMatch[1].trim(),
-      issuedAt: issuedAtMatch[1].trim(),
-      expirationTime: expirationMatch ? expirationMatch[1].trim() : undefined,
-    };
-  } catch {
-    return null;
-  }
-}
+import { parseSiweMessage, validateSiweMessage } from '@/lib/siwe';
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,92 +29,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate version (EIP-4361 requires version === '1')
-    if (parsed.version !== '1') {
-      return NextResponse.json(
-        { error: `Unsupported SIWE version: ${parsed.version}. Expected version 1.` },
-        { status: 400 }
-      );
+    // Validate version, domain, URI authority, chain id and freshness
+    const reqHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || '';
+    const validation = validateSiweMessage(parsed, {
+      reqHost,
+      isProduction: process.env.NODE_ENV === 'production',
+    });
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    // Validate domain
-    const reqHost = (
-      request.headers.get('x-forwarded-host') ||
-      request.headers.get('host') ||
-      ''
-    ).toLowerCase().trim();
-    const reqHostWithoutPort = reqHost.split(':')[0];
-    const parsedDomain = parsed.domain.toLowerCase().trim();
-    const parsedDomainWithoutPort = parsedDomain.split(':')[0];
-
-    const allowedDomains = [
-      'mercadopleis.club',
-      'www.mercadopleis.club',
-      'localhost',
-      '127.0.0.1',
-    ];
-
-    const isDomainAllowed =
-      parsedDomain === reqHost ||
-      parsedDomainWithoutPort === reqHostWithoutPort ||
-      allowedDomains.includes(parsedDomainWithoutPort);
-
-    if (!isDomainAllowed) {
-      return NextResponse.json(
-        { error: `Invalid SIWE domain: ${parsed.domain}. Expected Mercadopleis domain or active host.` },
-        { status: 400 }
-      );
-    }
-
-    // Validate URI authority matches domain
-    let parsedUri: URL;
-    try {
-      parsedUri = new URL(parsed.uri);
-    } catch {
-      return NextResponse.json(
-        { error: `Invalid SIWE URI: ${parsed.uri}. Must be a valid URI.` },
-        { status: 400 }
-      );
-    }
-
-    if (parsedUri.host.toLowerCase() !== parsedDomain) {
-      return NextResponse.json(
-        { error: `SIWE URI authority (${parsedUri.host}) does not match domain (${parsed.domain})` },
-        { status: 400 }
-      );
-    }
-
-    // Validate chainId (Base Mainnet 8453 or Base Sepolia 84532)
-    if (parsed.chainId !== 8453 && parsed.chainId !== 84532) {
-      return NextResponse.json(
-        { error: `Unsupported SIWE chainId: ${parsed.chainId}. Expected 8453 or 84532.` },
-        { status: 400 }
-      );
-    }
-
-    // Validate timestamp (not in future by >60s, not older than 10m)
-    const issuedAtMs = Date.parse(parsed.issuedAt);
-    if (isNaN(issuedAtMs)) {
-      return NextResponse.json({ error: 'Invalid SIWE issuedAt timestamp' }, { status: 400 });
-    }
-    const now = Date.now();
-    if (issuedAtMs > now + 60 * 1000) {
-      return NextResponse.json({ error: 'SIWE message issuedAt timestamp is in the future' }, { status: 400 });
-    }
-    if (now - issuedAtMs > 10 * 60 * 1000) {
-      return NextResponse.json({ error: 'SIWE message has expired (>10 minutes old)' }, { status: 400 });
-    }
-
-    // 2. Validate & atomically consume durable nonce from PostgreSQL
-    const nonceResult = await validateAndConsumeNonce(normalized, parsed.nonce);
-    if (!nonceResult.isValid) {
-      return NextResponse.json(
-        { error: nonceResult.error || 'Nonce expired or invalid. Request a new challenge nonce.' },
-        { status: 400 }
-      );
-    }
-
-    // 3. Cryptographic signature verification
+    // 2. Cryptographic signature verification (before touching the nonce)
     const isValid = await verifyMessage({
       address: address as `0x${string}`,
       message,
@@ -167,6 +48,15 @@ export async function POST(request: NextRequest) {
 
     if (!isValid) {
       return NextResponse.json({ error: 'Invalid cryptographic signature' }, { status: 401 });
+    }
+
+    // 3. Validate & atomically consume durable nonce from PostgreSQL
+    const nonceResult = await validateAndConsumeNonce(normalized, parsed.nonce);
+    if (!nonceResult.isValid) {
+      return NextResponse.json(
+        { error: nonceResult.error || 'Nonce expired or invalid. Request a new challenge nonce.' },
+        { status: 400 }
+      );
     }
 
     const existingUser = await db.query.users.findFirst({

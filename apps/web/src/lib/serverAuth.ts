@@ -9,7 +9,7 @@ const INSECURE_SECRETS = new Set([
 
 // Resolved lazily so `next build` does not require the secret, but any request
 // that signs or verifies a token fails closed when it is missing or a known placeholder.
-function getJwtSecret(): string {
+export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
   if (process.env.NODE_ENV === 'production') {
     if (!secret || secret.length < 32 || INSECURE_SECRETS.has(secret)) {

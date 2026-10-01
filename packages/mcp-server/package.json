@@ -4,14 +4,19 @@
   "description": "MCP server for Mercadopleis: discover and hire services with non-custodial USDC escrow on Base",
   "license": "Apache-2.0",
   "type": "module",
-  "bin": { "mercadopleis-mcp": "./dist/index.js" },
+  "bin": {
+    "mercadopleis-mcp": "./dist/index.js"
+  },
   "main": "./dist/index.js",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
-    "test": "tsx src/smoke.ts",
-    "lint": "tsc --noEmit"
+    "test": "vitest run",
+    "lint": "tsc --noEmit",
+    "test:smoke": "tsx src/smoke.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.31.0",
@@ -22,6 +27,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^5.0.3"
   }
 }

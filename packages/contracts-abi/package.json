@@ -6,12 +6,14 @@
   "types": "./src/index.ts",
   "scripts": {
     "build": "tsc --noEmit",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@mercadopleis/types": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^5.0.3"
   }
 }
