@@ -10,6 +10,7 @@ import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { Shield, Clock, CheckCircle2, AlertCircle, X, ExternalLink, Droplet, MapPin } from 'lucide-react';
 import { FaucetButton } from './FaucetButton';
 import { isUserRejection } from '../lib/web3Errors';
+import { BUILDER_DATA_SUFFIX } from '@/lib/builderCode';
 
 interface CheckoutModalProps {
   service: Service | null;
@@ -115,6 +116,7 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
       const fundTx = await writeFund({
         address: escrowAddress,
         abi: MarketplaceEscrowAbi,
+        dataSuffix: BUILDER_DATA_SUFFIX,
         functionName: 'createAndFundOrder',
         args: [
           sellerWallet,

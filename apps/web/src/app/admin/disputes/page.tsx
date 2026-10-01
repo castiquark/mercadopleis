@@ -11,6 +11,7 @@ import { MarketplaceEscrowAbi, ESCROW_ADDRESSES, calculateOrderAmounts } from '@
 import { CONTRACT_CONFIG, isAdminWallet } from '@mercadopleis/types';
 import { fetchDisputes, resolveDisputeApi } from '@/lib/api';
 import { useAuth } from '@/lib/authContext';
+import { BUILDER_DATA_SUFFIX } from '@/lib/builderCode';
 import {
   Gavel,
   ShieldCheck,
@@ -127,6 +128,7 @@ export default function AdminDisputesPage() {
         await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
+          dataSuffix: BUILDER_DATA_SUFFIX,
           functionName: 'resolveDispute',
           args: [BigInt(selectedDispute.contractOrderId), sellerRaw, buyerRaw],
         });

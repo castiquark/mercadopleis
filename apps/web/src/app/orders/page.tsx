@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { OrderTimelineAndChat } from '@/components/OrderTimelineAndChat';
 import { isUserRejection } from '@/lib/web3Errors';
+import { BUILDER_DATA_SUFFIX } from '@/lib/builderCode';
 
 interface MockOrder {
   id: string;
@@ -231,6 +232,7 @@ export default function OrdersDashboardPage() {
         txHash = await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
+          dataSuffix: BUILDER_DATA_SUFFIX,
           functionName: 'approveDelivery',
           args: [BigInt(order.contractOrderId)],
         });
@@ -280,6 +282,7 @@ export default function OrdersDashboardPage() {
         await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
+          dataSuffix: BUILDER_DATA_SUFFIX,
           functionName: 'openDispute',
           args: [BigInt(activeDisputeModalOrder.contractOrderId)],
         });
@@ -336,6 +339,7 @@ export default function OrdersDashboardPage() {
         await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
+          dataSuffix: BUILDER_DATA_SUFFIX,
           functionName: 'claimTimeoutRefund',
           args: [BigInt(order.contractOrderId)],
         });
@@ -440,6 +444,7 @@ export default function OrdersDashboardPage() {
         txHash = await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
+          dataSuffix: BUILDER_DATA_SUFFIX,
           functionName: 'submitDelivery',
           args: [BigInt(activeDeliveryModalOrder.contractOrderId), finalHash as `0x${string}`],
         });
