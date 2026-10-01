@@ -149,6 +149,7 @@ export async function createOrder(data: string | {
   contractOrderId?: number | null;
   txHashFunding?: string | null;
   buyerWallet?: string | null;
+  chainId?: number;
 }) {
   const payload = typeof data === 'string' ? { serviceId: data } : data;
   const token = getAuthToken(payload.buyerWallet);
@@ -178,6 +179,7 @@ export async function updateOrder(
   updates: {
     status?: string;
     contractOrderId?: number;
+    txHash?: string;
     txHashFunding?: string;
     txHashRelease?: string;
     deliveryUrl?: string;
@@ -233,6 +235,7 @@ export async function openDisputeApi(data: {
   orderId: string;
   reason: string;
   evidenceUrl?: string;
+  txHash?: string;
 }) {
   const token = getAuthToken();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -261,6 +264,7 @@ export async function resolveDisputeApi(
     sellerAwardUsdc: number;
     buyerRefundUsdc: number;
     resolutionNotes?: string;
+    txHash?: string;
   }
 ) {
   const token = getAuthToken();

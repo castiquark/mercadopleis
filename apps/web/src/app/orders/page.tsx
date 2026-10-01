@@ -280,8 +280,10 @@ export default function OrdersDashboardPage() {
       setIsProcessing(true);
       setActionNotice(`Abriendo disputa formal para Orden #${activeDisputeModalOrder.contractOrderId}...`);
 
+      let disputeTxHash: `0x${string}`;
+
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
-        await writeContractAsync({
+        disputeTxHash = await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
           dataSuffix: BUILDER_DATA_SUFFIX,
@@ -297,6 +299,7 @@ export default function OrdersDashboardPage() {
           orderId: activeDisputeModalOrder.id,
           reason: disputeReason.trim(),
           evidenceUrl: disputeEvidenceUrl.trim() || undefined,
+          txHash: disputeTxHash,
         });
       } catch (err) {
         console.warn('Backend dispute record note:', err);
@@ -461,6 +464,7 @@ export default function OrdersDashboardPage() {
       try {
         await updateOrder(activeDeliveryModalOrder.id, {
           status: 'DELIVERED',
+          txHash,
           deliveryUrl: deliveryInputUrl,
           deliveryHash: finalHash,
         });

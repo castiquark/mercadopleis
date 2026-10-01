@@ -124,8 +124,9 @@ export default function AdminDisputesPage() {
       const buyerRaw = parseUnits(buyerRefund.toString(), 6);
 
       // On-chain resolution if connected
+      let resolveTxHash: `0x${string}`;
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
-        await writeContractAsync({
+        resolveTxHash = await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
           dataSuffix: BUILDER_DATA_SUFFIX,
@@ -142,6 +143,7 @@ export default function AdminDisputesPage() {
           sellerAwardUsdc: sellerGross,
           buyerRefundUsdc: buyerRefund,
           resolutionNotes,
+          txHash: resolveTxHash,
         });
       } catch (err) {
         console.warn('API resolve note:', err);

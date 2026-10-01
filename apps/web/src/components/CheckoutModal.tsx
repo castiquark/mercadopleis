@@ -162,6 +162,7 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
           contractOrderId: realContractOrderId,
           txHashFunding: fundTx,
           buyerWallet: address,
+          chainId: activeChainId,
         });
       } catch (dbErr) {
         console.warn('[Escrow] Backend registration notice (funds are safe on-chain):', dbErr);

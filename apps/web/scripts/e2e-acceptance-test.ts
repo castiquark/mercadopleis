@@ -9,6 +9,7 @@ import {
 } from 'viem';
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
 import { MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
+import { Attribution } from 'ox/erc8021';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -28,7 +29,9 @@ const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org';
 const ESCROW_ADDRESS = (process.env.MARKETPLACE_ESCROW_ADDRESS || '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48') as `0x${string}`;
 const USDC_ADDRESS = (process.env.NEXT_PUBLIC_USDC_ADDRESS || '0x6Fa1279f6c760fA993B7f9aC75de5a141d7D2D8A') as `0x${string}`;
 const DEPLOYER_KEY = process.env.DEPLOYER_PRIVATE_KEY as `0x${string}`;
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = process.env.API_BASE || 'http://localhost:3000/api';
+// Base Builder Code (ERC-8021) suffix expected on escrow transactions
+const BUILDER_DATA_SUFFIX = Attribution.toDataSuffix({ codes: ['bc_dmphihka'] });
 
 const MockUsdcAbi = [
   parseAbiItem('function mint(address to, uint256 amount) external'),
@@ -62,7 +65,7 @@ async function main() {
   const deployerBalance = await publicClient.getBalance({ address: deployerAccount.address });
   console.log(`[Deployer] ${deployerAccount.address} | Balance: ${formatEther(deployerBalance)} ETH\n`);
 
-  if (deployerBalance < parseEther('0.001')) {
+  if (deployerBalance < parseEther('0.00008')) {
     throw new Error('Deployer wallet does not have enough Base Sepolia ETH to fund test wallets.');
   }
 
@@ -90,17 +93,17 @@ async function main() {
   console.log('--- 2. Funding Wallets with Base Sepolia ETH for Gas ---');
   const fundSellerTx = await deployerClient.sendTransaction({
     to: sellerAccount.address,
-    value: parseEther('0.0004'),
+    value: parseEther('0.00002'),
   });
   await publicClient.waitForTransactionReceipt({ hash: fundSellerTx });
-  console.log(`  ✓ Funded Seller: 0.0004 ETH (Tx: ${fundSellerTx})`);
+  console.log(`  ✓ Funded Seller: 0.00002 ETH (Tx: ${fundSellerTx})`);
 
   const fundBuyerTx = await deployerClient.sendTransaction({
     to: buyerAccount.address,
-    value: parseEther('0.0006'),
+    value: parseEther('0.00004'),
   });
   await publicClient.waitForTransactionReceipt({ hash: fundBuyerTx });
-  console.log(`  ✓ Funded Buyer:  0.0006 ETH (Tx: ${fundBuyerTx})`);
+  console.log(`  ✓ Funded Buyer:  0.00004 ETH (Tx: ${fundBuyerTx})`);
 
   // Wait for RPC node propagation
   await sleep(3000);
@@ -133,7 +136,19 @@ async function main() {
       throw new Error(`Failed to get nonce for ${account.address}: ${err}`);
     }
     const { nonce } = await nonceRes.json();
-    const message = `Sign in to mercadopleis with your Ethereum account:\nAddress: ${account.address}\nNonce: ${nonce}`;
+    // Strict EIP-4361 (SIWE): domain/URI must match the API host, version 1
+    const apiUrlObj = new URL(API_BASE);
+    const statement = 'Iniciar sesión en mercadopleis con tu wallet criptográfica.';
+    const message = `${apiUrlObj.host} wants you to sign in with your Ethereum account:
+${account.address}
+
+${statement}
+
+URI: ${apiUrlObj.origin}
+Version: 1
+Chain ID: 84532
+Nonce: ${nonce}
+Issued At: ${new Date().toISOString()}`;
     const signature = await account.signMessage({ message });
 
     const verifyRes = await fetch(`${API_BASE}/auth/verify`, {
@@ -206,8 +221,14 @@ async function main() {
     abi: MarketplaceEscrowAbi,
     functionName: 'createAndFundOrder',
     args: [sellerAccount.address, USDC_ADDRESS, orderPriceWei, deliveryDays],
+    dataSuffix: BUILDER_DATA_SUFFIX,
   });
   const fundReceipt = await publicClient.waitForTransactionReceipt({ hash: fundTx });
+  const fundTxData = await publicClient.getTransaction({ hash: fundTx });
+  if (!fundTxData.input.endsWith(BUILDER_DATA_SUFFIX.slice(2))) {
+    throw new Error('Builder Code (ERC-8021) suffix missing from funding transaction calldata');
+  }
+  console.log('  ✓ Builder Code suffix present in funding calldata');
   console.log(`  ✓ Order Funded on Base Sepolia!`);
   console.log(`    BaseScan Tx: https://sepolia.basescan.org/tx/${fundTx}`);
 
@@ -235,6 +256,7 @@ async function main() {
     body: JSON.stringify({
       contractOrderId: onChainOrderId,
       serviceId: createdService.id,
+      chainId: 84532,
       sellerAddress: sellerAccount.address,
       grossAmountUsdc: 100.0,
       deliveryDays: 3,
@@ -258,6 +280,7 @@ async function main() {
 
   const uploadRes = await fetch(`${API_BASE}/upload`, {
     method: 'POST',
+    headers: { Authorization: `Bearer ${sellerToken}` },
     body: formData,
   });
   if (!uploadRes.ok) {
@@ -292,6 +315,7 @@ async function main() {
     },
     body: JSON.stringify({
       status: 'DELIVERED',
+      txHash: deliveryTx,
       onChainOrderId,
       deliverableUrl: uploadData.url,
       deliverableHash: uploadData.hash,
