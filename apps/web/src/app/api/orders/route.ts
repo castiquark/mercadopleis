@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, orders, services, users } from '@mercadopleis/database';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { calculateOrderAmounts, MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
 
     // Check if this contractOrderId is already registered in DB
     const existingOrder = await db.query.orders.findFirst({
-      where: eq(orders.contractOrderId, verification.orderId),
+      where: and(eq(orders.contractOrderId, verification.orderId), eq(orders.chainId, verification.chainId)),
     });
 
     if (existingOrder) {

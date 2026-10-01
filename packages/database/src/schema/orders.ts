@@ -1,10 +1,10 @@
-import { pgTable, uuid, varchar, text, numeric, integer, bigint, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uniqueIndex, uuid, varchar, text, numeric, integer, bigint, timestamp } from 'drizzle-orm/pg-core';
 import { users } from './users';
 import { services } from './services';
 
 export const orders = pgTable('orders', {
   id: uuid('id').primaryKey().defaultRandom(),
-  contractOrderId: bigint('contract_order_id', { mode: 'number' }).unique(),
+  contractOrderId: bigint('contract_order_id', { mode: 'number' }),
   serviceId: uuid('service_id').references(() => services.id).notNull(),
   buyerId: uuid('buyer_id').references(() => users.id).notNull(),
   sellerId: uuid('seller_id').references(() => users.id).notNull(),
@@ -24,4 +24,7 @@ export const orders = pgTable('orders', {
   txHashRelease: varchar('tx_hash_release', { length: 66 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  // Contract order ids are only unique per chain/escrow deployment.
+  uniqueIndex('orders_chain_contract_order_unique').on(table.chainId, table.contractOrderId),
+]);

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createPublicClient, http, parseAbiItem, formatUnits } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { db, orders, disputes, blockchainTransactions, users, services } from '@mercadopleis/database';
-import { eq, desc } from 'drizzle-orm';
+import { and, eq, desc } from 'drizzle-orm';
 import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 
@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
       const deadline = Number((log.args as any).deadline);
 
       let existing = await db.query.orders.findFirst({
-        where: eq(orders.contractOrderId, orderId),
+        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId)),
       });
 
       if (!existing && buyerAddr && sellerAddr) {
@@ -230,7 +230,7 @@ export async function GET(request: NextRequest) {
       const deliveryHash = (log.args as any).deliveryHash;
       const autoReleaseDeadline = Number((log.args as any).autoReleaseTime);
       const existing = await db.query.orders.findFirst({
-        where: eq(orders.contractOrderId, orderId),
+        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId)),
       });
       if (existing) {
         await db
@@ -253,7 +253,7 @@ export async function GET(request: NextRequest) {
     for (const log of releaseLogs) {
       const orderId = Number((log.args as any).orderId);
       const existing = await db.query.orders.findFirst({
-        where: eq(orders.contractOrderId, orderId),
+        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId)),
       });
       if (existing) {
         await db
@@ -276,7 +276,7 @@ export async function GET(request: NextRequest) {
     for (const log of refundLogs) {
       const orderId = Number((log.args as any).orderId);
       const existing = await db.query.orders.findFirst({
-        where: eq(orders.contractOrderId, orderId),
+        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId)),
       });
       if (existing) {
         await db
@@ -301,7 +301,7 @@ export async function GET(request: NextRequest) {
       const openedByWallet = ((log.args as any).openedBy as string).toLowerCase();
 
       const existing = await db.query.orders.findFirst({
-        where: eq(orders.contractOrderId, orderId),
+        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId)),
       });
 
       if (existing) {
@@ -354,7 +354,7 @@ export async function GET(request: NextRequest) {
       const buyerRefund = (log.args as any).buyerRefund as bigint;
 
       const existing = await db.query.orders.findFirst({
-        where: eq(orders.contractOrderId, orderId),
+        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId)),
       });
 
       if (existing) {
