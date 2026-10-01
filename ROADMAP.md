@@ -1,8 +1,8 @@
 # mercadopleis — Roadmap de Producto y Arquitectura
 
 **Documento:** Roadmap Técnico y Estratégico Integrado — *Outsourcing Layer for the AI Economy*  
-**Versión:** 2.2  
-**Fecha:** 30 de Septiembre de 2026  
+**Versión:** 2.3  
+**Fecha:** 1 de Octubre de 2026  
 **Estado:** Activo / En Ejecución  
 **Propuesta de Valor:**  
 > **The service marketplace for AI agents and humans.**  
@@ -68,7 +68,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 
 ---
 
-## 📌 Estado Actual del Proyecto (Sprints 0 a 7 — Completados)
+## 📌 Estado Actual del Proyecto (Sprints 0 a 8 — Completados)
 
 | Módulo / Sprint | Alcance Implementado | Estado |
 |---|---|---|
@@ -80,6 +80,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 | **Sprint 5: Arbitraje & Reviews** | Panel de moderación para rol `arbitrator` (`/admin`), resolución de disputas, sistema de reseñas auténticas con estrellas (1 a 5) | ✅ Completado |
 | **Sprint 6: Mainnet, Agent Surface & Open Source Readiness** | Despliegue en Base Mainnet (`0x9E5b...`), USDC nativo Circle, superficie agentic (`/llms.txt`, `/llms-full.txt`, `/agents.txt`), API `/api/services` con filtro por `capability`, catálogo semilla ($10–$35 USDC) y activos de código abierto (`README.md`, `LICENSE` Apache-2.0, `SECURITY.md`, `CONTRIBUTING.md`, auditoría de secretos limpia) | ✅ Completado |
 | **Sprint 7: Endurecimiento Criptográfico, Indexador Resistente a Fallos & Blindaje Pre-Mainnet** | Eliminación de mocks/hashes demo y wallets fallback; verificación on-chain de recibos vinculada a `chainId` de la orden (`FUNDED`, `DELIVERED`, `RELEASED`, `DISPUTED`, `RESOLVED`); inmutabilidad estricta de `contractOrderId` y bloqueo de transiciones arbitrarias en `PATCH /api/orders/[id]` (estados financieros 100% on-chain); cursor persistente en indexador `/api/sync` y reconciliación automática de `OrderFunded` huérfanos; SIWE estricto (`version: 1`, `domain`, `uri`) con consumo atómico de nonces en SQL (`UPDATE ... RETURNING`); reseñas con SIWE; filtros SQL y subidas protegidas (<25 MB); enlaces dinámicos a BaseScan Mainnet/Sepolia en la UI. | ✅ Completado |
+| **Sprint 8: Pruebas Automatizadas, CI, Servidor MCP & UX Móvil** | 50 pruebas unitarias (Vitest) sobre reglas SIWE, política de secretos JWT con cierre seguro, expiración y reutilización de nonces, matemática de comisiones frente a la aritmética del contrato y guardas contra desajustes con el contrato (enum de estados, ABI, dirección del escrow); CI en GitHub Actions (tipado, pruebas, build web y `forge test`); scripts e2e en Base Sepolia para el flujo completo y para disputas con arbitraje 60/40; servidor MCP oficial `@mercadopleis/mcp-server` (búsqueda, comparación, preparación de órdenes sin firmar, lectura on-chain de estado y entrega); Builder Code de Base (ERC-8021) en las transacciones del escrow; unicidad de `contractOrderId` por cadena; verificación de firma antes de consumir el nonce y secreto JWT obligatorio en producción; autenticación obligatoria en `GET /api/orders/my`; auditoría responsive en 320–1280 px (header móvil, paneles con URLs largas, objetivos táctiles de 36 px o más) y bloqueo de acciones on-chain cuando la wallet está en una red distinta a la de la orden. | ✅ Completado |
 
 ---
 
@@ -152,7 +153,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 
 ### 🎯 Fase 2: Tracción Semilla & Agent Economy Wedge (Semanas 1 a 4)
 
-**Objetivo:** Activar las primeras transacciones reales adquiriendo clientes humanos y desarrolladores de agentes de IA, ampliando el catálogo semilla, publicando un servidor MCP oficial (`@mercadopleis/mcp-server`) y manteniendo el protocolo abierto bajo Apache-2.0.
+**Objetivo:** Activar las primeras transacciones reales adquiriendo clientes humanos y desarrolladores de agentes de IA, ampliando el catálogo semilla y manteniendo el protocolo abierto bajo Apache-2.0. El servidor MCP oficial (`@mercadopleis/mcp-server`) ya está implementado en `packages/mcp-server`.
 
 _El detalle operativo de esta fase se mantiene fuera del repositorio público._
 

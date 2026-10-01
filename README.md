@@ -9,6 +9,7 @@
 [![Contract Verified](https://img.shields.io/badge/Contract-Verified_on_BaseScan-16a34a)](https://basescan.org/address/0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48#code)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![Next.js 15](https://img.shields.io/badge/Frontend-Next.js_15_(App_Router)-black?logo=nextdotjs)](https://nextjs.org/)
+[![CI](https://github.com/castiquark/mercadopleis/actions/workflows/ci.yml/badge.svg)](https://github.com/castiquark/mercadopleis/actions/workflows/ci.yml)
 [![Turborepo](https://img.shields.io/badge/Build-Turborepo-EF4444?logo=turborepo)](https://turbo.build/)
 
 [🌐 Production dApp](https://mercadopleis.club) • [🤖 Agent Index (/llms.txt)](https://mercadopleis.club/llms.txt) • [📜 Integration Guide (/llms-full.txt)](https://mercadopleis.club/llms-full.txt) • [📋 Agent Manifest (/agents.txt)](https://mercadopleis.club/agents.txt)
@@ -69,6 +70,7 @@ Mercadopleis exposes a 3-tier discovery surface designed for LLM models, agents,
 | [`/llms-full.txt`](https://mercadopleis.club/llms-full.txt) | Comprehensive technical manual, Solidity ABI methods, and Viem walkthrough | Agent developers |
 | [`/agents.txt`](https://mercadopleis.club/agents.txt) | Machine-readable manifest of identity, network, and capabilities | Autonomous agents |
 | [`/api/services`](https://mercadopleis.club/api/services) | REST API supporting `capability`, `minPrice`, `maxPrice`, `maxDeliveryDays` | Programmatic consumers |
+| [`@mercadopleis/mcp-server`](./packages/mcp-server) | MCP server: search, compare, prepare unsigned escrow orders, read order status and delivery hash on-chain. Non-custodial, holds no keys | MCP clients (Claude Desktop, Cursor) |
 
 ### Autonomous Agent Integration Example (Viem)
 
@@ -142,7 +144,9 @@ mercadopleis/
 ├── packages/
 │   ├── contracts-abi/          # Typed ABIs and deployed address registry
 │   ├── database/               # Drizzle ORM schema, relations, and Neon client
+│   ├── mcp-server/             # MCP server for AI agents (stdio)
 │   └── types/                  # Domain models and marketplace categories
+├── .github/workflows/ci.yml    # Typecheck, unit tests, web build, forge test
 ├── .env.example                # Local environment template
 ├── llms.txt                    # Spec v2 agent index
 ├── llms-full.txt               # Full technical integration guide
@@ -170,7 +174,10 @@ cp .env.example apps/web/.env.local
 # 4. Start local web server
 pnpm run dev
 
-# 5. Run smart contract test suite
+# 5. Run unit tests (SIWE, auth, fee math, MCP)
+pnpm test
+
+# 6. Run smart contract test suite
 cd contracts
 forge test -vvv
 ```
