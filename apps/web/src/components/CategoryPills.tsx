@@ -36,11 +36,12 @@ interface CategoryPillsProps {
 export function CategoryPills({ selectedCategory, onSelectCategory }: CategoryPillsProps) {
   const { language, t } = useLanguage();
 
+  // Single scrolling row on phones (10+ pills stacked would fill the whole screen); wraps from sm up.
   return (
-    <div className="flex flex-wrap items-center gap-2 py-4">
+    <div className="-mx-4 flex flex-nowrap items-center gap-2 overflow-x-auto px-4 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
       <button
         onClick={() => onSelectCategory(null)}
-        className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+        className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${
           selectedCategory === null
             ? 'bg-primary text-white shadow-md shadow-primary/25'
             : 'border border-border bg-surface text-slate-300 hover:border-slate-600 hover:text-white'
@@ -59,7 +60,7 @@ export function CategoryPills({ selectedCategory, onSelectCategory }: CategoryPi
           <button
             key={cat.id}
             onClick={() => onSelectCategory(isSelected ? null : cat.id)}
-            className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+            className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${
               isSelected
                 ? 'bg-primary text-white shadow-md shadow-primary/25'
                 : 'border border-border bg-surface text-slate-300 hover:border-slate-600 hover:text-white'

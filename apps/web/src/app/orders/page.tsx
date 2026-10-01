@@ -220,9 +220,23 @@ export default function OrdersDashboardPage() {
 
   const filteredOrders = orders.filter((o) => o.role === activeTab);
 
+  // The escrow address is the same on every chain, so acting on an order while the wallet is on another
+  // network would hit a different order with the same id. Refuse and tell the user which network to use.
+  const assertOrderChain = (order: { chainId?: number }) => {
+    if (order.chainId && order.chainId !== activeChainId) {
+      const name = order.chainId === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID ? 'Base Sepolia' : 'Base Mainnet';
+      throw new Error(
+        language === 'en'
+          ? `This order lives on ${name}. Switch your wallet to ${name} and try again.`
+          : `Esta orden está en ${name}. Cambia tu wallet a ${name} e inténtalo de nuevo.`
+      );
+    }
+  };
+
   // Buyer Action: Approve delivery and release funds
   const handleApproveDelivery = async (order: MockOrder) => {
     try {
+      assertOrderChain(order);
       setIsProcessing(true);
       setActionNotice(`Aprobando entrega de Orden #${order.contractOrderId}...`);
 
@@ -277,6 +291,7 @@ export default function OrdersDashboardPage() {
     if (!activeDisputeModalOrder || !disputeReason.trim()) return;
 
     try {
+      assertOrderChain(activeDisputeModalOrder);
       setIsProcessing(true);
       setActionNotice(`Abriendo disputa formal para Orden #${activeDisputeModalOrder.contractOrderId}...`);
 
@@ -339,6 +354,7 @@ export default function OrdersDashboardPage() {
   // Buyer Action: Claim timeout refund
   const handleClaimRefund = async (order: MockOrder) => {
     try {
+      assertOrderChain(order);
       setIsProcessing(true);
       setActionNotice(`Reclamando reembolso por timeout para Orden #${order.contractOrderId}...`);
 
@@ -436,6 +452,7 @@ export default function OrdersDashboardPage() {
     if (!activeDeliveryModalOrder || !deliveryInputUrl) return;
 
     try {
+      assertOrderChain(activeDeliveryModalOrder);
       setIsProcessing(true);
 
       let finalHash = deliveryHash;
@@ -640,7 +657,7 @@ export default function OrdersDashboardPage() {
                         href={order.deliveryUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1 font-mono text-primary-light hover:underline"
+                        className="inline-flex max-w-full items-start gap-1 break-all font-mono text-primary-light hover:underline"
                       >
                         {order.deliveryUrl}
                         <ExternalLink className="h-3 w-3" />
@@ -801,13 +818,13 @@ export default function OrdersDashboardPage() {
 
                     {order.role === 'buyer' && (
                       (reviewedOrders[order.id] || order.review) ? (
-                        <div className="flex flex-col items-end gap-1">
+                        <div className="flex min-w-0 max-w-full flex-col items-end gap-1">
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
                             <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                             {t('serviceRated')} ({reviewedOrders[order.id] || order.review?.rating || 5} / 5 ★)
                           </span>
                           {(order.review?.comment || (reviewedOrders[order.id] && reviewComment)) && (
-                            <span className="text-[11px] text-slate-400 italic max-w-xs text-right truncate">
+                            <span className="block max-w-full text-[11px] text-slate-400 italic sm:max-w-xs text-right truncate">
                               "{order.review?.comment || reviewComment}"
                             </span>
                           )}
@@ -828,13 +845,13 @@ export default function OrdersDashboardPage() {
                     )}
 
                     {order.role === 'seller' && (reviewedOrders[order.id] || order.review) && (
-                      <div className="flex flex-col items-end gap-1">
+                      <div className="flex min-w-0 max-w-full flex-col items-end gap-1">
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
                           <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                           {t('receivedReview')}: {order.review?.rating || reviewedOrders[order.id] || 5} / 5 ★
                         </span>
                         {order.review?.comment && (
-                          <span className="text-[11px] text-slate-400 italic max-w-xs text-right truncate">
+                          <span className="block max-w-full text-[11px] text-slate-400 italic sm:max-w-xs text-right truncate">
                             "{order.review.comment}"
                           </span>
                         )}
@@ -998,7 +1015,7 @@ export default function OrdersDashboardPage() {
                               Haz clic o arrastra aquí tu archivo de entrega
                             </p>
                             <p className="text-xs text-slate-400">
-                              Soporta .zip, .pdf, .sol, imágenes, videos o documentos (hasta 50MB)
+                              Soporta .zip, .pdf, .sol, imágenes, videos o documentos (hasta 25MB)
                             </p>
                             <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-purple-300">
                               ⚡ Alojado en Neon Object Storage (AWS S3)
@@ -1095,7 +1112,7 @@ export default function OrdersDashboardPage() {
                   <ShieldCheck className="h-4 w-4 text-accent" /> Garantía de Escrow
                 </p>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Al confirmar, el contrato pasará a estado <strong>DELIVERED</strong> con el hash inmutable registrado en Base Sepolia. El comprador tendrá <strong>5 días</strong> para validar la entrega antes del auto-release de los fondos.
+                  Al confirmar, el contrato pasará a estado <strong>DELIVERED</strong> con el hash inmutable registrado en {(activeDeliveryModalOrder.chainId ?? activeChainId) === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID ? 'Base Sepolia' : 'Base Mainnet'}. El comprador tendrá <strong>5 días</strong> para validar la entrega antes del auto-release de los fondos.
                 </p>
               </div>
 

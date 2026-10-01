@@ -189,7 +189,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
     <div className="mt-6 border-t border-border/70 pt-6">
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Left Column: Milestone On-chain Timeline (5 cols) */}
-        <div className="lg:col-span-5 rounded-2xl border border-border/80 bg-surface-elevated/40 p-5 backdrop-blur-sm">
+        <div className="min-w-0 lg:col-span-5 rounded-2xl border border-border/80 bg-surface-elevated/40 p-5 backdrop-blur-sm">
           <div className="flex items-center gap-2 mb-4">
             <ShieldCheck className="h-4 w-4 text-accent" />
             <h4 className="text-sm font-bold text-white uppercase tracking-wider">
@@ -252,7 +252,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                         href={order.deliveryUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-0.5 flex items-center gap-1 text-[11px] text-cyan-300 hover:underline truncate"
+                        className="mt-0.5 flex min-w-0 items-center gap-1 text-[11px] text-cyan-300 hover:underline truncate"
                       >
                         <span className="truncate">{order.deliveryUrl}</span>
                         <ExternalLink className="h-3 w-3 shrink-0" />
@@ -360,7 +360,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
         </div>
 
         {/* Right Column: In-Order Communication Chat (7 cols) */}
-        <div className="lg:col-span-7 flex flex-col rounded-2xl border border-border/80 bg-surface-elevated/40 p-5 backdrop-blur-sm">
+        <div className="min-w-0 lg:col-span-7 flex flex-col rounded-2xl border border-border/80 bg-surface-elevated/40 p-5 backdrop-blur-sm">
           <div className="flex items-center justify-between border-b border-border/70 pb-3 mb-4">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-cyan-400" />

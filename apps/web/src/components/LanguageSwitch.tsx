@@ -9,11 +9,11 @@ export function LanguageSwitch() {
 
   return (
     <div className="inline-flex items-center rounded-lg border border-border bg-surface p-1 text-xs font-semibold">
-      <Globe className="h-3.5 w-3.5 text-slate-400 ml-1.5 mr-1" />
+      <Globe className="mr-1 ml-1.5 hidden h-3.5 w-3.5 text-slate-400 sm:block" />
       <button
         type="button"
         onClick={() => setLanguage('es')}
-        className={`rounded-md px-2 py-1 transition ${
+        className={`rounded-md px-2.5 py-1.5 transition sm:px-2 sm:py-1 ${
           language === 'es'
             ? 'bg-primary text-white shadow-sm font-bold'
             : 'text-slate-400 hover:text-white'
@@ -25,7 +25,7 @@ export function LanguageSwitch() {
       <button
         type="button"
         onClick={() => setLanguage('en')}
-        className={`rounded-md px-2 py-1 transition ${
+        className={`rounded-md px-2.5 py-1.5 transition sm:px-2 sm:py-1 ${
           language === 'en'
             ? 'bg-primary text-white shadow-sm font-bold'
             : 'text-slate-400 hover:text-white'

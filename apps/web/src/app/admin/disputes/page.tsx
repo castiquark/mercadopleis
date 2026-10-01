@@ -200,7 +200,7 @@ export default function AdminDisputesPage() {
           </div>
           <h1 className="mt-1 text-3xl font-extrabold text-white">Panel de Arbitraje y Disputas</h1>
           <p className="mt-1 text-sm text-slate-400">
-            Resolución justa y proporcional de conflictos entre compradores y prestadores en Base Sepolia.
+            Resolución justa y proporcional de conflictos entre compradores y prestadores en {isSepolia ? 'Base Sepolia' : 'Base Mainnet'}.
           </p>
         </div>
 
