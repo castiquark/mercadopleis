@@ -226,7 +226,7 @@ export default function OrdersDashboardPage() {
       setIsProcessing(true);
       setActionNotice(`Aprobando entrega de Orden #${order.contractOrderId}...`);
 
-      let txHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      let txHash: `0x${string}`;
 
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
         txHash = await writeContractAsync({
@@ -236,6 +236,8 @@ export default function OrdersDashboardPage() {
           functionName: 'approveDelivery',
           args: [BigInt(order.contractOrderId)],
         });
+      } else {
+        throw new Error(language === 'en' ? 'Connect your wallet to send this on-chain transaction.' : 'Conecta tu wallet para enviar esta transacción on-chain.');
       }
 
       // Sync with PostgreSQL API
@@ -286,6 +288,8 @@ export default function OrdersDashboardPage() {
           functionName: 'openDispute',
           args: [BigInt(activeDisputeModalOrder.contractOrderId)],
         });
+      } else {
+        throw new Error(language === 'en' ? 'Connect your wallet to send this on-chain transaction.' : 'Conecta tu wallet para enviar esta transacción on-chain.');
       }
 
       try {
@@ -343,6 +347,8 @@ export default function OrdersDashboardPage() {
           functionName: 'claimTimeoutRefund',
           args: [BigInt(order.contractOrderId)],
         });
+      } else {
+        throw new Error(language === 'en' ? 'Connect your wallet to send this on-chain transaction.' : 'Conecta tu wallet para enviar esta transacción on-chain.');
       }
 
       try {
@@ -438,7 +444,7 @@ export default function OrdersDashboardPage() {
         finalHash = '0x' + hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
       }
 
-      let txHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      let txHash: `0x${string}`;
 
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
         txHash = await writeContractAsync({
@@ -448,6 +454,8 @@ export default function OrdersDashboardPage() {
           functionName: 'submitDelivery',
           args: [BigInt(activeDeliveryModalOrder.contractOrderId), finalHash as `0x${string}`],
         });
+      } else {
+        throw new Error(language === 'en' ? 'Connect your wallet to send this on-chain transaction.' : 'Conecta tu wallet para enviar esta transacción on-chain.');
       }
 
       try {

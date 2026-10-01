@@ -132,6 +132,8 @@ export default function AdminDisputesPage() {
           functionName: 'resolveDispute',
           args: [BigInt(selectedDispute.contractOrderId), sellerRaw, buyerRaw],
         });
+      } else {
+        throw new Error('Conecta tu wallet para enviar esta transacción on-chain.');
       }
 
       // Backend API resolution
