@@ -216,7 +216,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                     href={`${explorerBaseUrl}/tx/${fundingTx}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-1.5 inline-flex items-center gap-1 font-mono text-[10px] text-cyan-400 hover:text-cyan-300"
+                    className="mt-0.5 inline-flex items-center gap-1 py-2 font-mono text-[10px] text-cyan-400 hover:text-cyan-300 sm:mt-1.5 sm:py-0"
                   >
                     <span>Tx: {fundingTx.slice(0, 10)}...{fundingTx.slice(-8)}</span>
                     <ExternalLink className="h-2.5 w-2.5" />
@@ -276,7 +276,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                     href={`${explorerBaseUrl}/tx/${deliveryTx}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-1.5 inline-flex items-center gap-1 font-mono text-[10px] text-cyan-400 hover:text-cyan-300"
+                    className="mt-0.5 inline-flex items-center gap-1 py-2 font-mono text-[10px] text-cyan-400 hover:text-cyan-300 sm:mt-1.5 sm:py-0"
                   >
                     <span>Tx: {deliveryTx.slice(0, 10)}...{deliveryTx.slice(-8)}</span>
                     <ExternalLink className="h-2.5 w-2.5" />
@@ -348,7 +348,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                     href={`${explorerBaseUrl}/tx/${releaseTx}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-1.5 inline-flex items-center gap-1 font-mono text-[10px] text-cyan-400 hover:text-cyan-300"
+                    className="mt-0.5 inline-flex items-center gap-1 py-2 font-mono text-[10px] text-cyan-400 hover:text-cyan-300 sm:mt-1.5 sm:py-0"
                   >
                     <span>Tx: {releaseTx.slice(0, 10)}...{releaseTx.slice(-8)}</span>
                     <ExternalLink className="h-2.5 w-2.5" />

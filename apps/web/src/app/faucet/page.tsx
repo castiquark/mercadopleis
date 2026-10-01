@@ -223,8 +223,9 @@ export default function FaucetPage() {
             <span className="truncate pr-2">{usdcAddress}</span>
             <button
               onClick={() => handleCopy(usdcAddress)}
-              className="text-slate-400 hover:text-white transition"
+              className="-m-2.5 p-2.5 text-slate-400 hover:text-white transition"
               title="Copiar dirección"
+              aria-label="Copiar dirección"
             >
               {copiedToken ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
             </button>
@@ -233,7 +234,7 @@ export default function FaucetPage() {
             href={`https://sepolia.basescan.org/address/${usdcAddress}#code`}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 inline-flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300"
+            className="mt-3 inline-flex min-h-10 items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 sm:min-h-0"
           >
             <span>Ver código en BaseScan</span>
             <ExternalLink className="h-3 w-3" />
@@ -253,8 +254,9 @@ export default function FaucetPage() {
             <span className="truncate pr-2">{escrowAddress}</span>
             <button
               onClick={() => handleCopy(escrowAddress)}
-              className="text-slate-400 hover:text-white transition"
+              className="-m-2.5 p-2.5 text-slate-400 hover:text-white transition"
               title="Copiar dirección"
+              aria-label="Copiar dirección"
             >
               <Copy className="h-4 w-4" />
             </button>
@@ -263,7 +265,7 @@ export default function FaucetPage() {
             href={`https://sepolia.basescan.org/address/${escrowAddress}#code`}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 inline-flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300"
+            className="mt-3 inline-flex min-h-10 items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 sm:min-h-0"
           >
             <span>Ver contrato en BaseScan</span>
             <ExternalLink className="h-3 w-3" />

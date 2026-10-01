@@ -550,7 +550,7 @@ export default function OrdersDashboardPage() {
                 setActionNotice(language === 'en' ? 'Local test orders cache cleared.' : 'Caché local de órdenes de prueba eliminada.');
               }
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-slate-400 transition hover:bg-surface-elevated hover:text-white"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2.5 text-xs font-semibold text-slate-400 transition hover:bg-surface-elevated hover:text-white sm:py-2"
             title="Limpiar datos temporales de prueba en tu navegador"
           >
             <Trash2 className="h-3.5 w-3.5 text-slate-400" />
@@ -784,7 +784,7 @@ export default function OrdersDashboardPage() {
                     <button
                       onClick={() => handleClaimRefund(order)}
                       disabled={isProcessing}
-                      className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white"
+                      className="rounded-lg border border-border px-3 py-2.5 text-xs font-semibold text-slate-400 hover:text-white sm:py-1.5"
                     >
                       Verificar Timeout
                     </button>
@@ -866,7 +866,7 @@ export default function OrdersDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition"
+                  className="inline-flex min-h-10 items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition sm:min-h-0"
                 >
                   <MessageSquare className="h-3.5 w-3.5" />
                   <span>

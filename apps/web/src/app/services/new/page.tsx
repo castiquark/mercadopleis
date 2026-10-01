@@ -104,7 +104,7 @@ export default function NewServicePage() {
       {/* Back navigation */}
       <Link
         href="/"
-        className="inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+        className="inline-flex min-h-10 items-center gap-2 text-sm text-slate-400 transition hover:text-white sm:min-h-0"
       >
         <ArrowLeft className="h-4 w-4" />
         <span>{language === 'en' ? 'Back to Catalog' : 'Volver al Catálogo'}</span>

@@ -79,7 +79,7 @@ export default function ProfilePage() {
       {/* Navigation */}
       <Link
         href="/"
-        className="inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+        className="inline-flex min-h-10 items-center gap-2 text-sm text-slate-400 transition hover:text-white sm:min-h-0"
       >
         <ArrowLeft className="h-4 w-4" />
         <span>Volver al Catálogo</span>
@@ -105,12 +105,13 @@ export default function ProfilePage() {
               {/* Wallet address & copy */}
               <div className="mt-1.5 flex items-center gap-2 text-xs font-mono text-slate-400">
                 <span>
-                  {address ? `${address.slice(0, 10)}...${address.slice(-8)}` : '0x7099...79C8'}
+                  {address ? `${address.slice(0, 10)}...${address.slice(-8)}` : '—'}
                 </span>
                 <button
                   onClick={copyAddress}
-                  className="rounded p-1 text-slate-400 hover:bg-surface-elevated hover:text-white"
+                  className="-m-2 rounded-lg p-3 text-slate-400 hover:bg-surface-elevated hover:text-white"
                   title="Copiar dirección"
+                  aria-label="Copiar dirección"
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </button>

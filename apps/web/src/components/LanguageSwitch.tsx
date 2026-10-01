@@ -13,7 +13,7 @@ export function LanguageSwitch() {
       <button
         type="button"
         onClick={() => setLanguage('es')}
-        className={`rounded-md px-2.5 py-1.5 transition sm:px-2 sm:py-1 ${
+        className={`rounded-md px-3 py-2.5 transition sm:px-2 sm:py-1 ${
           language === 'es'
             ? 'bg-primary text-white shadow-sm font-bold'
             : 'text-slate-400 hover:text-white'
@@ -25,7 +25,7 @@ export function LanguageSwitch() {
       <button
         type="button"
         onClick={() => setLanguage('en')}
-        className={`rounded-md px-2.5 py-1.5 transition sm:px-2 sm:py-1 ${
+        className={`rounded-md px-3 py-2.5 transition sm:px-2 sm:py-1 ${
           language === 'en'
             ? 'bg-primary text-white shadow-sm font-bold'
             : 'text-slate-400 hover:text-white'

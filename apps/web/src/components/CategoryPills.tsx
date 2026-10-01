@@ -41,7 +41,7 @@ export function CategoryPills({ selectedCategory, onSelectCategory }: CategoryPi
     <div className="-mx-4 flex flex-nowrap items-center gap-2 overflow-x-auto px-4 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
       <button
         onClick={() => onSelectCategory(null)}
-        className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${
+        className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium transition sm:py-2 ${
           selectedCategory === null
             ? 'bg-primary text-white shadow-md shadow-primary/25'
             : 'border border-border bg-surface text-slate-300 hover:border-slate-600 hover:text-white'
@@ -60,7 +60,7 @@ export function CategoryPills({ selectedCategory, onSelectCategory }: CategoryPi
           <button
             key={cat.id}
             onClick={() => onSelectCategory(isSelected ? null : cat.id)}
-            className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${
+            className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium transition sm:py-2 ${
               isSelected
                 ? 'bg-primary text-white shadow-md shadow-primary/25'
                 : 'border border-border bg-surface text-slate-300 hover:border-slate-600 hover:text-white'

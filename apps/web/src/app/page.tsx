@@ -188,11 +188,11 @@ export default function HomePage() {
         <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-border/80 bg-surface/80 p-3 sm:p-4 backdrop-blur-md">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             {/* Left: Mode Segmented Control */}
-            <div className="flex items-center gap-1 rounded-xl bg-background/80 p-1 border border-border">
+            <div className="grid grid-cols-3 gap-1 rounded-xl border border-border bg-background/80 p-1 sm:flex sm:items-center">
               <button
                 type="button"
                 onClick={() => setSelectedDeliveryType('all')}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-center text-xs font-semibold transition sm:px-3 sm:py-1.5 ${
                   selectedDeliveryType === 'all'
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -204,26 +204,26 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => setSelectedDeliveryType('digital')}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-center text-xs font-semibold transition sm:px-3 sm:py-1.5 ${
                   selectedDeliveryType === 'digital'
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Globe className="h-3.5 w-3.5 text-primary-light" />
+                <Globe className="hidden h-3.5 w-3.5 text-primary-light xs:block" />
                 <span>{t('modeDigital')}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setSelectedDeliveryType('in_person')}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-center text-xs font-semibold transition sm:px-3 sm:py-1.5 ${
                   selectedDeliveryType === 'in_person'
                     ? 'bg-cyan-500 text-white shadow-sm shadow-cyan-500/25'
                     : 'text-slate-400 hover:text-cyan-300'
                 }`}
               >
-                <MapPin className="h-3.5 w-3.5 text-cyan-400" />
+                <MapPin className="hidden h-3.5 w-3.5 text-cyan-400 xs:block" />
                 <span>{t('modeInPerson')}</span>
               </button>
             </div>
@@ -238,13 +238,13 @@ export default function HomePage() {
                 value={locationQuery}
                 onChange={(e) => setLocationQuery(e.target.value)}
                 placeholder={t('filterLocationPlaceholder')}
-                className="w-full rounded-xl border border-border bg-background/90 py-2 pl-9 pr-8 text-xs text-white placeholder-slate-500 transition focus:border-cyan-400 focus:outline-none"
+                className="w-full rounded-xl border border-border bg-background/90 py-2.5 pl-9 pr-9 text-base text-white placeholder-slate-500 placeholder:text-sm sm:placeholder:text-xs transition focus:border-cyan-400 focus:outline-none sm:py-2 sm:pr-8 sm:text-xs"
               />
               {locationQuery && (
                 <button
                   type="button"
                   onClick={() => setLocationQuery('')}
-                  className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400 hover:text-white"
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-white sm:px-0 sm:pr-2.5"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>

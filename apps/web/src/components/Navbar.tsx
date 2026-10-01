@@ -56,7 +56,7 @@ export function Navbar() {
 
           <Link
             href="/orders"
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-surface p-2.5 sm:px-3.5 sm:py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-surface p-3 sm:px-3.5 sm:py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white"
             title={t('myOrders')}
             aria-label={t('myOrders')}
           >
@@ -104,7 +104,7 @@ export function Navbar() {
               disabled={isLoading}
               aria-label={isLoading ? t('signing') : t('signSession')}
               title={t('signSession')}
-              className="inline-flex items-center gap-1 rounded-lg bg-primary/20 border border-primary/40 px-2.5 sm:px-3 py-2 text-[11px] sm:text-xs font-semibold text-primary-light transition hover:bg-primary/30 active:scale-95 animate-pulse"
+              className="inline-flex items-center gap-1 rounded-lg bg-primary/20 border border-primary/40 px-3 sm:px-3 py-2.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-primary-light transition hover:bg-primary/30 active:scale-95 animate-pulse"
             >
               <KeyRound className="h-3.5 w-3.5" />
               <span className="hidden xs:inline">{isLoading ? t('signing') : t('signSession')}</span>
