@@ -27,7 +27,7 @@
   ],
   "type": "module",
   "bin": {
-    "mercadopleis-mcp": "./dist/index.js"
+    "mercadopleis-mcp": "dist/index.js"
   },
   "main": "./dist/index.js",
   "files": [
