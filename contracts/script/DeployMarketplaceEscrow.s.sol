@@ -7,7 +7,6 @@ import {MarketplaceEscrow} from "../src/MarketplaceEscrow.sol";
 contract DeployMarketplaceEscrow is Script {
     // Base Sepolia Native USDC
     address public constant BASE_SEPOLIA_USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
-    uint256 public constant INITIAL_FEE_BPS = 300; // 3%
 
     function run() external returns (MarketplaceEscrow escrow) {
         uint256 deployerPrivateKey = vm.envOr("DEPLOYER_PRIVATE_KEY", uint256(0));
@@ -34,8 +33,7 @@ contract DeployMarketplaceEscrow is Script {
         escrow = new MarketplaceEscrow(
             deployer,
             feeRecipient,
-            arbitrator,
-            INITIAL_FEE_BPS
+            arbitrator
         );
 
         escrow.setAcceptedToken(usdc, true);

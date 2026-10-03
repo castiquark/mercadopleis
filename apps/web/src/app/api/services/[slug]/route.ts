@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, services } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
+import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -52,7 +53,7 @@ export async function GET(
         protocol: 'Mercadopleis Escrow Protocol v1',
         network: 'Base Mainnet',
         chainId: 8453,
-        escrowContract: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
+        escrowContract: ESCROW_ADDRESSES[8453],
         service,
       },
       { headers: CORS_HEADERS }

@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { concatHex, decodeFunctionData, encodeFunctionData, getAddress, parseUnits } from 'viem';
 import { MarketplaceEscrowAbi } from '../../contracts-abi/src/MarketplaceEscrowAbi';
-import { BUILDER_DATA_SUFFIX, ESCROW_ADDRESS, NETWORKS, ORDER_STATUS, erc20Abi, escrowAbi } from './config';
+import { BUILDER_DATA_SUFFIX, NETWORKS, ORDER_STATUS, erc20Abi, escrowAbi } from './config';
 
 const repoRoot = resolve(__dirname, '../../..');
 
@@ -39,10 +39,11 @@ describe('drift guards against the contract', () => {
     }
   });
 
-  it('the escrow address matches the one published in contracts-abi', async () => {
+  it('the escrow address of each network matches the registry in contracts-abi', async () => {
     const { ESCROW_ADDRESSES } = await import('../../contracts-abi/src/index');
-    expect(ESCROW_ADDRESSES[8453].toLowerCase()).toBe(ESCROW_ADDRESS.toLowerCase());
-    expect(ESCROW_ADDRESSES[84532].toLowerCase()).toBe(ESCROW_ADDRESS.toLowerCase());
+    for (const chainId of [8453, 84532]) {
+      expect(NETWORKS[chainId].escrow.toLowerCase()).toBe(ESCROW_ADDRESSES[chainId].toLowerCase());
+    }
   });
 
   it('uses the official USDC on Base Mainnet', () => {
@@ -57,7 +58,7 @@ describe('order calldata', () => {
     const seller = '0x9ddf9f930ff5b7064ffcee63738af7f6a31afb10';
     const fund = encodeFunctionData({ abi: escrowAbi, functionName: 'createAndFundOrder', args: [seller, NETWORKS[8453].usdc, amount, 2n] });
     expect(decodeFunctionData({ abi: escrowAbi, data: fund }).args).toEqual([getAddress(seller), NETWORKS[8453].usdc, amount, 2n]);
-    const approve = encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [ESCROW_ADDRESS, amount] });
-    expect(decodeFunctionData({ abi: erc20Abi, data: approve }).args).toEqual([ESCROW_ADDRESS, amount]);
+    const approve = encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [NETWORKS[8453].escrow, amount] });
+    expect(decodeFunctionData({ abi: erc20Abi, data: approve }).args).toEqual([NETWORKS[8453].escrow, amount]);
   });
 });

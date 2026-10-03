@@ -28,8 +28,9 @@ describe('legal content', () => {
     for (const lang of ['es', 'en'] as const) {
       const text = allText(TERMS[lang]);
       expect(text).toContain(LEGAL.escrowAddress);
-      expect(text).toContain(`${CONTRACT_CONFIG.INITIAL_FEE_BPS / 100}%`);
-      expect(text).toContain('10%');
+      expect(text).toContain(`${CONTRACT_CONFIG.FEE_BPS / 100}%`);
+      expect(text).not.toMatch(/10%|máximo/i); // the fee is fixed; no cap language
+      expect(text).toMatch(/nadie|nobody/i);
       expect(text).toContain('5 ');
       expect(text).toContain(LEGAL.contactEmail);
       expect(text).toContain(LEGAL.securityEmail);

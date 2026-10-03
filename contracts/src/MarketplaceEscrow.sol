@@ -13,13 +13,16 @@ import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step
  * @notice Non-custodial escrow contract for crypto service marketplace.
  *         Operates with single-milestone orders, auto-release timeout,
  *         timeout refund protections, and flexible dispute resolution.
+ * @dev    The protocol fee is a hard-coded constant (FEE_BPS = 3%). It is charged on the amount paid to
+ *         the seller when the escrow ends (approval, auto-release or arbitrated payout) and cannot be
+ *         changed by anyone, including the owner. A full refund to the buyer carries no fee.
  */
 contract MarketplaceEscrow is ReentrancyGuard, Pausable, Ownable2Step {
     using SafeERC20 for IERC20;
 
     // --- Constants ---
     uint256 public constant FEE_DENOMINATOR = 10_000;
-    uint256 public constant MAX_FEE_BPS = 1_000; // 10% hard cap in basis points
+    uint256 public constant FEE_BPS = 300; // 3% protocol fee, immutable and not configurable
     uint256 public constant AUTO_RELEASE_DURATION = 5 days; // 120 hours window for buyer review
 
     // --- Enums ---
@@ -46,7 +49,6 @@ contract MarketplaceEscrow is ReentrancyGuard, Pausable, Ownable2Step {
     }
 
     // --- State Variables ---
-    uint256 public feeBps;
     address public feeRecipient;
     address public arbitrator;
     uint256 public orderCount;
@@ -95,7 +97,6 @@ contract MarketplaceEscrow is ReentrancyGuard, Pausable, Ownable2Step {
         uint256 platformFee
     );
 
-    event FeeBpsUpdated(uint256 oldFeeBps, uint256 newFeeBps);
     event FeeRecipientUpdated(address oldRecipient, address newRecipient);
     event ArbitratorUpdated(address oldArbitrator, address newArbitrator);
     event TokenWhitelisted(address indexed token, bool allowed);
@@ -103,7 +104,6 @@ contract MarketplaceEscrow is ReentrancyGuard, Pausable, Ownable2Step {
     // --- Errors ---
     error InvalidAddress();
     error InvalidAmount();
-    error InvalidFee();
     error TokenNotAccepted();
     error InvalidDeadline();
     error OrderNotFound();
@@ -123,22 +123,23 @@ contract MarketplaceEscrow is ReentrancyGuard, Pausable, Ownable2Step {
      * @param initialOwner Address of contract administrator
      * @param _feeRecipient Address collecting protocol fees
      * @param _arbitrator Address authorized to resolve formal disputes
-     * @param _initialFeeBps Initial protocol fee in basis points (e.g. 300 = 3%)
      */
     constructor(
         address initialOwner,
         address _feeRecipient,
-        address _arbitrator,
-        uint256 _initialFeeBps
+        address _arbitrator
     ) Ownable(initialOwner) {
         if (initialOwner == address(0) || _feeRecipient == address(0) || _arbitrator == address(0)) {
             revert InvalidAddress();
         }
-        if (_initialFeeBps > MAX_FEE_BPS) revert InvalidFee();
 
         feeRecipient = _feeRecipient;
         arbitrator = _arbitrator;
-        feeBps = _initialFeeBps;
+    }
+
+    /// @notice Protocol fee in basis points. Always 300 (3%): kept as a function for integrators that read `feeBps()`.
+    function feeBps() external pure returns (uint256) {
+        return FEE_BPS;
     }
 
     // --- External / User Functions ---
@@ -303,7 +304,7 @@ contract MarketplaceEscrow is ReentrancyGuard, Pausable, Ownable2Step {
         uint256 sellerPayout = 0;
 
         if (sellerAmount > 0) {
-            fee = (sellerAmount * feeBps) / FEE_DENOMINATOR;
+            fee = (sellerAmount * FEE_BPS) / FEE_DENOMINATOR;
             sellerPayout = sellerAmount - fee;
         }
 
@@ -326,7 +327,7 @@ contract MarketplaceEscrow is ReentrancyGuard, Pausable, Ownable2Step {
         order.status = OrderStatus.Released;
 
         uint256 total = order.amount;
-        uint256 fee = (total * feeBps) / FEE_DENOMINATOR;
+        uint256 fee = (total * FEE_BPS) / FEE_DENOMINATOR;
         uint256 sellerPayout = total - fee;
 
         emit OrderReleased(orderId, sellerPayout, fee);
@@ -340,13 +341,6 @@ contract MarketplaceEscrow is ReentrancyGuard, Pausable, Ownable2Step {
     }
 
     // --- Admin / Configuration Functions ---
-
-    function setFeeBps(uint256 newFeeBps) external onlyOwner {
-        if (newFeeBps > MAX_FEE_BPS) revert InvalidFee();
-        uint256 oldFeeBps = feeBps;
-        feeBps = newFeeBps;
-        emit FeeBpsUpdated(oldFeeBps, newFeeBps);
-    }
 
     function setFeeRecipient(address newRecipient) external onlyOwner {
         if (newRecipient == address(0)) revert InvalidAddress();

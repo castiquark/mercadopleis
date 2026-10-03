@@ -71,11 +71,8 @@ export async function GET(request: NextRequest) {
       ? (process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org')
       : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
 
-    const escrowAddress = (
-      process.env.MARKETPLACE_ESCROW_ADDRESS ||
-      ESCROW_ADDRESSES[targetChainId] ||
-      '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48'
-    ) as `0x${string}`;
+    // Per-chain registry only: a single env var cannot be right for both networks.
+    const escrowAddress = ESCROW_ADDRESSES[targetChainId];
 
     const client = createPublicClient({
       chain: targetChain,

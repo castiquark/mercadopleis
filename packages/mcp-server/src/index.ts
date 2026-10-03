@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { concatHex, createPublicClient, encodeFunctionData, http, isAddress, parseUnits } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { fetchService, fetchServices, type Service } from './api.js';
-import { BUILDER_DATA_SUFFIX, CHAIN_ID, ESCROW_ADDRESS, NETWORKS, ORDER_STATUS, erc20Abi, escrowAbi } from './config.js';
+import { BUILDER_DATA_SUFFIX, CHAIN_ID, NETWORKS, ORDER_STATUS, erc20Abi, escrowAbi } from './config.js';
 
 const server = new McpServer({ name: 'mercadopleis', version: '0.1.0' });
 
@@ -38,7 +38,7 @@ function publicClient(chainId: number) {
 
 async function readOrder(orderId: number, chainId: number) {
   return publicClient(chainId).readContract({
-    address: ESCROW_ADDRESS,
+    address: NETWORKS[chainId].escrow,
     abi: escrowAbi,
     functionName: 'orders',
     args: [BigInt(orderId)],
@@ -119,7 +119,7 @@ server.registerTool(
     const net = NETWORKS[CHAIN_ID];
     const price = service.price?.amount ?? service.priceUsdc;
     const amount = parseUnits(price, 6);
-    const approveData = encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [ESCROW_ADDRESS, amount] });
+    const approveData = encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [net.escrow, amount] });
     const fundData = encodeFunctionData({
       abi: escrowAbi,
       functionName: 'createAndFundOrder',
@@ -139,7 +139,7 @@ server.registerTool(
           step: 2,
           description: 'Create and fund the escrow order (emits OrderFunded with the orderId)',
           from: buyerWallet,
-          to: ESCROW_ADDRESS,
+          to: net.escrow,
           value: '0',
           data: concatHex([fundData, BUILDER_DATA_SUFFIX]),
         },
@@ -171,7 +171,7 @@ server.registerTool(
       deliveryDeadline: ts(deadline),
       autoReleaseTime: ts(autoReleaseTime),
       deliveryHash: deliveryHash === ZERO_HASH ? null : deliveryHash,
-      explorer: `${NETWORKS[id].explorer}/address/${ESCROW_ADDRESS}`,
+      explorer: `${NETWORKS[id].explorer}/address/${NETWORKS[id].escrow}`,
     });
   },
 );

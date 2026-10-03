@@ -72,7 +72,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 
 | Módulo / Sprint | Alcance Implementado | Estado |
 |---|---|---|
-| **Sprint 0: Diseño y Economía** | Modelo de comisión (3.0% deducido del vendedor, 0% recargo al comprador), hard cap 10%, auto-release (5 días), reglas de arbitraje | ✅ Completado |
+| **Sprint 0: Diseño y Economía** | Modelo de comisión (3.0% deducido del vendedor, 0% recargo al comprador), auto-release (5 días), reglas de arbitraje | ✅ Completado |
 | **Sprint 1: Catálogo y Frontend** | Catálogo digital y servicios físicos/presenciales/híbridos, filtros de ubicación geográfica, stack Next.js 15 + Tailwind | ✅ Completado |
 | **Sprint 2: Identidad Web3** | Conexión multicartera con RainbowKit / Wagmi, autenticación SIWE (Sign-In with Ethereum) con fallback por wallet address | ✅ Completado |
 | **Sprint 3: Smart Contract Escrow** | `MarketplaceEscrow.sol` verificado con Foundry (invariantes y fuzzing aprobados), deployed en Base Sepolia y Mainnet | ✅ Completado |
@@ -230,7 +230,7 @@ _El detalle operativo de esta fase se mantiene fuera del repositorio público._
 
 ## 📈 Resumen de Parámetros Económicos Clave
 
-* **Comisión de Protocolo:** 3.0% (300 basis points) deducido del cobro del vendedor al liberarse los fondos.
+* **Comisión de Protocolo:** 3.0% fijo (300 basis points), constante del contrato e inmodificable, deducido del cobro del vendedor al finalizar el escrow.
 * **Recargo al Comprador:** 0.0% (el comprador paga exactamente el precio listado en USDC).
 * **Costos de Red (Gas):** ~<$0.01 USD por transacción en Base L2.
 * **Ventana de Inspección:** 5 días garantizados tras la entrega antes de auto-release.

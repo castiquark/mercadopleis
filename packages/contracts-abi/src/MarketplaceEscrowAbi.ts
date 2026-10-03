@@ -16,11 +16,6 @@ export const MarketplaceEscrowAbi = [
         "name": "_arbitrator",
         "type": "address",
         "internalType": "address"
-      },
-      {
-        "name": "_initialFeeBps",
-        "type": "uint256",
-        "internalType": "uint256"
       }
     ],
     "stateMutability": "nonpayable"
@@ -40,7 +35,7 @@ export const MarketplaceEscrowAbi = [
   },
   {
     "type": "function",
-    "name": "FEE_DENOMINATOR",
+    "name": "FEE_BPS",
     "inputs": [],
     "outputs": [
       {
@@ -53,7 +48,7 @@ export const MarketplaceEscrowAbi = [
   },
   {
     "type": "function",
-    "name": "MAX_FEE_BPS",
+    "name": "FEE_DENOMINATOR",
     "inputs": [],
     "outputs": [
       {
@@ -187,7 +182,7 @@ export const MarketplaceEscrowAbi = [
         "internalType": "uint256"
       }
     ],
-    "stateMutability": "view"
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -391,19 +386,6 @@ export const MarketplaceEscrowAbi = [
   },
   {
     "type": "function",
-    "name": "setFeeBps",
-    "inputs": [
-      {
-        "name": "newFeeBps",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "setFeeRecipient",
     "inputs": [
       {
@@ -546,25 +528,6 @@ export const MarketplaceEscrowAbi = [
       },
       {
         "name": "platformFee",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "FeeBpsUpdated",
-    "inputs": [
-      {
-        "name": "oldFeeBps",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "newFeeBps",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -805,11 +768,6 @@ export const MarketplaceEscrowAbi = [
   {
     "type": "error",
     "name": "InvalidDeadline",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidFee",
     "inputs": []
   },
   {

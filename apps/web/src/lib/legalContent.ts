@@ -1,12 +1,14 @@
 // Legal texts (Terms of Service and Privacy Policy) in Spanish and English.
 // Operator-specific facts live in LEGAL so they can be completed without touching the wording.
 
+import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
+
 export const LEGAL = {
   siteName: 'mercadopleis',
   domain: 'mercadopleis.club',
   contactEmail: 'hello@mercadopleis.club',
   securityEmail: 'security@mercadopleis.club',
-  escrowAddress: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
+  escrowAddress: ESCROW_ADDRESSES[8453] as string,
   updatedEs: '2 de octubre de 2026',
   updatedEn: 'October 2, 2026',
   /** Set to the governing-law / courts clause once the operator decides it, e.g. { es: '...', en: '...' }. */
@@ -53,14 +55,14 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
         paragraphs: [
           `El comprador deposita USDC en el contrato de escrow (${L.escrowAddress}). Mercadopleis no custodia fondos: las reglas las ejecuta el contrato.`,
           'El vendedor registra la entrega con el hash SHA-256 del entregable. El comprador dispone de 5 días desde la entrega para aprobarla o abrir una disputa. Si no hay acción, el vendedor puede reclamar la liberación automática. Si el vendedor no entrega dentro del plazo acordado, el comprador puede reclamar el reembolso íntegro.',
-          'Comisión: 3% descontado del cobro del vendedor y 0% para el comprador. El contrato aplica la comisión vigente en el momento de la liberación y su propietario puede modificarla hasta un máximo de 10%. Cada usuario paga el gas de sus transacciones.',
+          'Comisión: 3% fijo, descontado del cobro del vendedor, y 0% para el comprador. Es una constante del contrato: nadie puede modificarla, ni siquiera su propietario. Se cobra al finalizar el escrow sobre el monto que recibe el vendedor (en una orden normal, el 3% del total); un reembolso íntegro al comprador no tiene comisión. Cada usuario paga el gas de sus transacciones.',
           'Las transacciones en blockchain son irreversibles. Verifica direcciones, red y montos antes de firmar.',
         ],
       },
       {
         title: '3 bis. Facultades del propietario del contrato',
         paragraphs: [
-          'El propietario del contrato puede: cambiar la comisión (máximo 10%), cambiar el destinatario de la comisión, designar al árbitro, habilitar o deshabilitar tokens aceptados y pausar el contrato. Mientras está pausado no se pueden crear órdenes ni aprobar, reclamar o abrir disputas, pero el árbitro puede seguir resolviendo disputas ya abiertas.',
+          'El propietario del contrato puede: cambiar el destinatario de la comisión, designar al árbitro, habilitar o deshabilitar tokens aceptados y pausar el contrato. No puede cambiar la comisión. Mientras está pausado no se pueden crear órdenes ni aprobar, reclamar o abrir disputas, pero el árbitro puede seguir resolviendo disputas ya abiertas.',
           'El propietario no tiene una función para retirar los fondos de órdenes en curso. Los fondos solo pueden moverse según las reglas del contrato.',
         ],
       },
@@ -135,14 +137,14 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
         paragraphs: [
           `The buyer deposits USDC into the escrow contract (${L.escrowAddress}). Mercadopleis does not hold funds: the contract enforces the rules.`,
           'The seller records the delivery with the SHA-256 hash of the deliverable. The buyer has 5 days from delivery to approve it or open a dispute. If nothing happens, the seller can claim the automatic release. If the seller does not deliver within the agreed time, the buyer can claim a full refund.',
-          'Fee: 3% deducted from the seller payout and 0% for the buyer. The contract applies the fee in force at release time and its owner can change it up to a maximum of 10%. Each user pays the gas for their own transactions.',
+          'Fee: a fixed 3%, deducted from the seller payout, and 0% for the buyer. It is a constant in the contract: nobody can change it, not even its owner. It is charged when the escrow ends on the amount the seller receives (on a normal order, 3% of the total); a full refund to the buyer carries no fee. Each user pays the gas for their own transactions.',
           'Blockchain transactions are irreversible. Check addresses, network and amounts before signing.',
         ],
       },
       {
         title: '3 bis. Powers of the contract owner',
         paragraphs: [
-          'The contract owner can change the fee (maximum 10%), change the fee recipient, appoint the arbiter, enable or disable accepted tokens and pause the contract. While paused, orders cannot be created and users cannot approve, claim or open disputes, but the arbiter can still resolve disputes that are already open.',
+          'The contract owner can change the fee recipient, appoint the arbiter, enable or disable accepted tokens and pause the contract. It cannot change the fee. While paused, orders cannot be created and users cannot approve, claim or open disputes, but the arbiter can still resolve disputes that are already open.',
           'The owner has no function to withdraw funds from orders in progress. Funds can only move according to the contract rules.',
         ],
       },

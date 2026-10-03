@@ -13,7 +13,7 @@ export const ESCROW_ADDRESSES: Record<number, `0x${string}`> = {
 /**
  * Calculates platform fee and seller net payout matching smart contract arithmetic exactly.
  */
-export function calculateOrderAmounts(grossAmountUsdc: number, feeBps: number = CONTRACT_CONFIG.INITIAL_FEE_BPS) {
+export function calculateOrderAmounts(grossAmountUsdc: number, feeBps: number = CONTRACT_CONFIG.FEE_BPS) {
   const platformFeeUsdc = Number(((grossAmountUsdc * feeBps) / CONTRACT_CONFIG.FEE_DENOMINATOR).toFixed(2));
   const sellerAmountUsdc = Number((grossAmountUsdc - platformFeeUsdc).toFixed(2));
   return {

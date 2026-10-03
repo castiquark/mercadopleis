@@ -218,8 +218,7 @@ export interface Review {
 // Smart Contract Constants
 export const CONTRACT_CONFIG = {
   FEE_DENOMINATOR: 10_000,
-  INITIAL_FEE_BPS: 300, // 3%
-  MAX_FEE_BPS: 1_000, // 10% hard cap
+  FEE_BPS: 300, // 3%: hard-coded in the escrow contract, not configurable
   AUTO_RELEASE_DURATION_SECONDS: 5 * 24 * 60 * 60, // 5 days (120 hours)
   BASE_SEPOLIA_CHAIN_ID: 84532,
   BASE_MAINNET_CHAIN_ID: 8453,

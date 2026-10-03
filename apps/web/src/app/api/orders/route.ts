@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
     const grossAmount = parseFloat(service.priceUsdc);
     const { platformFeeUsdc, sellerAmountUsdc, feeBps } = calculateOrderAmounts(
       grossAmount,
-      CONTRACT_CONFIG.INITIAL_FEE_BPS
+      CONTRACT_CONFIG.FEE_BPS
     );
 
     const [newOrder] = await db

@@ -4,6 +4,8 @@ import { eq, desc, and, gte, lte, ilike, or } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { validateServiceInput } from '@/lib/validation';
 import { enforceRateLimit, getClientIp } from '@/lib/rateLimit';
+import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
+import { CONTRACT_CONFIG } from '@mercadopleis/types';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -150,8 +152,8 @@ export async function GET(request: NextRequest) {
         network: 'Base',
         chainId: 8453,
         method: 'smart_contract_escrow',
-        escrowContract: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
-        feeBps: 300,
+        escrowContract: ESCROW_ADDRESSES[8453],
+        feeBps: CONTRACT_CONFIG.FEE_BPS,
         reviewWindowDays: 5,
       },
     }));
@@ -161,7 +163,7 @@ export async function GET(request: NextRequest) {
         protocol: 'Mercadopleis Agent Commerce v1',
         network: 'Base Mainnet',
         chainId: 8453,
-        escrowContract: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
+        escrowContract: ESCROW_ADDRESSES[8453],
         acceptedToken: {
           symbol: 'USDC',
           address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',

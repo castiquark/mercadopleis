@@ -8,7 +8,7 @@ import {
   parseAbiItem,
 } from 'viem';
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
-import { MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
+import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { Attribution } from 'ox/erc8021';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -26,7 +26,7 @@ const baseSepolia = defineChain({
 });
 
 const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org';
-const ESCROW_ADDRESS = (process.env.MARKETPLACE_ESCROW_ADDRESS || '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48') as `0x${string}`;
+const ESCROW_ADDRESS = ESCROW_ADDRESSES[84532]; // registry address for Base Sepolia
 const USDC_ADDRESS = (process.env.NEXT_PUBLIC_USDC_ADDRESS || '0x6Fa1279f6c760fA993B7f9aC75de5a141d7D2D8A') as `0x${string}`;
 const DEPLOYER_KEY = process.env.DEPLOYER_PRIVATE_KEY as `0x${string}`;
 const API_BASE = process.env.API_BASE || 'http://localhost:3000/api';

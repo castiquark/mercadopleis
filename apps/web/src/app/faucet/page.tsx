@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAccount, useReadContract, useWriteContract } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
-import { Erc20Abi } from '@mercadopleis/contracts-abi';
+import { Erc20Abi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { 
   Droplet, 
@@ -31,7 +31,7 @@ export default function FaucetPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const usdcAddress = CONTRACT_CONFIG.USDC_BASE_SEPOLIA;
-  const escrowAddress = '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48';
+  const escrowAddress = ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID];
 
   const { data: balance, refetch: refetchBalance } = useReadContract({
     address: usdcAddress,

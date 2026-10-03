@@ -7,7 +7,6 @@ import {MarketplaceEscrow} from "../src/MarketplaceEscrow.sol";
 contract DeployMainnet is Script {
     // Official native Circle USDC on Base Mainnet (Chain ID 8453)
     address public constant BASE_MAINNET_USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
-    uint256 public constant INITIAL_FEE_BPS = 300; // 3%
 
     function run() external returns (MarketplaceEscrow escrow) {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
@@ -31,8 +30,7 @@ contract DeployMainnet is Script {
         escrow = new MarketplaceEscrow(
             deployer,
             feeRecipient,
-            arbitrator,
-            INITIAL_FEE_BPS
+            arbitrator
         );
 
         escrow.setAcceptedToken(usdc, true);
