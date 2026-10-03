@@ -144,7 +144,7 @@ Hoy una sola wallet es propietaria del contrato, árbitro y receptora de la comi
 | `pause()` | Una multisig "guardián" | Inmediata: es la acción de emergencia. |
 | `unpause()`, `setArbitrator`, `setFeeRecipient`, `setAcceptedToken`, transferir la propiedad | Multisig a través de un `TimelockController` (OpenZeppelin) | 72 horas, visibles on-chain antes de ejecutarse. |
 
-Como `Ownable2Step` admite un solo propietario, la propiedad pasará a un pequeño contrato intermediario que solo permite `pause()` al guardián y envía todo lo demás al timelock. Así nadie puede cambiar el árbitro o el destino de la comisión sin aviso, y los usuarios con órdenes abiertas tienen tiempo de reaccionar.
+Como `Ownable2Step` admite un solo propietario, la propiedad pasará a un pequeño contrato intermediario que solo permite `pause()` al guardián y envía todo lo demás al timelock. **Implementado** en [`contracts/src/EscrowAdmin.sol`](../contracts/src/EscrowAdmin.sol), con 15 pruebas en Foundry y el script [`DeployEscrowAdmin.s.sol`](../contracts/script/DeployEscrowAdmin.s.sol), ensayado sobre una copia local de Base Sepolia. Falta desplegarlo en Mainnet con la multisig y el guardián definitivos. Así nadie puede cambiar el árbitro o el destino de la comisión sin aviso, y los usuarios con órdenes abiertas tienen tiempo de reaccionar.
 
 **No se renunciará a la propiedad.** Si el contrato quedara sin propietario, no se podría reemplazar un árbitro defectuoso ni hacer una pausa de emergencia.
 

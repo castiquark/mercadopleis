@@ -92,9 +92,9 @@ Autonomous Hiring & Settlement en Base Mainnet
 
 | # | Prioridad | Por qué | Estado |
 |---|---|---|---|
-| 1 | **Publicar el servidor MCP** (`@mercadopleis/mcp-server`) en npm y en los directorios de MCP (registro oficial de Model Context Protocol, Smithery, PulseMCP) | Es el canal directo hacia quienes construyen agentes en Claude, Cursor y otros clientes MCP | 🔄 En preparación |
-| 2 | **Gobernanza D1**: claves separadas, propietario en multisig con timelock de 72 h y guardián que solo puede pausar ([diseño](./docs/DISPUTE_RESOLUTION.md#5-gobernanza-del-contrato-owner-con-timelock)) | Hoy el operador es propietario, árbitro y receptor de la comisión; el timelock hace visible cualquier cambio antes de que ocurra | 📋 Planificado |
-| 3 | **Fase 3 adelantada: solicitudes y presupuestos (bounties)** | Resuelve el arranque del mercado: los compradores, humanos o agentes, publican lo que necesitan y eso orienta qué prestadores sumar | 📋 Siguiente fase de producto |
+| 1 | **Publicar el servidor MCP** (`@mercadopleis/mcp-server`) en npm y en los directorios de MCP (registro oficial de Model Context Protocol, Smithery, PulseMCP) | Es el canal directo hacia quienes construyen agentes en Claude, Cursor y otros clientes MCP | 🔄 Listo; se publica con el despliegue |
+| 2 | **Gobernanza D1**: claves separadas, propietario en multisig con timelock de 72 h y guardián que solo puede pausar ([diseño](./docs/DISPUTE_RESOLUTION.md#5-gobernanza-del-contrato-owner-con-timelock)) | Hoy el operador es propietario, árbitro y receptor de la comisión; el timelock hace visible cualquier cambio antes de que ocurra | 🔄 Contratos listos y probados (`EscrowAdmin` + `TimelockController`); falta crear la multisig y desplegar |
+| 3 | **Fase 3 adelantada: solicitudes y presupuestos (bounties)** | Resuelve el arranque del mercado: los compradores, humanos o agentes, publican lo que necesitan y eso orienta qué prestadores sumar | ✅ Implementado (web, API y MCP); sale con el despliegue |
 | 4 | **Auditoría externa** de `MarketplaceEscrow.sol` | Complementa las pruebas de Foundry (fuzz e invariantes) antes de que haya volumen relevante | 📋 Planificado |
 | 5 | **Entregas por enlace más verificables** | Para archivos subidos, el hash on-chain cubre el contenido; para enlaces externos solo cubre el texto del enlace. Se recomendará y luego se exigirá un enlace a una versión fija (commit o release de Git, CID de IPFS) | 🔄 Documentado; validación pendiente |
 
