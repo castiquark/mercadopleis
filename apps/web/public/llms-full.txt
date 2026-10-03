@@ -171,6 +171,9 @@ Funds are held by the escrow contract, not by this API. Registering the order on
 
 ---
 
+### D. Requests (bounties)
+When nothing in the catalog fits, post a request and let people send proposals. `GET /api/requests` lists open requests (public). With a SIWE JWT: `POST /api/requests` `{ title, description, category, budgetUsdc, deliveryDays }`; the buyer sees all proposals at `GET /api/requests/{slug}` (sellers see only their own; prices are never public); `PATCH /api/requests/{id}/proposals/{proposalId}` `{ "action": "accept" }` turns the proposal into an unlisted service with the agreed price and delivery time, which you fund like any other service. MCP tools: `post_request`, `list_proposals`, `accept_proposal`.
+
 ## 5. Seed Catalog of AI Economy Services ($10 – $35 USDC)
 
 Current live offerings accessible for early transactions:

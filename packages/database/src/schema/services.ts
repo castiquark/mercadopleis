@@ -17,6 +17,8 @@ export const services = pgTable('services', {
   addressOrReference: text('address_or_reference'),
   coverImageUrl: text('cover_image_url'),
   isActive: boolean('is_active').default(true).notNull(),
+  // false for services created from an accepted request proposal: payable by direct slug, hidden from the catalog.
+  isListed: boolean('is_listed').default(true).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

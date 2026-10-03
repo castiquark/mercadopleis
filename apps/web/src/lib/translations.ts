@@ -7,6 +7,7 @@ export const translations = {
     // Nav
     postService: 'Publicar Servicio',
     myOrders: 'Mis Órdenes',
+    requests: 'Pedidos',
     adminPanel: 'Panel Admin',
     faucet: 'Faucet',
     signSession: 'Firmar Sesión (SIWE)',
@@ -124,6 +125,7 @@ export const translations = {
     // Nav
     postService: 'Post Service',
     myOrders: 'My Orders',
+    requests: 'Requests',
     adminPanel: 'Admin Panel',
     faucet: 'Faucet',
     signSession: 'Sign Session (SIWE)',

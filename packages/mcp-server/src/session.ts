@@ -110,3 +110,41 @@ export async function syncChain(chainId: number) {
     // The next sync catches up.
   }
 }
+
+// --- Requests (bounties) ---
+
+export interface ApiRequest {
+  id: string;
+  slug: string;
+  title: string;
+  status: string;
+  budgetUsdc: string;
+  deliveryDays: number;
+  proposalCount?: number;
+}
+
+export interface ApiProposal {
+  id: string;
+  priceUsdc: string;
+  deliveryDays: number;
+  message: string;
+  status: string;
+  seller?: { displayName?: string; walletAddress?: string } | null;
+}
+
+export const createRequest = (body: { title: string; description: string; category: string; budgetUsdc: string; deliveryDays: number }) =>
+  call<{ request: ApiRequest }>('/api/requests', { method: 'POST', body: JSON.stringify(body) }, true).then((d) => d.request);
+
+export const getRequest = (idOrSlug: string) =>
+  call<{ request: ApiRequest & { isOwner?: boolean }; proposals: ApiProposal[]; award: { serviceSlug: string | null } | null }>(
+    `/api/requests/${encodeURIComponent(idOrSlug)}`,
+    {},
+    true
+  );
+
+export const acceptProposal = (requestId: string, proposalId: string) =>
+  call<{ service: { id: string; slug: string; priceUsdc: string; deliveryDays: number } }>(
+    `/api/requests/${requestId}/proposals/${proposalId}`,
+    { method: 'PATCH', body: JSON.stringify({ action: 'accept' }) },
+    true
+  );

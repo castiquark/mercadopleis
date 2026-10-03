@@ -28,17 +28,8 @@ export default function HomePage() {
         const { fetchServices } = await import('@/lib/api');
         const apiServices = await fetchServices();
 
-        const stored = typeof window !== 'undefined' ? localStorage.getItem('mercadopleis_custom_services') : null;
-        const custom = stored ? JSON.parse(stored) : [];
-
-        const combined: Service[] = [...(Array.isArray(custom) ? custom : [])];
-        if (Array.isArray(apiServices)) {
-          for (const s of apiServices) {
-            if (!combined.some((c) => c.slug === s.slug || c.id === s.id)) {
-              combined.push(s);
-            }
-          }
-        }
+        // Only services stored by the API: a listing that failed to save must not look published.
+        const combined: Service[] = Array.isArray(apiServices) ? apiServices : [];
         setServicesList(combined);
       } catch (e) {
         console.error(e);
@@ -156,6 +147,11 @@ export default function HomePage() {
             <a href="/llms.txt" className="font-mono text-primary-light hover:underline">
               /llms.txt
             </a>
+            .{' '}
+            {language === 'en' ? 'Need something that is not listed? ' : '¿No encuentras lo que necesitas? '}
+            <Link href="/requests/new" className="font-semibold text-primary-light hover:underline">
+              {language === 'en' ? 'Post a request' : 'Publica un pedido'}
+            </Link>
             .
           </p>
         </div>

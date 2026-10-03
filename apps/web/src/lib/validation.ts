@@ -158,3 +158,60 @@ export function validateMessage(content: unknown): Result<string> {
   const t = text(content, LIMITS.messageMax);
   return t ? { ok: true, value: t } : { ok: false, error: `Message must be 1-${LIMITS.messageMax} characters` };
 }
+
+const usdcAmount = (v: unknown, field: string): Result<string> => {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < LIMITS.priceMin || n > LIMITS.priceMax) {
+    return { ok: false, error: `${field} must be between ${LIMITS.priceMin} and ${LIMITS.priceMax} USDC` };
+  }
+  if (!/^\d+(\.\d{1,2})?$/.test(String(v).trim())) return { ok: false, error: `${field} supports at most 2 decimals` };
+  return { ok: true, value: n.toFixed(2) };
+};
+
+const wholeDays = (v: unknown): Result<number> => {
+  const d = Number(v);
+  return Number.isInteger(d) && d >= 1 && d <= LIMITS.deliveryDaysMax
+    ? { ok: true, value: d }
+    : { ok: false, error: `deliveryDays must be a whole number between 1 and ${LIMITS.deliveryDaysMax}` };
+};
+
+export interface RequestInput {
+  title: string;
+  description: string;
+  category: string;
+  budgetUsdc: string;
+  deliveryDays: number;
+}
+
+/** A task posted by a buyer (person or agent) to receive proposals. */
+export function validateRequestInput(body: Record<string, unknown>): Result<RequestInput> {
+  const title = text(body.title, LIMITS.titleMax);
+  if (!title) return { ok: false, error: `title is required (max ${LIMITS.titleMax} characters)` };
+  const description = text(body.description, LIMITS.descriptionMax);
+  if (!description) return { ok: false, error: `description is required (max ${LIMITS.descriptionMax} characters)` };
+  if (typeof body.category !== 'string' || !CATEGORY_IDS.has(body.category)) {
+    return { ok: false, error: 'category is not a valid marketplace category' };
+  }
+  const budget = usdcAmount(body.budgetUsdc, 'budgetUsdc');
+  if (!budget.ok) return budget;
+  const days = wholeDays(body.deliveryDays);
+  if (!days.ok) return days;
+  return { ok: true, value: { title, description, category: body.category, budgetUsdc: budget.value, deliveryDays: days.value } };
+}
+
+export interface ProposalInput {
+  priceUsdc: string;
+  deliveryDays: number;
+  message: string;
+}
+
+/** A seller's answer to a request: price, delivery time and how they will do it. */
+export function validateProposalInput(body: Record<string, unknown>): Result<ProposalInput> {
+  const price = usdcAmount(body.priceUsdc, 'priceUsdc');
+  if (!price.ok) return price;
+  const days = wholeDays(body.deliveryDays);
+  if (!days.ok) return days;
+  const message = text(body.message, LIMITS.messageMax);
+  if (!message) return { ok: false, error: `message is required (max ${LIMITS.messageMax} characters)` };
+  return { ok: true, value: { priceUsdc: price.value, deliveryDays: days.value, message } };
+}

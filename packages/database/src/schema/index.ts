@@ -6,6 +6,7 @@ import { disputes } from './disputes';
 import { reviews } from './reviews';
 import { blockchainTransactions } from './blockchainTransactions';
 import { orderMessages } from './orderMessages';
+import { requests, requestProposals } from './requests';
 
 export * from './users';
 export * from './services';
@@ -15,6 +16,7 @@ export * from './reviews';
 export * from './blockchainTransactions';
 export * from './orderMessages';
 export * from './rateLimits';
+export * from './requests';
 
 export const usersRelations = relations(users, ({ many }) => ({
   services: many(services),
@@ -82,5 +84,28 @@ export const disputesRelations = relations(disputes, ({ one }) => ({
   arbitrator: one(users, {
     fields: [disputes.arbitratorId],
     references: [users.id],
+  }),
+}));
+
+export const requestsRelations = relations(requests, ({ one, many }) => ({
+  buyer: one(users, {
+    fields: [requests.buyerId],
+    references: [users.id],
+  }),
+  proposals: many(requestProposals),
+}));
+
+export const requestProposalsRelations = relations(requestProposals, ({ one }) => ({
+  request: one(requests, {
+    fields: [requestProposals.requestId],
+    references: [requests.id],
+  }),
+  seller: one(users, {
+    fields: [requestProposals.sellerId],
+    references: [users.id],
+  }),
+  service: one(services, {
+    fields: [requestProposals.serviceId],
+    references: [services.id],
   }),
 }));

@@ -31,32 +31,13 @@ export default function ServiceDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let customServices: Service[] = [];
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('mercadopleis_custom_services') : null;
-      if (stored) {
-        const custom = JSON.parse(stored);
-        if (Array.isArray(custom)) {
-          customServices = custom;
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-
-    const localFound = customServices.find((s) => s.slug === slug);
-    if (localFound) {
-      setService(localFound);
-      setLoading(false);
-    } else {
-      fetch(`/api/services/${slug}`)
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data?.service) setService(data.service);
-        })
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    fetch(`/api/services/${slug}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.service) setService(data.service);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [slug]);
 
 

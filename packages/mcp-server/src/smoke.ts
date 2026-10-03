@@ -15,13 +15,16 @@ const text = (r: any) => r.content[0].text as string;
 
 const tools = (await client.listTools()).tools.map((t) => t.name).sort();
 assert.deepEqual(tools, [
+  'accept_proposal',
   'compare_services',
   'create_order',
   'get_deliverable',
   'get_delivery',
   'get_order_status',
   'get_service',
+  'list_proposals',
   'login',
+  'post_request',
   'prepare_login',
   'prepare_order_action',
   'read_messages',

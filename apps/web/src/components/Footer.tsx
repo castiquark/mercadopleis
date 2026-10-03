@@ -13,7 +13,13 @@ export function Footer() {
   return (
     <footer className="border-t border-border bg-surface/50 py-8 text-center text-xs text-slate-500">
       <div className="mx-auto max-w-7xl px-4">
-        <nav aria-label={en ? 'Legal' : 'Legal'} className="mb-3 flex flex-wrap items-center justify-center gap-x-2">
+        <nav aria-label={en ? 'Site' : 'Sitio'} className="mb-3 flex flex-wrap items-center justify-center gap-x-2">
+          <Link href="/requests" className={linkClass}>
+            {t('requests')}
+          </Link>
+          <Link href="/services/new" className={linkClass}>
+            {t('postService')}
+          </Link>
           <Link href="/terms" className={linkClass}>
             {en ? 'Terms' : 'Términos'}
           </Link>

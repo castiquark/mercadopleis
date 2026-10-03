@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
       : 0;
 
   try {
-    const conditions: any[] = [eq(services.isActive, true)];
+    // Unlisted services (created from accepted request proposals) are payable by slug but never listed.
+    const conditions: any[] = [eq(services.isActive, true), eq(services.isListed, true)];
 
     if (category && category !== 'all') {
       conditions.push(eq(services.category, category));

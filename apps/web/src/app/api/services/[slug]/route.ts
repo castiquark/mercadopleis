@@ -40,7 +40,7 @@ export async function GET(
             updatedAt: true,
           },
         },
-        orders: true,
+        // Orders are private (buyers, delivery links, hashes): never include them in this public endpoint.
       },
     });
 

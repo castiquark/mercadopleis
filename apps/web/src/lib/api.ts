@@ -94,20 +94,27 @@ export async function verifySignature(address: string, signature: string, messag
   return data;
 }
 
+const signInRequired = () =>
+  typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('en')
+    ? 'Sign the session with your wallet (button in the top bar) and try again.'
+    : 'Firma la sesión con tu wallet (botón en la barra superior) e inténtalo de nuevo.';
+
 /**
  * Create a new service in PostgreSQL
  */
 export async function createService(serviceData: CreateServiceInput) {
   const token = getAuthToken(serviceData.sellerWallet);
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (!token) throw new Error(signInRequired());
 
   const res = await fetch(`${API_URL}/services`, {
     method: 'POST',
-    headers,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(serviceData),
   });
-  if (!res.ok) throw new Error('Failed to create service in database');
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(res.status === 401 ? signInRequired() : data.error || 'Failed to create service');
+  }
   return await res.json();
 }
 
@@ -384,3 +391,81 @@ export async function getDeliverableAccess(orderId: string): Promise<{ type: 'st
   if (!res.ok) throw new Error(data.error || 'No se pudo obtener el entregable');
   return { type: data.type, url: data.url };
 }
+
+// --- Requests (bounties): buyers post a task, sellers send proposals ---
+
+export interface RequestSummary {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  category: string;
+  budgetUsdc: string;
+  deliveryDays: number;
+  status: 'OPEN' | 'AWARDED' | 'CANCELLED';
+  createdAt: string;
+  proposalCount: number;
+  buyerId: string;
+  buyer?: { displayName?: string; walletAddress?: string } | null;
+  isOwner?: boolean;
+}
+
+export interface Proposal {
+  id: string;
+  sellerId: string;
+  priceUsdc: string;
+  deliveryDays: number;
+  message: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
+  createdAt: string;
+  seller?: { displayName?: string; walletAddress?: string } | null;
+}
+
+export interface RequestDetail {
+  request: RequestSummary;
+  proposals: Proposal[];
+  award: {
+    proposalId: string;
+    serviceSlug: string | null;
+    order: { contractOrderId: number | null; chainId: number; status: string } | null;
+  } | null;
+}
+
+async function authedJson<T>(path: string, wallet: string | null | undefined, init: RequestInit = {}, requireAuth = true): Promise<T> {
+  const token = getAuthToken(wallet);
+  if (requireAuth && !token) throw new Error(signInRequired());
+  const headers: Record<string, string> = { ...(init.body ? { 'Content-Type': 'application/json' } : {}) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${API_URL}${path}`, { ...init, headers });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(res.status === 401 ? signInRequired() : data.error || `Request failed (${res.status})`);
+  return data as T;
+}
+
+export const fetchRequests = (params: { category?: string; search?: string; status?: string } = {}) => {
+  const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString();
+  return authedJson<{ requests: RequestSummary[] }>(`/requests${q ? `?${q}` : ''}`, null, {}, false).then((d) => d.requests);
+};
+
+export const fetchRequest = (idOrSlug: string, wallet?: string | null) =>
+  authedJson<RequestDetail>(`/requests/${encodeURIComponent(idOrSlug)}`, wallet, {}, false);
+
+export const createRequest = (
+  wallet: string | null | undefined,
+  body: { title: string; description: string; category: string; budgetUsdc: string; deliveryDays: number }
+) => authedJson<{ request: RequestSummary }>('/requests', wallet, { method: 'POST', body: JSON.stringify(body) });
+
+export const cancelRequest = (wallet: string | null | undefined, idOrSlug: string) =>
+  authedJson(`/requests/${encodeURIComponent(idOrSlug)}`, wallet, { method: 'PATCH', body: JSON.stringify({ status: 'CANCELLED' }) });
+
+export const sendProposal = (
+  wallet: string | null | undefined,
+  requestId: string,
+  body: { priceUsdc: string; deliveryDays: number; message: string }
+) => authedJson<{ proposal: Proposal }>(`/requests/${requestId}/proposals`, wallet, { method: 'POST', body: JSON.stringify(body) });
+
+export const updateProposal = (wallet: string | null | undefined, requestId: string, proposalId: string, action: 'accept' | 'withdraw') =>
+  authedJson<{ service?: { slug: string } }>(`/requests/${requestId}/proposals/${proposalId}`, wallet, {
+    method: 'PATCH',
+    body: JSON.stringify({ action }),
+  });

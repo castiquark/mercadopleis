@@ -25,6 +25,7 @@ export default function NewServicePage() {
   const [deliveryDays, setDeliveryDays] = useState<string>('5');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const priceNum = parseFloat(priceUsdc) || 0;
   // Seller receives 97% (3% platform fee deducted upon release as agreed in Sprint 0)
@@ -34,38 +35,20 @@ export default function NewServicePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !description || priceNum <= 0) return;
+    setSubmitError(null);
 
     if (!address) {
-      alert('Por favor conecta tu wallet para publicar un servicio.');
-      setIsSubmitting(false);
+      setSubmitError(language === 'en' ? 'Connect your wallet to publish a service.' : 'Conecta tu wallet para publicar un servicio.');
       return;
     }
 
     const isInPerson = deliveryType === 'in_person' || deliveryType === 'both';
 
-    // Store in localStorage so it appears immediately across all components!
-    const newService = {
-      id: `local-${Date.now()}`,
-      sellerId: address,
-      title,
-      slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + `-${Date.now().toString().slice(-4)}`,
-      description,
-      category,
-      deliveryType,
-      country: isInPerson ? country.trim() : null,
-      city: isInPerson ? city.trim() : null,
-      locality: isInPerson ? locality.trim() : null,
-      addressOrReference: isInPerson ? addressOrReference.trim() : null,
-      priceUsdc: priceNum,
-      deliveryDays: parseInt(deliveryDays, 10) || 3,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
     try {
+      setIsSubmitting(true);
       const { createService } = await import('@/lib/api');
-      await createService({
+      // Only a service stored by the API is real: never pretend it was published if the request failed.
+      const created = await createService({
         title,
         description,
         category,
@@ -77,16 +60,12 @@ export default function NewServicePage() {
         priceUsdc: priceNum,
         deliveryDays: parseInt(deliveryDays, 10) || 3,
         sellerWallet: address || undefined,
-      }).catch((e) => console.warn('[API] Could not save to remote backend, saving to local fallback:', e));
-
-      const existing = JSON.parse(localStorage.getItem('mercadopleis_custom_services') || '[]');
-      localStorage.setItem('mercadopleis_custom_services', JSON.stringify([newService, ...existing]));
+      });
       setSuccess(true);
-      setTimeout(() => {
-        router.push('/');
-      }, 1500);
-    } catch (err) {
-      console.error(err);
+      const slug = created?.service?.slug;
+      setTimeout(() => router.push(slug ? `/services/${slug}` : '/'), 1500);
+    } catch (err: any) {
+      setSubmitError(err?.message || (language === 'en' ? 'The service could not be published.' : 'No se pudo publicar el servicio.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -139,13 +118,20 @@ export default function NewServicePage() {
             </div>
           )}
 
+          {submitError && (
+            <div className="mt-6 flex items-center gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 p-3.5 text-xs font-semibold text-red-400">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{submitError}</span>
+            </div>
+          )}
+
           {success && (
             <div className="mt-6 flex items-center gap-2.5 rounded-xl border border-accent/30 bg-accent/10 p-3.5 text-xs font-semibold text-accent">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-accent" />
               <span>
                 {language === 'en'
-                  ? 'Service published successfully! Redirecting to catalog...'
-                  : '¡Servicio publicado con éxito! Redirigiendo al catálogo...'}
+                  ? 'Service published. Opening it...'
+                  : 'Servicio publicado. Abriéndolo...'}
               </span>
             </div>
           )}

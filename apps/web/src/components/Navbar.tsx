@@ -6,7 +6,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/lib/languageContext';
-import { ShieldCheck, PlusCircle, ShoppingBag, KeyRound, UserCheck, Scale, Droplet } from 'lucide-react';
+import { ShieldCheck, PlusCircle, ShoppingBag, KeyRound, UserCheck, Scale, Droplet, ClipboardList } from 'lucide-react';
 import { FaucetButton } from './FaucetButton';
 import { LanguageSwitch } from './LanguageSwitch';
 
@@ -57,10 +57,20 @@ export function Navbar() {
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <Link
             href="/services/new"
-            className="hidden items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white sm:flex"
+            className="hidden items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white md:flex"
           >
             <PlusCircle className="h-4 w-4 text-primary-light" />
             <span>{t('postService')}</span>
+          </Link>
+
+          <Link
+            href="/requests"
+            className="hidden min-[360px]:flex items-center gap-1.5 rounded-lg border border-border bg-surface p-3 sm:px-3.5 sm:py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white"
+            title={t('requests')}
+            aria-label={t('requests')}
+          >
+            <ClipboardList className="h-4 w-4 text-slate-400" />
+            <span className="hidden lg:inline">{t('requests')}</span>
           </Link>
 
           <Link
