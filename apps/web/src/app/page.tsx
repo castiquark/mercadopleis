@@ -125,8 +125,8 @@ export default function HomePage() {
 
           <p className="mt-4 text-base text-slate-300 sm:text-lg">
             {language === 'en'
-              ? 'Hire people and technical services for AI models, automated workflows, and datasets. Pay in USDC. Your funds are secured in a smart contract escrow until you approve the delivery.'
-              : 'Contrata personas y servicios técnicos para modelos de IA, flujos automatizados y datasets. Paga en USDC. Tus fondos se aseguran en un smart contract escrow hasta que apruebas la entrega.'}
+              ? 'Hire people and technical services for AI models, automated workflows, and datasets. Pay in USDC. Your funds stay in a smart contract escrow until you approve the delivery or the review period ends.'
+              : 'Contrata personas y servicios técnicos para modelos de IA, flujos automatizados y datasets. Paga en USDC. Tus fondos quedan en un smart contract escrow hasta que apruebas la entrega o termina el período de revisión.'}
           </p>
 
           {/* Search Input */}
@@ -152,7 +152,7 @@ export default function HomePage() {
           <ShieldCheck className="h-6 w-6 text-accent shrink-0" />
           <div className="text-xs">
             <p className="font-semibold text-white">{language === 'en' ? '0% Buyer Fee • Keep 97%' : '0% Recargo Comprador • Cobras 97%'}</p>
-            <p className="text-slate-400">{language === 'en' ? '3% protocol fee vs 20% on Web2 platforms.' : 'Comisión de solo 3% frente al 20% de plataformas Web2.'}</p>
+            <p className="text-slate-400">{language === 'en' ? 'Fixed 3% fee, vs up to 20% on Web2 platforms.' : 'Comisión fija del 3%, frente a hasta 20% en plataformas Web2.'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface/50 p-4">

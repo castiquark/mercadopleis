@@ -9,8 +9,8 @@ export const LEGAL = {
   contactEmail: 'hello@mercadopleis.club',
   securityEmail: 'security@mercadopleis.club',
   escrowAddress: ESCROW_ADDRESSES[8453] as string,
-  updatedEs: '2 de octubre de 2026',
-  updatedEn: 'October 2, 2026',
+  updatedEs: '3 de octubre de 2026',
+  updatedEn: 'October 3, 2026',
   /** Set to the governing-law / courts clause once the operator decides it, e.g. { es: '...', en: '...' }. */
   jurisdiction: null as null | { es: string; en: string },
 };
@@ -62,7 +62,8 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
       {
         title: '3 bis. Facultades del propietario del contrato',
         paragraphs: [
-          'El propietario del contrato puede: cambiar el destinatario de la comisión, designar al árbitro, habilitar o deshabilitar tokens aceptados y pausar el contrato. No puede cambiar la comisión. Mientras está pausado no se pueden crear órdenes ni aprobar, reclamar o abrir disputas, pero el árbitro puede seguir resolviendo disputas ya abiertas.',
+          'El propietario del contrato puede: cambiar el destinatario de la comisión, designar al árbitro, habilitar o deshabilitar tokens aceptados, pausar el contrato y transferir o renunciar a la propiedad. No puede cambiar la comisión.',
+          'Mientras el contrato está pausado no se pueden crear órdenes, registrar entregas, aprobarlas, reclamar liberaciones o reembolsos ni abrir disputas; el árbitro sí puede seguir resolviendo disputas ya abiertas. Los plazos de entrega y de revisión siguen corriendo durante la pausa.',
           'El propietario no tiene una función para retirar los fondos de órdenes en curso. Los fondos solo pueden moverse según las reglas del contrato.',
         ],
       },
@@ -70,6 +71,7 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
         title: '4. Disputas y arbitraje',
         paragraphs: [
           'Comprador o vendedor pueden abrir una disputa mientras la orden esté fondeada o entregada. El árbitro designado revisa la información de las partes y decide un reparto de los fondos entre ambos. La decisión se ejecuta en el contrato y es definitiva dentro de la plataforma, sin perjuicio de los derechos que la ley te reconozca frente a la otra parte.',
+          'En esta etapa inicial, el árbitro es el propio operador de Mercadopleis, que también recibe la comisión. Como la comisión solo se cobra sobre la parte que recibe el vendedor, lo indicamos para que lo tengas en cuenta.',
         ],
       },
       {
@@ -144,7 +146,8 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
       {
         title: '3 bis. Powers of the contract owner',
         paragraphs: [
-          'The contract owner can change the fee recipient, appoint the arbiter, enable or disable accepted tokens and pause the contract. It cannot change the fee. While paused, orders cannot be created and users cannot approve, claim or open disputes, but the arbiter can still resolve disputes that are already open.',
+          'The contract owner can change the fee recipient, appoint the arbiter, enable or disable accepted tokens, pause the contract and transfer or renounce ownership. It cannot change the fee.',
+          'While the contract is paused, nobody can create orders, record deliveries, approve them, claim releases or refunds, or open disputes; the arbiter can still resolve disputes that are already open. Delivery and review deadlines keep running during a pause.',
           'The owner has no function to withdraw funds from orders in progress. Funds can only move according to the contract rules.',
         ],
       },
@@ -152,6 +155,7 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
         title: '4. Disputes and arbitration',
         paragraphs: [
           'Buyer or seller can open a dispute while the order is funded or delivered. The appointed arbiter reviews the information from both parties and decides how to split the funds between them. The decision is executed in the contract and is final within the platform, without prejudice to any rights the law gives you against the other party.',
+          'During this early stage, the arbiter is the Mercadopleis operator itself, which also receives the fee. Since the fee is only charged on the part the seller receives, we disclose this so you can take it into account.',
         ],
       },
       {

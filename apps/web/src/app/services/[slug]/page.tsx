@@ -269,45 +269,37 @@ export default function ServiceDetailPage() {
               </div>
             )}
 
-            {/* What you receive checklist */}
+            {/* How delivery works: platform guarantees, not seller promises */}
             <div className="mt-8 border-t border-border/80 pt-6">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
-                {language === 'en' ? 'What is included in the delivery' : 'Qué incluye la entrega'}
+                {language === 'en' ? 'How delivery works' : 'Cómo funciona la entrega'}
               </h3>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="flex items-start gap-2.5 text-sm text-slate-200">
-                  <Check className="h-4 w-4 shrink-0 text-accent mt-0.5" />
-                  <span>
-                    {language === 'en'
-                      ? 'Full source files, deliverables and documentation'
-                      : 'Archivos fuente completos, entregables y documentación'}
-                  </span>
-                </div>
-                <div className="flex items-start gap-2.5 text-sm text-slate-200">
-                  <Check className="h-4 w-4 shrink-0 text-accent mt-0.5" />
-                  <span>
-                    {language === 'en'
-                      ? 'Quality assurance and deliverable validation'
-                      : 'Control de calidad y verificación del entregable'}
-                  </span>
-                </div>
-                <div className="flex items-start gap-2.5 text-sm text-slate-200">
-                  <Check className="h-4 w-4 shrink-0 text-accent mt-0.5" />
-                  <span>
-                    {language === 'en'
-                      ? 'Post-delivery review and revisions window'
-                      : 'Ventana de revisión y ajustes post-entrega'}
-                  </span>
-                </div>
-                <div className="flex items-start gap-2.5 text-sm text-slate-200">
-                  <Check className="h-4 w-4 shrink-0 text-accent mt-0.5" />
-                  <span>
-                    {language === 'en'
-                      ? 'On-chain cryptographic SHA-256 hash of delivery files'
-                      : 'Hash criptográfico on-chain de los archivos entregados'}
-                  </span>
-                </div>
+                {[
+                  language === 'en'
+                    ? 'The seller records the delivery with its SHA-256 hash on-chain'
+                    : 'El vendedor registra la entrega con su hash SHA-256 on-chain',
+                  language === 'en'
+                    ? 'You have 5 days to approve it or open a dispute'
+                    : 'Tienes 5 días para aprobarla o abrir una disputa',
+                  language === 'en'
+                    ? 'Full refund if it is not delivered within the agreed time'
+                    : 'Reembolso íntegro si no se entrega en el plazo acordado',
+                  language === 'en'
+                    ? 'Uploaded files are private: only you, the seller and the arbiter can download them'
+                    : 'Los archivos subidos son privados: solo tú, el vendedor y el árbitro pueden descargarlos',
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-2.5 text-sm text-slate-200">
+                    <Check className="h-4 w-4 shrink-0 text-accent mt-0.5" />
+                    <span>{item}</span>
+                  </div>
+                ))}
               </div>
+              <p className="mt-3 text-xs text-slate-500">
+                {language === 'en'
+                  ? 'What the work includes is defined by the seller in the description above; agree on any details in the order messages.'
+                  : 'Lo que incluye el trabajo lo define el vendedor en la descripción; acuerda cualquier detalle en los mensajes de la orden.'}
+              </p>
             </div>
 
             {/* Customer Reviews Section */}
@@ -373,7 +365,7 @@ export default function ServiceDetailPage() {
                     </p>
                     <p className="mt-1 text-slate-500">
                       {language === 'en'
-                        ? 'Be the first client to hire this service and leave an on-chain verified review.'
+                        ? 'Be the first client to hire this service and review the completed work.'
                         : 'Sé el primer cliente en contratar este servicio y calificar el trabajo completado.'}
                     </p>
                   </div>
@@ -430,8 +422,8 @@ export default function ServiceDetailPage() {
                 <span>
                   <strong>{language === 'en' ? 'Non-Custodial Escrow:' : 'Escrow Non-Custodial:'}</strong>{' '}
                   {language === 'en'
-                    ? 'USDC is locked in the smart contract until your approval.'
-                    : 'Los USDC se bloquean en el contrato inteligente hasta tu aprobación.'}
+                    ? 'USDC stays locked in the smart contract until you approve or the review period ends.'
+                    : 'Los USDC quedan bloqueados en el contrato hasta que apruebes o termine el período de revisión.'}
                 </span>
               </div>
               <div className="flex items-start gap-2">

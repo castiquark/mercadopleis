@@ -207,6 +207,18 @@ export async function updateOrder(
 }
 
 /**
+ * Asks the indexer to read new escrow events, for actions the order API cannot record directly
+ * (timeout refunds). Best effort: the next scheduled sync catches up anyway.
+ */
+export async function syncChain(chainId: number) {
+  try {
+    await fetch(`${API_URL}/sync?chainId=${chainId}`);
+  } catch {
+    // Ignore: the database is reconciled by later syncs.
+  }
+}
+
+/**
  * Fetch disputes (all disputes if admin, user-specific disputes otherwise)
  */
 export async function fetchDisputes() {

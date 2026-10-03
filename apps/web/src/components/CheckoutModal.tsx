@@ -226,8 +226,8 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
             </h2>
             <p className="text-xs text-slate-400">
               {language === 'en'
-                ? 'Funds locked in smart contract until your delivery approval'
-                : 'Fondos bloqueados hasta tu aprobación de entrega'}
+                ? 'Funds stay locked in the smart contract until the delivery is approved or the review period ends'
+                : 'Los fondos quedan bloqueados hasta que apruebes la entrega o termine el período de revisión'}
             </p>
           </div>
         </div>
@@ -290,16 +290,16 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
             <Clock className="h-4 w-4 shrink-0 text-primary-light" />
             <span>
               {language === 'en'
-                ? 'You have 5 days to review deliverables before automatic release.'
-                : 'Dispones de 5 días para revisar la entrega antes de la liberación automática.'}
+                ? 'You have 5 days after delivery to approve it or open a dispute. After that, the seller can claim the payment.'
+                : 'Tienes 5 días desde la entrega para aprobarla o abrir una disputa. Después, el vendedor puede cobrar.'}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 shrink-0 text-amber-400" />
             <span>
               {language === 'en'
-                ? '100% automatic refund if freelancer fails to deliver before deadline.'
-                : 'Reembolso 100% automático si el vendedor no entrega antes del deadline.'}
+                ? 'Full refund if the seller does not deliver on time: claim it from My Orders once the deadline passes.'
+                : 'Reembolso íntegro si el vendedor no entrega a tiempo: lo reclamas desde Mis Órdenes al vencer el plazo.'}
             </span>
           </div>
         </div>

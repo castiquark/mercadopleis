@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useAccount, useWriteContract } from 'wagmi';
+import { useAccount, usePublicClient, useWriteContract } from 'wagmi';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/lib/languageContext';
-import { fetchMyOrders, updateOrder, submitReview, openDisputeApi, uploadDeliverable } from '@/lib/api';
+import { fetchMyOrders, updateOrder, submitReview, openDisputeApi, uploadDeliverable, syncChain } from '@/lib/api';
 import {
   ShieldCheck,
   Clock,
@@ -110,6 +110,14 @@ export default function OrdersDashboardPage() {
   const activeChainId = chainId || CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID;
   const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID];
   const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
+
+  const networkName = (id?: number) => (id === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID ? 'Base Sepolia' : 'Base Mainnet');
+  const formatDate = (unixSeconds?: number | null) =>
+    unixSeconds
+      ? new Date(unixSeconds * 1000).toLocaleString(language === 'en' ? 'en-US' : 'es-ES', { dateStyle: 'medium', timeStyle: 'short' })
+      : null;
+  const nowSeconds = Math.floor(Date.now() / 1000);
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -354,8 +362,9 @@ export default function OrdersDashboardPage() {
       setIsProcessing(true);
       setActionNotice(`Reclamando reembolso por timeout para Orden #${order.contractOrderId}...`);
 
+      let refundTx: `0x${string}`;
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
-        await writeContractAsync({
+        refundTx = await writeContractAsync({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
           dataSuffix: BUILDER_DATA_SUFFIX,
@@ -366,16 +375,14 @@ export default function OrdersDashboardPage() {
         throw new Error(language === 'en' ? 'Connect your wallet to send this on-chain transaction.' : 'Conecta tu wallet para enviar esta transacción on-chain.');
       }
 
-      try {
-        await updateOrder(order.id, { status: 'REFUNDED' });
-      } catch (err) {
-        console.warn('Backend sync note:', err);
-      }
+      // Refunds are recorded from the OrderRefunded event by the indexer.
+      await publicClient?.waitForTransactionReceipt({ hash: refundTx });
+      await syncChain(activeChainId);
 
       setOrders((prev) =>
         prev.map((o) => (o.id === order.id ? { ...o, status: 'REFUNDED' } : o))
       );
-      setActionNotice(`100% de los fondos reembolsados directamente al comprador.`);
+      setActionNotice(language === 'en' ? 'The full amount was refunded to your wallet.' : 'El monto íntegro se reembolsó a tu wallet.');
     } catch (err: any) {
       if (isUserRejection(err)) {
         setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
@@ -388,6 +395,50 @@ export default function OrdersDashboardPage() {
     }
   };
 
+
+  // Seller Action: claim the payment once the review window has passed without approval or dispute
+  const handleClaimPayment = async (order: MockOrder) => {
+    try {
+      assertOrderChain(order);
+      setIsProcessing(true);
+      setActionNotice(language === 'en' ? `Claiming payment for order #${order.contractOrderId}...` : `Cobrando el pago de la orden #${order.contractOrderId}...`);
+
+      if (!isConnected || !escrowAddress || escrowAddress === '0x0000000000000000000000000000000000000000') {
+        throw new Error(language === 'en' ? 'Connect your wallet to send this on-chain transaction.' : 'Conecta tu wallet para enviar esta transacción on-chain.');
+      }
+      const txHash = await writeContractAsync({
+        address: escrowAddress,
+        abi: MarketplaceEscrowAbi,
+        dataSuffix: BUILDER_DATA_SUFFIX,
+        functionName: 'claimAutoRelease',
+        args: [BigInt(order.contractOrderId)],
+      });
+
+      await publicClient?.waitForTransactionReceipt({ hash: txHash });
+      try {
+        await updateOrder(order.id, { status: 'RELEASED', txHashRelease: txHash });
+      } catch (err) {
+        console.warn('Backend sync note:', err);
+        await syncChain(activeChainId);
+      }
+
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: 'RELEASED' } : o)));
+      setActionNotice(
+        language === 'en'
+          ? `Payment received: ${order.sellerAmountUsdc} USDC sent to your wallet.`
+          : `Pago cobrado: ${order.sellerAmountUsdc} USDC enviados a tu wallet.`
+      );
+    } catch (err: any) {
+      if (isUserRejection(err)) {
+        setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
+      } else {
+        console.error(err);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || (language === 'en' ? 'Transaction error' : 'Error en la transacción')}`);
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const openDeliveryModal = (order: MockOrder) => {
     setActiveDeliveryModalOrder(order);
@@ -674,9 +725,7 @@ export default function OrdersDashboardPage() {
                     <div className="flex items-center gap-2 font-bold text-red-400">
                       <AlertTriangle className="h-4 w-4 shrink-0" />
                       <span>
-                        {order.dispute?.status === 'RESOLVED'
-                          ? 'Fallo de Mediación y Arbitraje Emitido'
-                          : 'Disputa en Curso — Fondos Congelados en Escrow'}
+                        {order.dispute?.status === 'RESOLVED' ? t('disputeTitleResolved') : t('disputeTitleOpen')}
                       </span>
                     </div>
                     <span
@@ -686,20 +735,20 @@ export default function OrdersDashboardPage() {
                           : 'bg-red-500/20 text-red-300'
                       }`}
                     >
-                      {order.dispute?.status === 'RESOLVED' ? 'RESUELTA' : 'EN MEDIACIÓN'}
+                      {order.dispute?.status === 'RESOLVED' ? t('disputeBadgeResolved') : t('disputeBadgeOpen')}
                     </span>
                   </div>
 
                   {order.dispute?.reason && (
                     <div className="mt-2.5 text-slate-300">
-                      <strong className="text-red-300">Motivo del reclamo: </strong>
+                      <strong className="text-red-300">{t('disputeReasonLabel')}: </strong>
                       <span>{order.dispute.reason}</span>
                     </div>
                   )}
 
                   {order.dispute?.evidenceUrl && (
                     <div className="mt-1.5 text-slate-400">
-                      <span>Prueba aportada: </span>
+                      <span>{t('disputeEvidenceLabel')}: </span>
                       <a
                         href={order.dispute.evidenceUrl}
                         target="_blank"
@@ -715,18 +764,21 @@ export default function OrdersDashboardPage() {
                   {order.dispute?.status === 'RESOLVED' ? (
                     <div className="mt-3 rounded-lg border border-accent/30 bg-accent/10 p-3 text-accent">
                       <p className="font-bold">
-                        Resolución de mediación ejecutada: {order.dispute.sellerAwardUsdc} USDC acreditados al prestador / {order.dispute.buyerRefundUsdc} USDC reembolsados al comprador.
+                        {t('disputeResolvedNotice')}:{' '}
+                        {language === 'en'
+                          ? `${order.dispute.sellerAwardUsdc} USDC awarded to the seller / ${order.dispute.buyerRefundUsdc} USDC refunded to the buyer.`
+                          : `${order.dispute.sellerAwardUsdc} USDC asignados al prestador / ${order.dispute.buyerRefundUsdc} USDC reembolsados al comprador.`}
                       </p>
                       {order.dispute.resolutionNotes && (
                         <p className="mt-1.5 text-xs text-slate-300">
-                          <strong className="text-slate-400">Fundamentación de la resolución: </strong>
+                          <strong className="text-slate-400">{t('disputeArbitratorNotes')}: </strong>
                           {order.dispute.resolutionNotes}
                         </p>
                       )}
                     </div>
                   ) : (
                     <p className="mt-2 text-[11px] text-slate-400 leading-relaxed">
-                      El proceso de mediación y arbitraje neutral está evaluando las pruebas del caso. Los fondos en USDC permanecen asegurados de forma non-custodial en el contrato de Escrow de Base Sepolia.
+                      {t('disputeUnderReviewNotice').replace('{network}', networkName(order.chainId))}
                     </p>
                   )}
                 </div>
@@ -752,22 +804,25 @@ export default function OrdersDashboardPage() {
                       {t('openDispute')}
                     </button>
                     <span className="text-xs text-slate-400 ml-auto">
-                      {t('autoReleaseNotice')}
+                      {order.autoReleaseDeadline
+                        ? t('autoReleaseNotice').replace('{date}', formatDate(order.autoReleaseDeadline)!)
+                        : t('autoReleaseNoticeNoDate')}
                     </span>
                   </>
                 )}
 
                 {order.role === 'buyer' && order.status === 'FUNDED' && (
-                  <div className="flex items-center justify-between w-full">
+                  <div className="flex w-full flex-wrap items-center justify-between gap-3">
                     <span className="text-xs text-slate-400">
-                      El prestador está trabajando. Si no entrega antes del plazo acordado, podrás reclamar el 100% de reembolso.
+                      {t('sellerWorkingNotice').replace('{date}', formatDate(order.deadlineTimestamp) || '—')}
                     </span>
                     <button
                       onClick={() => handleClaimRefund(order)}
-                      disabled={isProcessing}
-                      className="rounded-lg border border-border px-3 py-2.5 text-xs font-semibold text-slate-400 hover:text-white sm:py-1.5"
+                      disabled={isProcessing || nowSeconds <= order.deadlineTimestamp}
+                      title={nowSeconds <= order.deadlineTimestamp ? t('refundNotYet') : undefined}
+                      className="rounded-lg border border-border px-3 py-2.5 text-xs font-semibold text-slate-400 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-slate-400 sm:py-1.5"
                     >
-                      Verificar Timeout
+                      {t('claimRefund')}
                     </button>
                   </div>
                 )}
@@ -784,10 +839,26 @@ export default function OrdersDashboardPage() {
                 )}
 
                 {order.role === 'seller' && order.status === 'DELIVERED' && (
-                  <div className="flex items-center justify-between w-full text-xs text-slate-400">
+                  <div className="flex w-full flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
                     <span>
-                      Entrega enviada al comprador. Si el cliente no revisa en 5 días, los fondos se liberarán automáticamente a tu wallet.
+                      {order.autoReleaseDeadline
+                        ? t('sellerDeliveredNotice').replace('{date}', formatDate(order.autoReleaseDeadline)!)
+                        : t('sellerDeliveredNoticeNoDate')}
                     </span>
+                    {(() => {
+                      // Without a known release time the contract decides; it reverts if the window is still open.
+                      const notYet = !!order.autoReleaseDeadline && nowSeconds < order.autoReleaseDeadline;
+                      return (
+                        <button
+                          onClick={() => handleClaimPayment(order)}
+                          disabled={isProcessing || notYet}
+                          title={notYet ? t('paymentNotYet') : undefined}
+                          className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-background transition hover:bg-accent/90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {t('claimPayment')}
+                        </button>
+                      );
+                    })()}
                   </div>
                 )}
 
@@ -1219,7 +1290,7 @@ export default function OrdersDashboardPage() {
             </div>
 
             <p className="mt-3 text-xs text-slate-400 leading-relaxed">
-              Al abrir una disputa, el auto-release de fondos se congela de inmediato en el smart contract escrow. El servicio de mediación y arbitraje neutral evaluará el caso para determinar la distribución o reembolso justo de los fondos.
+              {t('modalDisputeDesc')}
             </p>
 
             <form onSubmit={handleConfirmDispute} className="mt-5 space-y-4">

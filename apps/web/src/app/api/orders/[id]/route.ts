@@ -15,8 +15,8 @@ async function verifyOnChainDelivery(
   expectedSellerWallet: string,
   expectedDeliveryHash: string,
   targetChainId: number
-): Promise<boolean> {
-  if (!contractOrderId || contractOrderId <= 0) return false;
+): Promise<number | null> {
+  if (!contractOrderId || contractOrderId <= 0) return null;
 
   const isSepolia = targetChainId === 84532;
   const chain = isSepolia ? baseSepolia : base;
@@ -31,7 +31,7 @@ async function verifyOnChainDelivery(
 
     if (receipt && receipt.status === 'success') {
       if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
-        return false;
+        return null;
       }
 
       const logs = parseEventLogs({
@@ -48,15 +48,16 @@ async function verifyOnChainDelivery(
           log.args.seller.toLowerCase() === expectedSellerWallet.toLowerCase() &&
           log.args.deliveryHash.toLowerCase() === expectedDeliveryHash.toLowerCase()
         ) {
-          return true;
+          // When the seller can claim the payout if the buyer neither approves nor disputes.
+          return Number(log.args.autoReleaseTime);
         }
       }
     }
   } catch {
-    return false;
+    return null;
   }
 
-  return false;
+  return null;
 }
 
 async function verifyOnChainRelease(
@@ -205,6 +206,7 @@ export async function PATCH(
     // PATCH /api/orders/[id] cannot be used to arbitrarily set financial statuses.
     // Escrow states (FUNDED, DISPUTED, REFUNDED, RESOLVED) are strictly governed by smart contract events and dispute routes.
     let targetStatus = existingOrder.status;
+    let autoReleaseDeadline: number | null = existingOrder.autoReleaseDeadline;
 
     if (status !== undefined && status !== existingOrder.status) {
       if (status !== 'DELIVERED' && status !== 'RELEASED') {
@@ -247,7 +249,7 @@ export async function PATCH(
           );
         }
 
-        const isValidDelivery = await verifyOnChainDelivery(
+        autoReleaseDeadline = await verifyOnChainDelivery(
           deliveryTx as `0x${string}`,
           existingOrder.contractOrderId,
           existingOrder.seller.walletAddress,
@@ -255,7 +257,7 @@ export async function PATCH(
           targetChainId
         );
 
-        if (!isValidDelivery) {
+        if (autoReleaseDeadline === null) {
           return NextResponse.json(
             { error: `Transaction verification failed: DeliverySubmitted event not confirmed on chain ${targetChainId} for this order` },
             { status: 400 }
@@ -266,9 +268,8 @@ export async function PATCH(
       }
 
       if (status === 'RELEASED') {
-        if (!isBuyer && !isAdmin) {
-          return NextResponse.json({ error: 'Forbidden: Solo el comprador puede aprobar la entrega y liberar fondos' }, { status: 403 });
-        }
+        // The buyer approves, or the seller claims the automatic release after the review window.
+        // Either way the OrderReleased event below is the proof, so both parties may report it.
 
         if (existingOrder.status !== 'DELIVERED') {
           return NextResponse.json(
@@ -316,6 +317,7 @@ export async function PATCH(
         deliveryReferenceUrl: resolvedDeliveryUrl !== undefined ? resolvedDeliveryUrl : existingOrder.deliveryReferenceUrl,
         deliveryHash: resolvedDeliveryHash !== undefined ? resolvedDeliveryHash : existingOrder.deliveryHash,
         txHashRelease: resolvedTxHashRelease !== undefined ? resolvedTxHashRelease : existingOrder.txHashRelease,
+        autoReleaseDeadline,
         deliveredAt: targetStatus === 'DELIVERED' ? (existingOrder.deliveredAt || new Date()) : existingOrder.deliveredAt,
         releasedAt: targetStatus === 'RELEASED' ? (existingOrder.releasedAt || new Date()) : existingOrder.releasedAt,
         updatedAt: new Date(),
