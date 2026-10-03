@@ -416,6 +416,7 @@ export interface Proposal {
   priceUsdc: string;
   deliveryDays: number;
   message: string;
+  milestones?: { title: string; amountUsdc: string; deliveryDays: number }[] | null;
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
   createdAt: string;
   seller?: { displayName?: string; walletAddress?: string } | null;
@@ -428,7 +429,18 @@ export interface RequestDetail {
     proposalId: string;
     serviceSlug: string | null;
     order: { contractOrderId: number | null; chainId: number; status: string } | null;
+    phases: RequestPhase[];
   } | null;
+}
+
+export interface RequestPhase {
+  index: number;
+  count: number;
+  title: string;
+  priceUsdc: string;
+  deliveryDays: number;
+  serviceSlug: string;
+  order: { contractOrderId: number | null; chainId: number; status: string } | null;
 }
 
 async function authedJson<T>(path: string, wallet: string | null | undefined, init: RequestInit = {}, requireAuth = true): Promise<T> {
@@ -461,7 +473,12 @@ export const cancelRequest = (wallet: string | null | undefined, idOrSlug: strin
 export const sendProposal = (
   wallet: string | null | undefined,
   requestId: string,
-  body: { priceUsdc: string; deliveryDays: number; message: string }
+  body: {
+    priceUsdc?: string;
+    deliveryDays?: number;
+    message: string;
+    milestones?: { title: string; amountUsdc: string; deliveryDays: number }[];
+  }
 ) => authedJson<{ proposal: Proposal }>(`/requests/${requestId}/proposals`, wallet, { method: 'POST', body: JSON.stringify(body) });
 
 export const updateProposal = (wallet: string | null | undefined, requestId: string, proposalId: string, action: 'accept' | 'withdraw') =>

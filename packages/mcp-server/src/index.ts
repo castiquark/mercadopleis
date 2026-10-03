@@ -538,6 +538,9 @@ server.registerTool(
           seller: p.seller?.displayName,
           sellerWallet: p.seller?.walletAddress,
           message: p.message,
+          ...(p.milestones?.length && {
+            milestones: p.milestones.map((m, i) => ({ phase: i + 1, title: m.title, amountUsdc: usdc(m.amountUsdc), deliveryDays: m.deliveryDays })),
+          }),
         })),
         acceptedServiceId: award?.serviceSlug ?? null,
       });
@@ -551,13 +554,20 @@ server.registerTool(
   'accept_proposal',
   {
     description:
-      'Accept one proposal for your request. It becomes a private service with the agreed price and delivery time; the other proposals are declined. Nothing is charged yet: fund it with create_order using the returned serviceId.',
+      'Accept one proposal for your request. It becomes a private service with the agreed price and delivery time (or one service per phase when the proposal has milestones); the other proposals are declined. Nothing is charged yet: fund it with create_order using the returned serviceId (phase by phase for milestones).',
     inputSchema: { requestId: z.string().describe('Request slug or UUID'), proposalId: z.string() },
   },
   async ({ requestId, proposalId }) => {
     try {
       const { request } = await getRequest(requestId);
-      const { service } = await acceptProposal(request.id, proposalId);
+      const { service, phases } = await acceptProposal(request.id, proposalId);
+      if (phases && phases.length > 1) {
+        return json({
+          accepted: true,
+          phases: phases.map((ph) => ({ phase: ph.index, serviceId: ph.slug, priceUsdc: usdc(ph.priceUsdc), deliveryDays: ph.deliveryDays })),
+          next: 'Each phase is its own escrow order. Fund phase 1 with create_order({ serviceId, buyerWallet }), register_order, send_message; approve it with prepare_order_action, then fund the next phase.',
+        });
+      }
       return json({
         accepted: true,
         serviceId: service.slug,

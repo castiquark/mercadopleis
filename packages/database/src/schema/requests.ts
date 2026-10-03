@@ -1,4 +1,4 @@
-import { pgTable, uniqueIndex, index, uuid, varchar, text, numeric, integer, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uniqueIndex, index, uuid, varchar, text, numeric, integer, timestamp, jsonb } from 'drizzle-orm/pg-core';
 import { users } from './users';
 import { services } from './services';
 
@@ -33,9 +33,11 @@ export const requestProposals = pgTable(
     priceUsdc: numeric('price_usdc', { precision: 12, scale: 2 }).notNull(),
     deliveryDays: integer('delivery_days').notNull(),
     message: text('message').notNull(),
+    // Optional phases [{ title, amountUsdc, deliveryDays }]; each becomes its own unlisted service and escrow order.
+    milestones: jsonb('milestones').$type<{ title: string; amountUsdc: string; deliveryDays: number }[]>(),
     // PENDING | ACCEPTED | REJECTED | WITHDRAWN
     status: varchar('status', { length: 20 }).notNull().default('PENDING'),
-    // Unlisted service created when the proposal is accepted; the order is funded against it.
+    // Unlisted service created when the proposal is accepted (the first phase when it has milestones).
     serviceId: uuid('service_id').references(() => services.id),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

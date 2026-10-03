@@ -19,6 +19,10 @@ export const services = pgTable('services', {
   isActive: boolean('is_active').default(true).notNull(),
   // false for services created from an accepted request proposal: payable by direct slug, hidden from the catalog.
   isListed: boolean('is_listed').default(true).notNull(),
+  // Phases of an accepted proposal: same proposalId, milestoneIndex 1..milestoneCount. Null for regular services.
+  proposalId: uuid('proposal_id'),
+  milestoneIndex: integer('milestone_index'),
+  milestoneCount: integer('milestone_count'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

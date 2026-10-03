@@ -129,6 +129,7 @@ export interface ApiProposal {
   deliveryDays: number;
   message: string;
   status: string;
+  milestones?: { title: string; amountUsdc: string | number; deliveryDays: number }[] | null;
   seller?: { displayName?: string; walletAddress?: string } | null;
 }
 
@@ -143,7 +144,10 @@ export const getRequest = (idOrSlug: string) =>
   );
 
 export const acceptProposal = (requestId: string, proposalId: string) =>
-  call<{ service: { id: string; slug: string; priceUsdc: string; deliveryDays: number } }>(
+  call<{
+    service: { id: string; slug: string; priceUsdc: string; deliveryDays: number };
+    phases?: { index: number; slug: string; priceUsdc: string; deliveryDays: number }[];
+  }>(
     `/api/requests/${requestId}/proposals/${proposalId}`,
     { method: 'PATCH', body: JSON.stringify({ action: 'accept' }) },
     true

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, orders, requests, services } from '@mercadopleis/database';
-import { and, eq } from 'drizzle-orm';
+import { db, requests, services } from '@mercadopleis/database';
+import { eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { visibleProposals } from '@/lib/requests';
-import { findRequest } from '@/lib/requestsDb';
+import { findRequest, phasesOfProposal } from '@/lib/requestsDb';
 
 /**
  * Request detail. Everyone sees the request and how many proposals it has; the buyer sees every proposal,
@@ -21,14 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const awarded = proposals.find((p: any) => p.id === found.awardedProposalId);
     const canSeeAward = !!viewer && !!awarded && (viewer.id === found.buyerId || viewer.id === awarded.sellerId);
 
-    let order: { contractOrderId: number | null; chainId: number; status: string } | null = null;
-    if (canSeeAward && awarded.serviceId) {
-      const o = await db.query.orders.findFirst({
-        where: and(eq(orders.serviceId, awarded.serviceId), eq(orders.buyerId, found.buyerId)),
-        columns: { contractOrderId: true, chainId: true, status: true },
-      });
-      order = o ?? null;
-    }
+    const phases = canSeeAward ? await phasesOfProposal(awarded.id, found.buyerId) : [];
 
     return NextResponse.json({
       request: {
@@ -37,7 +30,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         isOwner: viewer?.id === found.buyerId,
       },
       proposals: visible,
-      award: canSeeAward ? { proposalId: awarded.id, serviceSlug: awarded.service?.slug ?? null, order } : null,
+      award: canSeeAward
+        ? { proposalId: awarded.id, serviceSlug: phases[0]?.serviceSlug ?? null, order: phases[0]?.order ?? null, phases }
+        : null,
     });
   } catch (err) {
     console.error('Error fetching request:', err);
@@ -63,17 +58,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (found.status === 'CANCELLED') return NextResponse.json({ request: found });
 
     const awarded = found.proposals.find((p) => p.id === found.awardedProposalId);
-    if (awarded?.serviceId) {
-      const funded = await db.query.orders.findFirst({ where: eq(orders.serviceId, awarded.serviceId), columns: { id: true } });
-      if (funded) {
-        return NextResponse.json({ error: 'An order was already funded for this request; manage it from your orders' }, { status: 409 });
-      }
+    const phases = awarded ? await phasesOfProposal(awarded.id, found.buyerId) : [];
+    if (phases.some((ph) => ph.order)) {
+      return NextResponse.json({ error: 'An order was already funded for this request; manage it from your orders' }, { status: 409 });
     }
 
     await db.transaction(async (tx: any) => {
       await tx.update(requests).set({ status: 'CANCELLED', updatedAt: new Date() }).where(eq(requests.id, found.id));
-      if (awarded?.serviceId) {
-        await tx.update(services).set({ isActive: false, updatedAt: new Date() }).where(eq(services.id, awarded.serviceId));
+      if (awarded) {
+        await tx.update(services).set({ isActive: false, updatedAt: new Date() }).where(eq(services.proposalId, awarded.id));
       }
     });
     return NextResponse.json({ request: { ...found, status: 'CANCELLED' } });

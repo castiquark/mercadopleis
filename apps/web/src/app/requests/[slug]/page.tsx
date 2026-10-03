@@ -33,6 +33,11 @@ export default function RequestDetailPage() {
   const [price, setPrice] = useState('');
   const [days, setDays] = useState('');
   const [message, setMessage] = useState('');
+  const [usePhases, setUsePhases] = useState(false);
+  const [phases, setPhases] = useState([
+    { title: '', amountUsdc: '', deliveryDays: '' },
+    { title: '', amountUsdc: '', deliveryDays: '' },
+  ]);
 
   const load = useCallback(async () => {
     try {
@@ -43,6 +48,10 @@ export default function RequestDetailPage() {
         setPrice(Number(mine.priceUsdc).toFixed(2));
         setDays(String(mine.deliveryDays));
         setMessage(mine.message);
+        if (mine.milestones?.length) {
+          setUsePhases(true);
+          setPhases(mine.milestones.map((m) => ({ title: m.title, amountUsdc: Number(m.amountUsdc).toFixed(2), deliveryDays: String(m.deliveryDays) })));
+        }
       }
     } catch (e: any) {
       if (/not found/i.test(e?.message || '')) setNotFound(true);
@@ -176,34 +185,56 @@ export default function RequestDetailPage() {
             {accepted.seller?.displayName || short(accepted.seller?.walletAddress)} · {Number(accepted.priceUsdc).toFixed(2)} USDC ·{' '}
             {accepted.deliveryDays} {en ? 'days' : 'días'}
           </p>
-          {award.order ? (
-            <p className="mt-3 text-sm text-slate-300">
-              {en ? 'Order funded in escrow' : 'Orden fondeada en el escrow'} (#{award.order.contractOrderId}).{' '}
-              <Link href="/orders" className="font-semibold text-primary-light hover:underline">
-                {en ? 'Follow it in My Orders' : 'Síguela en Mis Órdenes'}
-              </Link>
-            </p>
-          ) : isOwner ? (
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button
-                onClick={() => award.serviceSlug && openCheckout(award.serviceSlug)}
-                className="rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 hover:bg-primary-hover"
-              >
-                {en ? `Fund ${Number(accepted.priceUsdc).toFixed(2)} USDC in escrow` : `Fondear ${Number(accepted.priceUsdc).toFixed(2)} USDC en el escrow`}
-              </button>
-              <span className="text-xs text-slate-400">
-                {en
-                  ? 'The money stays in the contract until you approve the delivery or the review period ends.'
-                  : 'El dinero queda en el contrato hasta que apruebes la entrega o termine el período de revisión.'}
-              </span>
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-slate-300">
-              {en
-                ? 'Your proposal was accepted. Once the buyer funds the escrow, the order appears in My Orders: do not start before that.'
-                : 'Tu propuesta fue aceptada. Cuando el comprador fondee el escrow, la orden aparecerá en Mis Órdenes: no empieces antes.'}
-            </p>
-          )}
+          <ol className="mt-4 space-y-2">
+            {award.phases.map((ph, i) => {
+              const previousDone = award.phases.slice(0, i).every((x) => x.order && ['RELEASED', 'RESOLVED'].includes(x.order.status));
+              const nextToFund = !ph.order && award.phases.slice(0, i).every((x) => x.order);
+              return (
+                <li key={ph.serviceSlug} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-surface/60 p-3">
+                  <span className="min-w-0 text-sm text-slate-200">
+                    {award.phases.length > 1 && (
+                      <span className="font-semibold">{en ? `Phase ${ph.index}/${ph.count}` : `Fase ${ph.index}/${ph.count}`} · </span>
+                    )}
+                    {Number(ph.priceUsdc).toFixed(2)} USDC · {ph.deliveryDays} {en ? 'days' : 'días'}
+                    <span className="block text-xs text-slate-400">
+                      {ph.order
+                        ? `${en ? 'Order' : 'Orden'} #${ph.order.contractOrderId} · ${ph.order.status}`
+                        : en
+                          ? 'Not funded yet'
+                          : 'Sin fondear todavía'}
+                    </span>
+                  </span>
+                  {isOwner && nextToFund && (
+                    <span className="flex flex-col items-end gap-1">
+                      <button
+                        onClick={() => openCheckout(ph.serviceSlug)}
+                        className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow-lg shadow-primary/20 hover:bg-primary-hover"
+                      >
+                        {en ? `Fund ${Number(ph.priceUsdc).toFixed(2)} USDC` : `Fondear ${Number(ph.priceUsdc).toFixed(2)} USDC`}
+                      </button>
+                      {i > 0 && !previousDone && (
+                        <span className="text-[11px] text-amber-400">
+                          {en ? 'Tip: approve the previous phase first.' : 'Consejo: aprueba antes la fase anterior.'}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+          <p className="mt-3 text-xs text-slate-400">
+            {isOwner
+              ? en
+                ? 'Each phase is its own escrow order: the money stays in the contract until you approve that phase or its review period ends.'
+                : 'Cada fase es una orden de escrow propia: el dinero queda en el contrato hasta que apruebes esa fase o termine su período de revisión.'
+              : en
+                ? 'Your proposal was accepted. Start each phase only when it shows as funded.'
+                : 'Tu propuesta fue aceptada. Empieza cada fase solo cuando figure como fondeada.'}{' '}
+            <Link href="/orders" className="font-semibold text-primary-light hover:underline">
+              {en ? 'Follow them in My Orders' : 'Síguelas en Mis Órdenes'}
+            </Link>
+          </p>
         </div>
       )}
 
@@ -243,6 +274,20 @@ export default function RequestDetailPage() {
                   </div>
                 </div>
                 <p className="mt-3 whitespace-pre-line break-words text-sm text-slate-300">{p.message}</p>
+                {p.milestones && p.milestones.length > 0 && (
+                  <ol className="mt-3 space-y-1 rounded-xl bg-background/50 p-3 text-xs text-slate-300">
+                    {p.milestones.map((m, i) => (
+                      <li key={i} className="flex justify-between gap-3">
+                        <span className="min-w-0 break-words">
+                          {i + 1}. {m.title}
+                        </span>
+                        <span className="shrink-0 text-slate-400">
+                          {Number(m.amountUsdc).toFixed(2)} USDC · {m.deliveryDays} {en ? 'days' : 'días'}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
                 {r.status === 'OPEN' && p.status === 'PENDING' && (
                   <button
                     onClick={() => setConfirmAccept(p)}
@@ -280,12 +325,105 @@ export default function RequestDetailPage() {
               onSubmit={(e) => {
                 e.preventDefault();
                 run(
-                  () => sendProposal(address, r.id, { priceUsdc: price.trim(), deliveryDays: parseInt(days, 10), message: message.trim() }),
+                  () =>
+                    sendProposal(
+                      address,
+                      r.id,
+                      usePhases
+                        ? {
+                            message: message.trim(),
+                            milestones: phases.map((ph) => ({
+                              title: ph.title.trim(),
+                              amountUsdc: ph.amountUsdc.trim(),
+                              deliveryDays: parseInt(ph.deliveryDays, 10),
+                            })),
+                          }
+                        : { priceUsdc: price.trim(), deliveryDays: parseInt(days, 10), message: message.trim() }
+                    ),
                   en ? 'Proposal sent.' : 'Propuesta enviada.'
                 );
               }}
               className="mt-4 space-y-4"
             >
+              <label className="flex items-start gap-2 text-sm text-slate-300">
+                <input type="checkbox" checked={usePhases} onChange={(e) => setUsePhases(e.target.checked)} className="mt-1" />
+                <span>
+                  {en ? 'Split into milestones (paid by phases)' : 'Dividir en hitos (pago por fases)'}
+                  <span className="block text-xs text-slate-500">
+                    {en
+                      ? 'Each phase is funded and approved separately: you only start a phase once its payment is locked in escrow.'
+                      : 'Cada fase se fondea y aprueba por separado: solo empiezas una fase cuando su pago ya está bloqueado en el escrow.'}
+                  </span>
+                </span>
+              </label>
+              {usePhases ? (
+                <div className="space-y-3">
+                  {phases.map((ph, i) => (
+                    <div key={i} className="grid grid-cols-1 gap-2 rounded-xl border border-border/80 p-3 sm:grid-cols-[1fr_8rem_6rem_auto] sm:items-end">
+                      <label className="block text-[11px] font-medium uppercase tracking-wider text-slate-400">
+                        {en ? `Phase ${i + 1}` : `Fase ${i + 1}`}
+                        <input
+                          required
+                          maxLength={120}
+                          value={ph.title}
+                          onChange={(e) => setPhases(phases.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
+                          placeholder={en ? 'What is delivered' : 'Qué se entrega'}
+                          className={inputClass}
+                        />
+                      </label>
+                      <label className="block text-[11px] font-medium uppercase tracking-wider text-slate-400">
+                        USDC
+                        <input
+                          required
+                          type="number"
+                          min={1}
+                          step="0.01"
+                          value={ph.amountUsdc}
+                          onChange={(e) => setPhases(phases.map((x, j) => (j === i ? { ...x, amountUsdc: e.target.value } : x)))}
+                          className={inputClass}
+                        />
+                      </label>
+                      <label className="block text-[11px] font-medium uppercase tracking-wider text-slate-400">
+                        {en ? 'Days' : 'Días'}
+                        <input
+                          required
+                          type="number"
+                          min={1}
+                          max={365}
+                          step="1"
+                          value={ph.deliveryDays}
+                          onChange={(e) => setPhases(phases.map((x, j) => (j === i ? { ...x, deliveryDays: e.target.value } : x)))}
+                          className={inputClass}
+                        />
+                      </label>
+                      {phases.length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() => setPhases(phases.filter((_, j) => j !== i))}
+                          className="pb-2.5 text-xs font-semibold text-slate-500 hover:text-red-400"
+                        >
+                          {en ? 'Remove' : 'Quitar'}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+                    {phases.length < 10 && (
+                      <button
+                        type="button"
+                        onClick={() => setPhases([...phases, { title: '', amountUsdc: '', deliveryDays: '' }])}
+                        className="font-semibold text-primary-light hover:underline"
+                      >
+                        {en ? '+ Add phase' : '+ Añadir fase'}
+                      </button>
+                    )}
+                    <span>
+                      Total: {phases.reduce((t, ph) => t + (Number(ph.amountUsdc) || 0), 0).toFixed(2)} USDC ·{' '}
+                      {phases.reduce((t, ph) => t + (parseInt(ph.deliveryDays, 10) || 0), 0)} {en ? 'days' : 'días'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
                   {en ? 'Your price (USDC)' : 'Tu precio (USDC)'}
@@ -296,6 +434,7 @@ export default function RequestDetailPage() {
                   <input required type="number" min={1} max={365} step="1" value={days} onChange={(e) => setDays(e.target.value)} className={inputClass} />
                 </label>
               </div>
+              )}
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
                 {en ? 'How you will do it' : 'Cómo lo harás'}
                 <textarea required rows={4} maxLength={4000} value={message} onChange={(e) => setMessage(e.target.value)} className={inputClass} />

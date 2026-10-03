@@ -14,27 +14,60 @@ export function slugify(title: string, suffix: string): string {
   return `${base || 'request'}-${suffix}`;
 }
 
+type Milestone = { title: string; amountUsdc: string; deliveryDays: number };
+
 /**
- * Terms of the unlisted service created when a proposal is accepted. The order is funded against it, so the
- * existing on-chain checks (seller wallet and exact amount) enforce exactly what the buyer accepted.
+ * Unlisted services created when a proposal is accepted: one with the agreed terms, or one per milestone.
+ * Each is funded as its own escrow order, so the existing on-chain checks (seller wallet and exact amount)
+ * enforce exactly what the buyer accepted, phase by phase. A phase's delivery days count from its own funding.
  */
-export function serviceFromProposal(
+export function servicesFromProposal(
   request: { title: string; description: string; category: string; slug: string },
-  proposal: { priceUsdc: string; deliveryDays: number; message: string; id: string },
+  proposal: { priceUsdc: string; deliveryDays: number; message: string; id: string; milestones?: Milestone[] | null },
   sellerId: string
 ) {
-  return {
+  const base = {
     sellerId,
-    title: request.title.slice(0, 255),
-    slug: `${request.slug.slice(0, 200)}-p${proposal.id.slice(0, 8)}`,
-    description: `${request.description}\n\n---\nAccepted proposal:\n${proposal.message}`,
     category: request.category,
-    priceUsdc: proposal.priceUsdc,
-    deliveryDays: proposal.deliveryDays,
     deliveryType: 'digital' as const,
     isActive: true,
     isListed: false,
+    proposalId: proposal.id,
   };
+  const slugBase = `${request.slug.slice(0, 190)}-p${proposal.id.slice(0, 8)}`;
+  const description = `${request.description}
+
+---
+Accepted proposal:
+${proposal.message}`;
+
+  const phases = proposal.milestones ?? [];
+  if (phases.length === 0) {
+    return [
+      {
+        ...base,
+        title: request.title.slice(0, 255),
+        slug: slugBase,
+        description,
+        priceUsdc: proposal.priceUsdc,
+        deliveryDays: proposal.deliveryDays,
+        milestoneIndex: null,
+        milestoneCount: null,
+      },
+    ];
+  }
+  return phases.map((m, i) => ({
+    ...base,
+    title: `${request.title} — ${i + 1}/${phases.length}: ${m.title}`.slice(0, 255),
+    slug: `${slugBase}-m${i + 1}`,
+    description: `Phase ${i + 1} of ${phases.length}: ${m.title}
+
+${description}`,
+    priceUsdc: m.amountUsdc,
+    deliveryDays: m.deliveryDays,
+    milestoneIndex: i + 1,
+    milestoneCount: phases.length,
+  }));
 }
 
 export type Viewer = { id: string; role: string } | null;

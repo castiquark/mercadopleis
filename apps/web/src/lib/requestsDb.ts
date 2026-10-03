@@ -8,6 +8,7 @@ export interface RequestProposalRow {
   priceUsdc: string;
   deliveryDays: number;
   message: string;
+  milestones: { title: string; amountUsdc: string; deliveryDays: number }[] | null;
   status: string;
   serviceId: string | null;
   createdAt: Date;
@@ -48,5 +49,43 @@ export async function findRequest(idOrSlug: string): Promise<RequestRow | undefi
         },
       },
     },
+  });
+}
+
+export interface PhaseRow {
+  index: number;
+  count: number;
+  title: string;
+  priceUsdc: string;
+  deliveryDays: number;
+  serviceSlug: string;
+  order: { contractOrderId: number | null; chainId: number; status: string } | null;
+}
+
+/** The services created for an accepted proposal (one, or one per milestone) with the buyer's order for each. */
+export async function phasesOfProposal(proposalId: string, buyerId: string): Promise<PhaseRow[]> {
+  const { services, orders } = await import('@mercadopleis/database');
+  const { and, asc, eq, inArray } = await import('drizzle-orm');
+  const rows = await db.query.services.findMany({
+    where: eq(services.proposalId, proposalId),
+    orderBy: [asc(services.milestoneIndex)],
+    columns: { id: true, slug: true, title: true, priceUsdc: true, deliveryDays: true, milestoneIndex: true, milestoneCount: true },
+  });
+  if (rows.length === 0) return [];
+  const funded = await db.query.orders.findMany({
+    where: and(inArray(orders.serviceId, rows.map((r: any) => r.id)), eq(orders.buyerId, buyerId)),
+    columns: { serviceId: true, contractOrderId: true, chainId: true, status: true },
+  });
+  return rows.map((r: any, i: number) => {
+    const o = funded.find((x: any) => x.serviceId === r.id);
+    return {
+      index: r.milestoneIndex ?? i + 1,
+      count: r.milestoneCount ?? rows.length,
+      title: r.title,
+      priceUsdc: Number(r.priceUsdc).toFixed(2),
+      deliveryDays: r.deliveryDays,
+      serviceSlug: r.slug,
+      order: o ? { contractOrderId: o.contractOrderId, chainId: o.chainId, status: o.status } : null,
+    };
   });
 }

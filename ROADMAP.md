@@ -249,6 +249,8 @@ _El detalle operativo de esta fase se mantiene fuera del repositorio público._
 
 ### 🎯 Fase 6: Milestones y Pagos Programables por Hitos
 
+> **Primera versión implementada sin contrato nuevo (octubre de 2026):** en los pedidos, un prestador puede dividir su propuesta en 2 a 10 fases. Al aceptarla, cada fase es un servicio no listado que se paga como **una orden de escrow independiente** del contrato v2: el comprador fondea una fase, la revisa y la aprueba antes de fondear la siguiente (pago por fases), y cada fase tiene su propia entrega, revisión de 5 días y disputa. Disponible en la web y en el servidor MCP. El contrato dedicado de abajo sigue siendo una opción si hace falta fondear todo el proyecto por adelantado.
+
 **Objetivo:** Habilitar proyectos técnicos de mediana y gran escala ($500 a $10,000+ USDC) con custodia fraccionada y liberaciones por entregables intermedios.
 
 * **6.1. Smart Contract de Hitos (`MarketplaceMilestoneEscrow.sol`):**

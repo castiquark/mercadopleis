@@ -172,7 +172,7 @@ Funds are held by the escrow contract, not by this API. Registering the order on
 ---
 
 ### D. Requests (bounties)
-When nothing in the catalog fits, post a request and let people send proposals. `GET /api/requests` lists open requests (public). With a SIWE JWT: `POST /api/requests` `{ title, description, category, budgetUsdc, deliveryDays }`; the buyer sees all proposals at `GET /api/requests/{slug}` (sellers see only their own; prices are never public); `PATCH /api/requests/{id}/proposals/{proposalId}` `{ "action": "accept" }` turns the proposal into an unlisted service with the agreed price and delivery time, which you fund like any other service. MCP tools: `post_request`, `list_proposals`, `accept_proposal`.
+When nothing in the catalog fits, post a request and let people send proposals. `GET /api/requests` lists open requests (public). With a SIWE JWT: `POST /api/requests` `{ title, description, category, budgetUsdc, deliveryDays }`; the buyer sees all proposals at `GET /api/requests/{slug}` (sellers see only their own; prices are never public); `PATCH /api/requests/{id}/proposals/{proposalId}` `{ "action": "accept" }` turns the proposal into an unlisted service with the agreed price and delivery time, which you fund like any other service. Proposals can be split into 2 to 10 milestones (`milestones: [{ title, amountUsdc, deliveryDays }]`); accepting one creates one unlisted service per phase, and each phase is funded, delivered and approved as its own escrow order. MCP tools: `post_request`, `list_proposals`, `accept_proposal`.
 
 ## 5. Seed Catalog of AI Economy Services ($10 – $35 USDC)
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, requestProposals, requests, services, users } from '@mercadopleis/database';
 import { and, eq, ne } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
-import { serviceFromProposal } from '@/lib/requests';
+import { servicesFromProposal } from '@/lib/requests';
 import { findRequest } from '@/lib/requestsDb';
 
 /**
@@ -46,7 +46,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const seller = await db.query.users.findFirst({ where: eq(users.id, proposal.sellerId), columns: { walletAddress: true } });
     if (!seller?.walletAddress) return NextResponse.json({ error: 'The seller has no wallet on file' }, { status: 409 });
 
-    const result = await db.transaction(async (tx: any) => {
+    type Created = { id: string; slug: string; priceUsdc: string; deliveryDays: number; milestoneIndex: number | null };
+    const result: Created[] | null = await db.transaction(async (tx: any) => {
       // Guard against two accepts racing: only one transaction can move the request out of OPEN.
       const [claimed] = await tx
         .update(requests)
@@ -55,25 +56,30 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         .returning({ id: requests.id });
       if (!claimed) return null;
 
-      const [service] = await tx.insert(services).values(serviceFromProposal(found, proposal, proposal.sellerId)).returning();
+      const created = await tx.insert(services).values(servicesFromProposal(found, proposal, proposal.sellerId)).returning();
       await tx
         .update(requestProposals)
-        .set({ status: 'ACCEPTED', serviceId: service.id, updatedAt: new Date() })
+        .set({ status: 'ACCEPTED', serviceId: created[0].id, updatedAt: new Date() })
         .where(eq(requestProposals.id, proposal.id));
       await tx
         .update(requestProposals)
         .set({ status: 'REJECTED', updatedAt: new Date() })
         .where(and(eq(requestProposals.requestId, found.id), ne(requestProposals.id, proposal.id), eq(requestProposals.status, 'PENDING')));
-      return service;
+      return created as Created[];
     });
 
     if (!result) return NextResponse.json({ error: 'This request was already awarded' }, { status: 409 });
 
     return NextResponse.json({
       accepted: true,
-      service: { id: result.id, slug: result.slug, priceUsdc: result.priceUsdc, deliveryDays: result.deliveryDays },
+      // First (or only) phase, kept for clients that fund a single service.
+      service: { id: result[0].id, slug: result[0].slug, priceUsdc: result[0].priceUsdc, deliveryDays: result[0].deliveryDays },
+      phases: result.map((s, i) => ({ index: s.milestoneIndex ?? i + 1, slug: s.slug, priceUsdc: s.priceUsdc, deliveryDays: s.deliveryDays })),
       seller: { walletAddress: seller.walletAddress },
-      next: 'Fund the escrow order for this service (web checkout, or create_order in the MCP server with this slug).',
+      next:
+        result.length > 1
+          ? 'Fund each phase as its own escrow order, in order: fund phase 1, approve it, then fund the next.'
+          : 'Fund the escrow order for this service (web checkout, or create_order in the MCP server with this slug).',
     });
   } catch (err) {
     console.error('Error updating proposal:', err);
