@@ -74,3 +74,6 @@ scripts/migrate-columns.ts
 ROADMAP_GTM.md
 VIDEO_DEMO_SCRIPT.md
 DEPLOY_CHECKLIST_OCT14.md
+
+# Local marketing assets (kept out of apps/web/public so manual deploys never publish them)
+marketing-assets/

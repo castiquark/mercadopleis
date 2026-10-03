@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, users } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { validateProfileInput } from '@/lib/validation';
 
 export async function GET(request: NextRequest) {
   const authUser = getAuthUserFromRequest(request);
@@ -27,16 +28,20 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const { displayName, bio, country, avatarUrl } = body;
+    const body = await request.json().catch(() => ({}));
+    const parsed = validateProfileInput(body);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const { displayName, bio, country, avatarUrl } = parsed.value;
 
     const [updated] = await db
       .update(users)
       .set({
-        displayName: displayName || undefined,
-        bio: bio !== undefined ? bio : undefined,
-        country: country || undefined,
-        avatarUrl: avatarUrl !== undefined ? avatarUrl : undefined,
+        displayName,
+        bio,
+        country,
+        avatarUrl,
         updatedAt: new Date(),
       })
       .where(eq(users.id, authUser.id))

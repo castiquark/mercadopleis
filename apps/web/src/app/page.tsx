@@ -176,7 +176,7 @@ export default function HomePage() {
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-2xl font-bold text-white">{language === 'en' ? 'Available Services' : 'Servicios Disponibles'}</h2>
-            <p className="text-sm text-slate-400">{language === 'en' ? 'Explore verified gigs with instant USDC escrow' : 'Explora ofertas verificadas con liquidación en USDC'}</p>
+            <p className="text-sm text-slate-400">{language === 'en' ? 'Explore gigs paid through USDC escrow' : 'Explora ofertas con pago protegido por escrow en USDC'}</p>
           </div>
 
           <span className="text-xs font-medium text-slate-400">

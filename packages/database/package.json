@@ -8,7 +8,6 @@
     "build": "tsc --noEmit",
     "generate": "drizzle-kit generate",
     "migrate": "tsx src/migrate.ts",
-    "seed": "tsx src/seed.ts",
     "push": "drizzle-kit push",
     "studio": "drizzle-kit studio"
   },

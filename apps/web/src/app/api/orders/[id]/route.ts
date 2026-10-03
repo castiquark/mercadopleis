@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, orders, disputes } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { isSafeHttpUrl } from '@/lib/validation';
 import { createPublicClient, http, parseEventLogs } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
@@ -189,6 +190,9 @@ export async function PATCH(
     }
 
     const resolvedDeliveryUrl = deliverableUrl ?? deliveryUrl;
+    if (resolvedDeliveryUrl !== undefined && !isSafeHttpUrl(resolvedDeliveryUrl)) {
+      return NextResponse.json({ error: 'deliverableUrl must be an http(s) URL' }, { status: 400 });
+    }
     const resolvedDeliveryHash = deliverableHash ?? deliveryHash;
     const targetChainId = existingOrder.chainId || CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID;
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, reviews, orders, users } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { LIMITS } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,8 +17,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { orderId, rating, comment } = body;
 
-    if (!orderId || !rating || !comment) {
+    if (!orderId || !rating || typeof comment !== 'string' || !comment.trim()) {
       return NextResponse.json({ error: 'orderId, rating, and comment are required' }, { status: 400 });
+    }
+    if (comment.length > LIMITS.reviewMax) {
+      return NextResponse.json({ error: `comment must be at most ${LIMITS.reviewMax} characters` }, { status: 400 });
     }
 
     const ratingNum = parseInt(rating, 10);

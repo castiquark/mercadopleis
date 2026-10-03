@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, disputes, orders } from '@mercadopleis/database';
 import { eq, desc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { LIMITS, isSafeHttpUrl } from '@/lib/validation';
 import { createPublicClient, http, parseEventLogs } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
@@ -115,8 +116,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { orderId, reason, evidenceUrl, txHash, txHashDispute } = body;
 
-    if (!orderId || !reason) {
+    if (!orderId || typeof reason !== 'string' || !reason.trim()) {
       return NextResponse.json({ error: 'orderId and reason are required' }, { status: 400 });
+    }
+    if (reason.length > LIMITS.reasonMax) {
+      return NextResponse.json({ error: `reason must be at most ${LIMITS.reasonMax} characters` }, { status: 400 });
+    }
+    if (evidenceUrl && !isSafeHttpUrl(evidenceUrl)) {
+      return NextResponse.json({ error: 'evidenceUrl must be an http(s) URL' }, { status: 400 });
     }
 
     const order = await db.query.orders.findFirst({

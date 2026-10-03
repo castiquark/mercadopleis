@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, orders, orderMessages } from '@mercadopleis/database';
 import { eq, asc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { validateMessage } from '@/lib/validation';
 
 export async function GET(
   request: NextRequest,
@@ -62,12 +63,12 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await request.json();
-  const { content } = body;
-
-  if (!content || typeof content !== 'string' || !content.trim()) {
-    return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
+  const body = await request.json().catch(() => ({}));
+  const message = validateMessage(body.content);
+  if (!message.ok) {
+    return NextResponse.json({ error: message.error }, { status: 400 });
   }
+  const content = message.value;
 
   try {
     const { id } = await params;

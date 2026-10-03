@@ -29,7 +29,7 @@ export default function ProfilePage() {
 
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [bio, setBio] = useState(user?.bio || '');
-  const [country, setCountry] = useState(user?.country || 'UY');
+  const [country, setCountry] = useState(user?.country || '');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -40,7 +40,7 @@ export default function ProfilePage() {
     if (user) {
       setDisplayName(user.displayName || '');
       setBio(user.bio || '');
-      setCountry(user.country || 'UY');
+      setCountry(user.country || '');
     }
   }, [user]);
 
@@ -120,7 +120,7 @@ export default function ProfilePage() {
                 </h1>
                 {isAuthenticated && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 border border-accent/20 px-2.5 py-0.5 text-xs font-semibold text-accent">
-                    <UserCheck className="h-3.5 w-3.5" /> Wallet Verificada
+                    <UserCheck className="h-3.5 w-3.5" /> Sesión verificada
                   </span>
                 )}
               </div>
@@ -254,7 +254,7 @@ export default function ProfilePage() {
                 maxLength={2}
                 value={country}
                 onChange={(e) => setCountry(e.target.value.toUpperCase())}
-                placeholder="UY"
+                placeholder="ej. UY, AR, US"
                 className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-primary focus:outline-none uppercase"
               />
             </div>

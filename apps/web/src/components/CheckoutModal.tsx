@@ -5,12 +5,12 @@ import { Service, MARKETPLACE_CATEGORIES } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
 import { useAccount, useWriteContract, useReadContract, usePublicClient } from 'wagmi';
 import { parseUnits, formatUnits, parseEventLogs } from 'viem';
-import { Erc20Abi, MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
-import { CONTRACT_CONFIG } from '@mercadopleis/types';
+import { Erc20Abi, MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
 import { Shield, Clock, CheckCircle2, AlertCircle, X, ExternalLink, Droplet, MapPin } from 'lucide-react';
 import { FaucetButton } from './FaucetButton';
 import { isUserRejection } from '../lib/web3Errors';
 import { BUILDER_DATA_SUFFIX } from '@/lib/builderCode';
+import { resolveNetwork } from '@/lib/networks';
 
 interface CheckoutModalProps {
   service: Service | null;
@@ -25,11 +25,10 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 
-  const activeChainId = chainId || CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
-  const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID];
-  const usdcAddress = activeChainId === CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID 
-    ? CONTRACT_CONFIG.USDC_BASE_MAINNET 
-    : CONTRACT_CONFIG.USDC_BASE_SEPOLIA;
+  const network = resolveNetwork(chainId);
+  const activeChainId = network.chainId;
+  const escrowAddress = network.escrow;
+  const usdcAddress = network.usdc;
 
   const rawAmount = service ? parseUnits(service.priceUsdc.toString(), 6) : 0n;
 
@@ -78,7 +77,7 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
         );
       }
 
-      if (!escrowAddress || escrowAddress === '0x0000000000000000000000000000000000000000') {
+      if (!network.supported || !escrowAddress || escrowAddress === '0x0000000000000000000000000000000000000000') {
         throw new Error(
           language === 'en'
             ? 'No escrow contract configured for this network. Please switch to Base Mainnet or Base Sepolia.'

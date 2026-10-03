@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, services, users } from '@mercadopleis/database';
 import { eq, desc, and, gte, lte, ilike, or } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { validateServiceInput } from '@/lib/validation';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -207,24 +208,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const {
-      title,
-      description,
-      category,
-      priceUsdc,
-      deliveryDays,
-      coverImageUrl,
-      sellerWallet,
-      deliveryType,
-      country,
-      city,
-      locality,
-      addressOrReference,
-    } = body;
+    const sellerWallet = typeof body.sellerWallet === 'string' ? body.sellerWallet : undefined;
 
-    if (!title || !description || !category || !priceUsdc || !deliveryDays) {
-      return NextResponse.json({ error: 'Missing required service fields' }, { status: 400 });
+    const parsed = validateServiceInput(body);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const input = parsed.value;
 
     // Prevent arbitrary wallet spoofing: sellerWallet must match the authenticated wallet address
     if (sellerWallet && sellerWallet.toLowerCase() !== authUser.walletAddress.toLowerCase() && authUser.role !== 'ADMIN') {
@@ -236,7 +226,7 @@ export async function POST(request: NextRequest) {
 
     const sellerId = authUser.id;
 
-    const slug = title
+    const slug = input.title
       .toLowerCase()
       .trim()
       .replace(/[^\w\s-]/g, '')
@@ -247,18 +237,18 @@ export async function POST(request: NextRequest) {
       .insert(services)
       .values({
         sellerId,
-        title,
+        title: input.title,
         slug,
-        description,
-        category,
-        priceUsdc: priceUsdc.toString(),
-        deliveryDays: parseInt(deliveryDays.toString(), 10),
-        deliveryType: deliveryType || 'digital',
-        country: country || null,
-        city: city || null,
-        locality: locality || null,
-        addressOrReference: addressOrReference || null,
-        coverImageUrl: coverImageUrl || null,
+        description: input.description,
+        category: input.category,
+        priceUsdc: input.priceUsdc,
+        deliveryDays: input.deliveryDays,
+        deliveryType: input.deliveryType,
+        country: input.country,
+        city: input.city,
+        locality: input.locality,
+        addressOrReference: input.addressOrReference,
+        coverImageUrl: input.coverImageUrl,
         isActive: true,
       })
       .returning();

@@ -74,7 +74,7 @@ export const translations = {
     hideTimelineAndChat: 'Ocultar Actividad & Mensajes',
     noOrdersBuyer: 'Aún no has contratado servicios',
     noOrdersSeller: 'Aún no has recibido órdenes',
-    noOrdersBuyerDesc: 'Explora el catálogo de servicios verificados y contrata con la seguridad de smart contracts en Base con USDC.',
+    noOrdersBuyerDesc: 'Explora el catálogo de servicios y contrata con la seguridad de smart contracts en Base con USDC.',
     noOrdersSellerDesc: 'Publica tus habilidades en el catálogo internacional y comienza a recibir pagos asegurados en escrow.',
     
     // Disputes in Order
@@ -196,7 +196,7 @@ export const translations = {
     hideTimelineAndChat: 'Hide Activity & Messages',
     noOrdersBuyer: 'You have not hired any services yet',
     noOrdersSeller: 'You have not received any orders yet',
-    noOrdersBuyerDesc: 'Explore verified services and hire with smart contract security on Base using USDC.',
+    noOrdersBuyerDesc: 'Explore services and hire with smart contract security on Base using USDC.',
     noOrdersSellerDesc: 'List your skills on the international marketplace and start receiving secured escrow payments.',
     
     // Disputes in Order

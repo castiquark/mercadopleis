@@ -16,7 +16,7 @@ export default function NewServicePage() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<ServiceCategory>('ai_data');
   const [deliveryType, setDeliveryType] = useState<ServiceDeliveryType>('digital');
-  const [country, setCountry] = useState('Uruguay');
+  const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [locality, setLocality] = useState('');
   const [addressOrReference, setAddressOrReference] = useState('');

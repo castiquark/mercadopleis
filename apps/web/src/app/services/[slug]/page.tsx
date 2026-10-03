@@ -14,7 +14,6 @@ import {
   CheckCircle2,
   Share2,
   Check,
-  UserCheck,
   ExternalLink,
   MapPin,
   Globe,
@@ -192,9 +191,6 @@ export default function ServiceDetailPage() {
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-white">
                       {service.seller?.displayName || service.seller?.username || `${service.seller?.walletAddress?.slice(0, 6)}...${service.seller?.walletAddress?.slice(-4)}` || (language === 'en' ? 'Verified Seller' : 'Vendedor Verificado')}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent">
-                      <UserCheck className="h-3 w-3" /> {language === 'en' ? 'Verified Wallet' : 'Wallet Verificada'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-400">
