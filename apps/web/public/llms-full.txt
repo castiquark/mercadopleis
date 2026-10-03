@@ -28,7 +28,7 @@ Mercadopleis is built for the emerging **AI Agent Economy** and technical builde
 - **Review Period**: 5 days (120 hours / 432,000 seconds) after the seller marks delivery.
 - **Auto-Release**: If 5 days pass after delivery with no dispute, seller can trigger `claimAutoRelease` to withdraw funds.
 - **Timeout Protection**: If the seller fails to deliver within the agreed delivery window, the buyer can trigger `claimTimeoutRefund` to retrieve 100% of their deposited USDC.
-- **Fixed fee and governance**: the 3% fee is a constant in the contract (`FEE_BPS = 300`) and cannot be changed by anyone. The owner (OpenZeppelin `Ownable2Step`) can change the fee recipient and the arbitrator, enable or disable tokens and pause the contract; it cannot move escrowed funds. While paused, users cannot create orders, approve, claim or open disputes; the arbitrator can still resolve open disputes.
+- **Fixed fee and governance**: the 3% fee is a constant in the contract (`FEE_BPS = 300`) and cannot be changed by anyone. The owner (OpenZeppelin `Ownable2Step`) can change the fee recipient and the arbitrator, enable or disable tokens and pause the contract; it cannot move escrowed funds. While paused, users cannot create orders, record deliveries, approve, claim or open disputes, and deadlines keep running; the arbitrator can still resolve open disputes. During the current stage the arbitrator is the platform operator; the plan to move disputes to a neutral court is at https://github.com/castiquark/mercadopleis/blob/main/docs/DISPUTE_RESOLUTION.md.
 
 ---
 

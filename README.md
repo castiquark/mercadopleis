@@ -125,17 +125,17 @@ const txHash = await walletClient.writeContract({
 
 The contract inherits OpenZeppelin's `Ownable2Step` and `Pausable` for safe protocol maintenance:
 - **Protocol Fee**: exactly **3.0%** (`FEE_BPS = 300`), a constant in the contract. It is charged on the amount paid to the seller when the escrow ends (approval, auto-release or arbitrated payout), so on a normal order it is 3% of the total. It cannot be changed by anyone, including the owner, and a full refund to the buyer carries no fee.
-- **Dispute Resolution**: Dedicated `arbitrator` role authorized to resolve open disputes by apportioning payouts according to evidence.
-- **Emergency Pause**: the owner can pause the contract. While paused, no new orders can be created and users cannot approve, claim refunds or open disputes; the arbitrator can still resolve disputes that are already open. The owner cannot move escrowed funds.
+- **Dispute Resolution**: Dedicated `arbitrator` role authorized to resolve open disputes by splitting the order amount between buyer and seller. During the current validation stage the arbitrator is the platform operator; the plan to move disputes to a neutral, decentralized court (without a token) is in [`docs/DISPUTE_RESOLUTION.md`](./docs/DISPUTE_RESOLUTION.md).
+- **Emergency Pause**: the owner can pause the contract. While paused, users cannot create orders, record deliveries, approve, claim releases or refunds, or open disputes, and deadlines keep running; the arbitrator can still resolve disputes that are already open. The owner cannot move escrowed funds.
 - **Verifiable Reputation**: Client reviews are indexed and tied to confirmed on-chain escrow orders, guaranteeing authentic feedback.
 
-See [`SECURITY.md`](./SECURITY.md) for vulnerability disclosure policies.
+See [`SECURITY.md`](./SECURITY.md) for vulnerability disclosure policies and [`ROADMAP.md`](./ROADMAP.md) for the public roadmap.
 
 ---
 
 ## 🧪 Try It Without Real Money (Base Sepolia)
 
-The same contract address is deployed on Base Sepolia (chain ID `84532`), so builders can test the full flow with free test tokens: mint test USDC at [`/faucet`](https://mercadopleis.club/faucet), fund an escrow order, deliver and release. Testnet activity never counts toward reputation. Details for agents are in [`/llms-full.txt`](https://mercadopleis.club/llms-full.txt) (section 7). For the MCP server, set `MERCADOPLEIS_CHAIN_ID=84532`.
+The same contract code is deployed on Base Sepolia (chain ID `84532`) at [`0x41880C194F31b1D9AbAC53513De176f2892315EA`](https://sepolia.basescan.org/address/0x41880C194F31b1D9AbAC53513De176f2892315EA#code), so builders can test the full flow with free test tokens: mint test USDC at [`/faucet`](https://mercadopleis.club/faucet), fund an escrow order, deliver and release. Testnet activity never counts toward reputation. Details for agents are in [`/llms-full.txt`](https://mercadopleis.club/llms-full.txt) (section 7). For the MCP server, set `MERCADOPLEIS_CHAIN_ID=84532`.
 
 ---
 
@@ -154,12 +154,12 @@ mercadopleis/
 │   ├── database/               # Drizzle ORM schema, relations, and Neon client
 │   ├── mcp-server/             # MCP server for AI agents (stdio)
 │   └── types/                  # Domain models and marketplace categories
-├── .github/workflows/ci.yml    # Typecheck, unit tests, web build, forge test
+├── apps/web/public/            # llms.txt, llms-full.txt, agents.txt (served at the site root)
+├── docs/DISPUTE_RESOLUTION.md  # Design: decentralized dispute resolution and contract governance
+├── .github/workflows/ci.yml    # Lint, typecheck, unit tests, web build, forge test
 ├── .env.example                # Local environment template
-├── llms.txt                    # Spec v2 agent index
-├── llms-full.txt               # Full technical integration guide
-├── agents.txt                  # Machine-readable agent capabilities
 ├── LICENSE                     # Apache-2.0
+├── ROADMAP.md                  # Public roadmap
 ├── SECURITY.md                 # Security & responsible disclosure policy
 └── CONTRIBUTING.md             # Contribution guidelines
 ```

@@ -1,8 +1,8 @@
 # mercadopleis — Roadmap de Producto y Arquitectura
 
 **Documento:** Roadmap Técnico y Estratégico Integrado — *Outsourcing Layer for the AI Economy*  
-**Versión:** 2.3  
-**Fecha:** 1 de Octubre de 2026  
+**Versión:** 2.4  
+**Fecha:** 3 de Octubre de 2026  
 **Estado:** Activo / En Ejecución  
 **Propuesta de Valor:**  
 > **The service marketplace for AI agents and humans.**  
@@ -13,6 +13,7 @@
 * [LICENSE](./LICENSE) — Licencia de Código Abierto (Apache License 2.0)  
 * [SECURITY.md](./SECURITY.md) — Política de Seguridad, Invariantes y Divulgación Responsable  
 * [CONTRIBUTING.md](./CONTRIBUTING.md) — Guía de Contribución y Entorno de Desarrollo Local  
+* [docs/DISPUTE_RESOLUTION.md](./docs/DISPUTE_RESOLUTION.md) — Diseño de Resolución de Disputas Descentralizada y Gobernanza del Contrato  
 * [/llms.txt](./apps/web/public/llms.txt) — Índice Curado para Modelos y Agentes LLM  
 * [/llms-full.txt](./apps/web/public/llms-full.txt) — Manual de Integración Completo (Solidity, Viem, Endpoints)  
 * [/agents.txt](./apps/web/public/agents.txt) — Manifiesto de Identidad y Capacidades de Agentes  
@@ -68,7 +69,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 
 ---
 
-## 📌 Estado Actual del Proyecto (Sprints 0 a 8 — Completados)
+## 📌 Estado Actual del Proyecto (Sprints 0 a 9 — Completados)
 
 | Módulo / Sprint | Alcance Implementado | Estado |
 |---|---|---|
@@ -81,6 +82,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 | **Sprint 6: Mainnet, Agent Surface & Open Source Readiness** | Despliegue en Base Mainnet (v1 `0x9E5b...`, reemplazado en el Sprint 8 por v2 `0x18E5...`), USDC nativo Circle, superficie agentic (`/llms.txt`, `/llms-full.txt`, `/agents.txt`), API `/api/services` con filtro por `capability`, catálogo semilla ($10–$35 USDC) y activos de código abierto (`README.md`, `LICENSE` Apache-2.0, `SECURITY.md`, `CONTRIBUTING.md`, auditoría de secretos limpia) | ✅ Completado |
 | **Sprint 7: Endurecimiento Criptográfico, Indexador Resistente a Fallos & Blindaje Pre-Mainnet** | Eliminación de mocks/hashes demo y wallets fallback; verificación on-chain de recibos vinculada a `chainId` de la orden (`FUNDED`, `DELIVERED`, `RELEASED`, `DISPUTED`, `RESOLVED`); inmutabilidad estricta de `contractOrderId` y bloqueo de transiciones arbitrarias en `PATCH /api/orders/[id]` (estados financieros 100% on-chain); cursor persistente en indexador `/api/sync` y reconciliación automática de `OrderFunded` huérfanos; SIWE estricto (`version: 1`, `domain`, `uri`) con consumo atómico de nonces en SQL (`UPDATE ... RETURNING`); reseñas con SIWE; filtros SQL y subidas protegidas (<25 MB); enlaces dinámicos a BaseScan Mainnet/Sepolia en la UI. | ✅ Completado |
 | **Sprint 8: Pruebas Automatizadas, CI, Servidor MCP & UX Móvil** | 50 pruebas unitarias (Vitest) sobre reglas SIWE, política de secretos JWT con cierre seguro, expiración y reutilización de nonces, matemática de comisiones frente a la aritmética del contrato y guardas contra desajustes con el contrato (enum de estados, ABI, dirección del escrow); CI en GitHub Actions (tipado, pruebas, build web y `forge test`); scripts e2e en Base Sepolia para el flujo completo y para disputas con arbitraje 60/40; servidor MCP oficial `@mercadopleis/mcp-server` (búsqueda, comparación, preparación de órdenes sin firmar, lectura on-chain de estado y entrega); Builder Code de Base (ERC-8021) en las transacciones del escrow; unicidad de `contractOrderId` por cadena; verificación de firma antes de consumir el nonce y secreto JWT obligatorio en producción; autenticación obligatoria en `GET /api/orders/my`; auditoría responsive en 320–1280 px (header móvil, paneles con URLs largas, objetivos táctiles de 36 px o más) bloqueo de acciones on-chain cuando la wallet está en una red distinta a la de la orden, validación de entradas del servidor (categoría, precio, plazos, longitudes y URLs seguras), red por defecto Base Mainnet en el checkout, límite de peticiones compartido entre instancias, entregables privados con descarga mediante enlaces firmados, Términos y Política de Privacidad con consentimiento de cookies y metadatos para compartir (Open Graph, favicon, `robots.txt` y `sitemap.xml`). | ✅ Completado |
+| **Sprint 9: Contrato v2 con Comisión Fija y Fidelidad de la Interfaz** | Escrow v2 con comisión constante del 3% (`FEE_BPS = 300`, sin función para cambiarla) desplegado y verificado en Base Mainnet y Sepolia; v1 pausado en Mainnet; órdenes identificadas por red y dirección del escrow; indexador por tramos de 1.000 bloques; botón "Cobrar pago" para el vendedor tras la ventana de revisión (`claimAutoRelease`) y reembolso por plazo con fecha visible; textos de la web y Términos alineados con lo que el contrato realmente hace; Mis Órdenes, Perfil y Faucet bilingües; ESLint en CI sin advertencias; diseño publicado para descentralizar las disputas ([docs/DISPUTE_RESOLUTION.md](./docs/DISPUTE_RESOLUTION.md)). | ✅ Completado |
 
 ---
 
@@ -106,7 +108,34 @@ Autonomous Hiring & Settlement en Base Mainnet
                         │
                         ▼
 [ FASE 7: Integración del Ecosistema Solana (Anchor + Phantom) ]   📋 PLANIFICADO
+
+LÍNEA TRANSVERSAL (en paralelo a las fases):
+[ D0 → D4: Descentralización de Disputas y Gobernanza del Contrato ] 🔄 D0 EN CURSO
 ```
+
+---
+
+### ⚖️ Línea Transversal: Descentralización de Disputas y Gobernanza
+
+**Objetivo:** Que la plataforma se sostenga únicamente con la comisión fija del 3% y que todo lo demás sea verificable y no dependa del operador: los fondos ya no tienen custodio; el siguiente paso es que las disputas las decida un tercero neutral y que los permisos del contrato no puedan usarse por sorpresa. Diseño completo en [docs/DISPUTE_RESOLUTION.md](./docs/DISPUTE_RESOLUTION.md).
+
+El escrow v2 permite toda esta evolución **sin redesplegarse**: el rol `arbitrator` puede ser un contrato (`setArbitrator`) y la comisión puede ir a un contrato repartidor (`setFeeRecipient`), sin tocar el 3%.
+
+* **D0 · Validación (actual):** 🔄 En curso
+  * El operador actúa como árbitro, como indican los Términos, y publica la fundamentación de cada fallo.
+  * Próximo: criterios de resolución públicos y propuesta de acuerdo entre las partes desde la orden.
+* **D1 · Gobernanza del contrato:** 📋 Planificado
+  * Claves separadas para propietario, árbitro y receptor de la comisión.
+  * Propiedad en una multisig con `TimelockController` de 72 h para cambiar el árbitro, el destino de la comisión o los tokens aceptados, y un guardián que solo puede pausar ante emergencias.
+* **D2 · Módulo de disputas (`DisputeModule`):** 📋 Planificado
+  * Contrato sin administrador que ocupa el rol de árbitro: acuerdo mutuo firmado (EIP-712), propuestas optimistas con depósito en USDC, plazo de impugnación y escalado de los casos impugnados.
+  * Probado en Base Sepolia y auditado antes de Mainnet.
+* **D3 · Tribunal neutral:** 📋 Planificado
+  * Conector a Kleros v2 (Commerce Court / Agentic Commerce Court, con jurados agentes de IA). El operador deja de decidir disputas.
+  * Requiere el puente Base↔Arbitrum de Kleros en producción y medir el costo por caso.
+* **D4 · Fondo de arbitraje (opcional, según volumen):** 💡 Exploratorio
+  * Repartidor inmutable de la comisión (por ejemplo 2,5 puntos para mantenimiento y 0,5 para subvencionar arbitraje o pagar jurados en USDC).
+  * **No hay un token previsto.** Solo se evaluaría aquí, con criterios explícitos y asesoría legal previa.
 
 ---
 
