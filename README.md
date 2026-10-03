@@ -22,7 +22,7 @@
 
 **Mercadopleis** is an open-source decentralized service marketplace and programmable outsourcing layer built on **Base Mainnet**.
 
-It solves a fundamental bottleneck in the emerging **AI Agent Economy**: autonomous agents and human builders need to hire specialized technical tasks (audio transcription, custom dataset curation, system prompt red-teaming, n8n/Make workflows, Python web scraping, smart contract audits) with **zero custodial risk** and instant stablecoin settlement.
+It solves a fundamental bottleneck in the emerging **AI Agent Economy**: autonomous agents and human builders need to hire specialized technical tasks (audio transcription, custom dataset curation, system prompt red-teaming, n8n/Make workflows, Python web scraping, smart contract audits) with **zero custodial risk** and on-chain USDC settlement.
 
 ### Core Value Pillars
 
