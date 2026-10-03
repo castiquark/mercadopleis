@@ -25,7 +25,13 @@ export function getDatabaseClient(connectionString?: string) {
     return cachedDb;
   }
 
-  // Fallback: check environment
+  // Never fall back to an ephemeral database in production: a missing or malformed DATABASE_URL must fail
+  // loudly instead of serving an empty in-memory database that silently drops every write.
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('DATABASE_URL is missing or is not a postgres:// URL; refusing to start without a real database in production');
+  }
+
+  // Development fallback: local PGlite
   try {
     if (!pgliteClient) {
       const isServerless = !!(process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.VERCEL);

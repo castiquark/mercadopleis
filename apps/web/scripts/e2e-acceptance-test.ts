@@ -65,7 +65,7 @@ async function main() {
   const deployerBalance = await publicClient.getBalance({ address: deployerAccount.address });
   console.log(`[Deployer] ${deployerAccount.address} | Balance: ${formatEther(deployerBalance)} ETH\n`);
 
-  if (deployerBalance < parseEther('0.00008')) {
+  if (deployerBalance < parseEther('0.00001')) {
     throw new Error('Deployer wallet does not have enough Base Sepolia ETH to fund test wallets.');
   }
 
@@ -93,17 +93,17 @@ async function main() {
   console.log('--- 2. Funding Wallets with Base Sepolia ETH for Gas ---');
   const fundSellerTx = await deployerClient.sendTransaction({
     to: sellerAccount.address,
-    value: parseEther('0.00002'),
+    value: parseEther('0.000004'),
   });
   await publicClient.waitForTransactionReceipt({ hash: fundSellerTx });
-  console.log(`  ✓ Funded Seller: 0.00002 ETH (Tx: ${fundSellerTx})`);
+  console.log(`  ✓ Funded Seller: 0.000004 ETH (Tx: ${fundSellerTx})`);
 
   const fundBuyerTx = await deployerClient.sendTransaction({
     to: buyerAccount.address,
-    value: parseEther('0.00004'),
+    value: parseEther('0.000008'),
   });
   await publicClient.waitForTransactionReceipt({ hash: fundBuyerTx });
-  console.log(`  ✓ Funded Buyer:  0.00004 ETH (Tx: ${fundBuyerTx})`);
+  console.log(`  ✓ Funded Buyer:  0.000008 ETH (Tx: ${fundBuyerTx})`);
 
   // Wait for RPC node propagation
   await sleep(3000);
@@ -289,7 +289,7 @@ Issued At: ${new Date().toISOString()}`;
   }
   const uploadData = await uploadRes.json();
   console.log(`  ✓ Deliverable uploaded to Neon Object Storage!`);
-  console.log(`    Public URL: ${uploadData.url}`);
+  console.log(`    Private reference: ${uploadData.url}`);
   console.log(`    Cryptographic SHA-256: ${uploadData.hash}\n`);
 
   // 8. Seller Submits Delivery On-Chain
@@ -325,6 +325,29 @@ Issued At: ${new Date().toISOString()}`;
     const errText = await patchDeliveredRes.text();
     console.warn(`Warning: Failed to update order status in DB: ${errText}`);
   }
+
+  // 8b. Deliverable is private: signed download for the buyer only
+  console.log('--- 8b. Private Deliverable Download (signed URL) ---');
+  const noTokenRes = await fetch(`${API_BASE}/orders/${dbOrder.id}/deliverable`);
+  if (noTokenRes.status !== 401) throw new Error(`Expected 401 without token, got ${noTokenRes.status}`);
+  console.log('  ✓ No token -> 401');
+
+  const outsiderToken = await authenticateWallet(privateKeyToAccount(generatePrivateKey()));
+  const outsiderRes = await fetch(`${API_BASE}/orders/${dbOrder.id}/deliverable`, { headers: { Authorization: `Bearer ${outsiderToken}` } });
+  if (outsiderRes.status !== 403) throw new Error(`Expected 403 for an unrelated wallet, got ${outsiderRes.status}`);
+  console.log('  ✓ Unrelated wallet -> 403');
+
+  const buyerAccessRes = await fetch(`${API_BASE}/orders/${dbOrder.id}/deliverable`, { headers: { Authorization: `Bearer ${buyerToken}` } });
+  if (!buyerAccessRes.ok) throw new Error(`Buyer could not get the deliverable: ${await buyerAccessRes.text()}`);
+  const access = await buyerAccessRes.json();
+  if (access.type !== 'storage') throw new Error(`Expected a storage deliverable, got ${access.type}`);
+  const fileRes = await fetch(access.url);
+  if (!fileRes.ok) throw new Error(`Signed download failed with HTTP ${fileRes.status}`);
+  const downloaded = Buffer.from(await fileRes.arrayBuffer());
+  const downloadedHash = '0x' + (await import('crypto')).createHash('sha256').update(downloaded).digest('hex');
+  if (downloadedHash !== uploadData.hash) throw new Error('Downloaded file does not match the committed SHA-256 hash');
+  console.log(`  ✓ Buyer downloaded the file through a signed URL; SHA-256 matches the on-chain commitment
+`);
 
   // 9. Buyer Approves Delivery & Releases Funds On-Chain
   console.log('--- 9. Buyer Approves Delivery & Triggers Payout ---');

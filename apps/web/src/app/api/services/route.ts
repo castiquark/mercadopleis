@@ -3,6 +3,7 @@ import { db, services, users } from '@mercadopleis/database';
 import { eq, desc, and, gte, lte, ilike, or } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { validateServiceInput } from '@/lib/validation';
+import { enforceRateLimit, getClientIp } from '@/lib/rateLimit';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -177,22 +178,11 @@ export async function GET(request: NextRequest) {
       { headers: CORS_HEADERS }
     );
   } catch (err: any) {
-    console.warn('Database query notice, returning empty catalog:', err?.message);
+    // Do not pretend the catalog is empty: agents would read an outage as "no services exist".
+    console.error('Catalog query failed:', err?.message);
     return NextResponse.json(
-      {
-        protocol: 'Mercadopleis Agent Commerce v1',
-        network: 'Base Mainnet',
-        chainId: 8453,
-        escrowContract: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
-        pagination: {
-          limit,
-          offset,
-          count: 0,
-        },
-        count: 0,
-        services: [],
-      },
-      { headers: CORS_HEADERS }
+      { error: 'Catalog temporarily unavailable. Please retry shortly.' },
+      { status: 503, headers: { ...CORS_HEADERS, 'Retry-After': '30' } }
     );
   }
 }
@@ -206,6 +196,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const limited = await enforceRateLimit([{ name: 'services:create', id: authUser.id, limit: 10, windowSeconds: 3600 }]);
+    if (limited) return limited;
 
     const body = await request.json().catch(() => ({}));
     const sellerWallet = typeof body.sellerWallet === 'string' ? body.sellerWallet : undefined;

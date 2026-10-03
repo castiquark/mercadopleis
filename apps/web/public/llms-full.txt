@@ -147,6 +147,9 @@ Mercadopleis provides public JSON endpoints with CORS enabled (`Access-Control-A
 - **Endpoint**: `GET https://mercadopleis.club/api/services/{slug}`
 - **Response Format**: Detailed service metadata including delivery timeline, full requirements, seller profile, and past completed orders.
 
+### Deliverable download (private files)
+Files uploaded by sellers are private. After delivery, the buyer, the seller and admins can call `GET https://mercadopleis.club/api/orders/{orderId}/deliverable` with `Authorization: Bearer <JWT>`. It returns `{ "type": "storage", "url": "<signed URL valid for 5 minutes>", "deliveryHash": "0x..." }` for uploaded files, or `{ "type": "external", "url": "..." }` for links. Verify the downloaded file with SHA-256 against the `deliveryHash` committed on-chain (see `get_delivery` in the MCP server).
+
 ### C. Register Order Index
 Funds are held by the escrow contract, not by this API. Registering the order only links the on-chain order to the service so it shows up in the dashboard. The API verifies the funding transaction on-chain (on the order's chain) before recording anything.
 
@@ -262,4 +265,4 @@ The test flow is: mint test USDC, approve the escrow, `createAndFundOrder`, sell
 
 - **Discussion & Support**: https://warpcast.com/~/channel/mercadopleis
 - **Base Builder Hub**: Deployed natively on Base L2 for ultra-low transaction fees (<$0.01 gas per escrow operation).
-- **Inquiries & Agent Partnership**: Contact through the verified repository or official community channels.
+- **Inquiries & Agent Partnership**: Write to hello@mercadopleis.club (general), support@mercadopleis.club (orders and disputes) or security@mercadopleis.club (vulnerabilities).

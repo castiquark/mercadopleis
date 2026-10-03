@@ -3,6 +3,7 @@ import { db, orders, orderMessages } from '@mercadopleis/database';
 import { eq, asc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { validateMessage } from '@/lib/validation';
+import { enforceRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function GET(
   request: NextRequest,
@@ -62,6 +63,9 @@ export async function POST(
   if (!authUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const limited = await enforceRateLimit([{ name: 'messages:send', id: authUser.id, limit: 30, windowSeconds: 60 }]);
+  if (limited) return limited;
 
   const body = await request.json().catch(() => ({}));
   const message = validateMessage(body.content);

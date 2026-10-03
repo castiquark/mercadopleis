@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { getAuthToken } from '@/lib/api';
+import { DeliverableLink } from '@/components/DeliverableLink';
 import { 
   CheckCircle2, 
   Clock, 
@@ -248,15 +249,11 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                   <div className="mt-1.5 rounded-lg border border-purple-500/30 bg-purple-950/20 p-2.5 text-xs space-y-1.5">
                     <div>
                       <span className="text-[10px] uppercase font-bold text-purple-300">Enlace de entrega:</span>
-                      <a
-                        href={order.deliveryUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-0.5 flex min-w-0 items-center gap-1 text-[11px] text-cyan-300 hover:underline truncate"
-                      >
-                        <span className="truncate">{order.deliveryUrl}</span>
-                        <ExternalLink className="h-3 w-3 shrink-0" />
-                      </a>
+                      <DeliverableLink
+                        orderId={order.id}
+                        reference={order.deliveryUrl}
+                        className="mt-0.5 text-[11px] text-cyan-300 hover:underline"
+                      />
                     </div>
                     {order.deliveryHash && (
                       <div className="rounded bg-black/40 px-2 py-1 border border-purple-500/20 font-mono text-[10px] text-slate-300">

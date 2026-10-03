@@ -6,6 +6,7 @@ import { calculateOrderAmounts, MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { createPublicClient, http, parseEventLogs, parseUnits } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 interface VerifiedFunding {
   isValid: boolean;
@@ -108,6 +109,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const limited = await enforceRateLimit([{ name: 'orders:register', id: authUser.id, limit: 20, windowSeconds: 3600 }]);
+    if (limited) return limited;
 
     const body = await request.json().catch(() => ({}));
     const { serviceId, contractOrderId, txHashFunding, chainId } = body;

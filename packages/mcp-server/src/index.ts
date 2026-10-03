@@ -197,7 +197,7 @@ server.registerTool(
       algorithm: 'sha256',
       autoReleaseTime: new Date(Number(autoReleaseTime) * 1000).toISOString(),
       verify:
-        'sha256 of the received file must equal deliveryHash. If it matches, call approveDelivery(orderId); otherwise call openDispute(orderId) before autoReleaseTime.',
+        'Download the file (buyer, seller or admin: GET /api/orders/{orderId}/deliverable with a SIWE token returns a signed URL, or the external link) and check that its sha256 equals deliveryHash. If it matches, call approveDelivery(orderId); otherwise call openDispute(orderId) before autoReleaseTime.',
     });
   },
 );

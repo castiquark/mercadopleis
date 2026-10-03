@@ -3,6 +3,7 @@ import { db, orders, disputes } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { isSafeHttpUrl } from '@/lib/validation';
+import { isStorageRefOwnedBy } from '@/lib/storage';
 import { createPublicClient, http, parseEventLogs } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
@@ -190,8 +191,12 @@ export async function PATCH(
     }
 
     const resolvedDeliveryUrl = deliverableUrl ?? deliveryUrl;
-    if (resolvedDeliveryUrl !== undefined && !isSafeHttpUrl(resolvedDeliveryUrl)) {
-      return NextResponse.json({ error: 'deliverableUrl must be an http(s) URL' }, { status: 400 });
+    if (
+      resolvedDeliveryUrl !== undefined &&
+      !isSafeHttpUrl(resolvedDeliveryUrl) &&
+      !isStorageRefOwnedBy(resolvedDeliveryUrl, [authUser.id, existingOrder.sellerId])
+    ) {
+      return NextResponse.json({ error: 'deliverableUrl must be an http(s) URL or a file you uploaded' }, { status: 400 });
     }
     const resolvedDeliveryHash = deliverableHash ?? deliveryHash;
     const targetChainId = existingOrder.chainId || CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID;

@@ -3,6 +3,7 @@ import { db, reviews, orders, users } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { LIMITS } from '@/lib/validation';
+import { enforceRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,6 +14,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const limited = await enforceRateLimit([{ name: 'reviews:create', id: authUser.id, limit: 20, windowSeconds: 3600 }]);
+    if (limited) return limited;
 
     const body = await request.json();
     const { orderId, rating, comment } = body;

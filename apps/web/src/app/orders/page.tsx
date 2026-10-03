@@ -7,7 +7,7 @@ import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/lib/languageContext';
-import { fetchMyOrders, updateOrder, submitReview, openDisputeApi } from '@/lib/api';
+import { fetchMyOrders, updateOrder, submitReview, openDisputeApi, uploadDeliverable } from '@/lib/api';
 import {
   ShieldCheck,
   Clock,
@@ -36,6 +36,7 @@ import {
   Gavel,
 } from 'lucide-react';
 import { OrderTimelineAndChat } from '@/components/OrderTimelineAndChat';
+import { DeliverableLink } from '@/components/DeliverableLink';
 import { isUserRejection } from '@/lib/web3Errors';
 import { BUILDER_DATA_SUFFIX } from '@/lib/builderCode';
 
@@ -406,18 +407,7 @@ export default function OrdersDashboardPage() {
       setIsUploading(true);
       setUploadError(null);
 
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Error al subir el archivo');
-      }
+      const data = await uploadDeliverable(file);
 
       setUploadedFileMeta({
         filename: data.filename,
@@ -648,15 +638,11 @@ export default function OrdersDashboardPage() {
                   {order.deliveryUrl && (
                     <div className="mt-2 text-xs text-slate-400">
                       <span>Entregable: </span>
-                      <a
-                        href={order.deliveryUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex max-w-full items-start gap-1 break-all font-mono text-primary-light hover:underline"
-                      >
-                        {order.deliveryUrl}
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
+                      <DeliverableLink
+                        orderId={order.id}
+                        reference={order.deliveryUrl}
+                        className="font-mono text-primary-light hover:underline"
+                      />
                     </div>
                   )}
 
@@ -1028,7 +1014,7 @@ export default function OrdersDashboardPage() {
                               {uploadedFileMeta.filename}
                             </p>
                             <p className="text-xs text-slate-400">
-                              {(uploadedFileMeta.size / 1024).toFixed(1)} KB • Neon Storage
+                              {(uploadedFileMeta.size / 1024).toFixed(1)} KB • Almacenamiento privado
                             </p>
                           </div>
                         </div>
@@ -1063,15 +1049,9 @@ export default function OrdersDashboardPage() {
                         <p className="text-white font-mono break-all select-all">{uploadedFileMeta.hash}</p>
                       </div>
 
-                      <a
-                        href={uploadedFileMeta.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 hover:underline"
-                      >
-                        <span>Abrir archivo en el bucket público</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
+                      <p className="text-[11px] text-slate-400">
+                        Archivo privado: solo el comprador, tú y el árbitro podrán descargarlo.
+                      </p>
                     </div>
                   )}
                 </div>

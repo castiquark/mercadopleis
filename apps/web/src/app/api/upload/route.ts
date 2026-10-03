@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { enforceRateLimit } from '@/lib/rateLimit';
+import { DELIVERABLES_BUCKET, buildObjectKey, getS3Client, toStorageRef } from '@/lib/storage';
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
@@ -28,49 +30,6 @@ const ALLOWED_MIME_TYPES = new Set([
   'video/webm',
 ]);
 
-function getS3Config() {
-  const endpoint =
-    process.env.NEON_STORAGE_ENDPOINT_URL ||
-    process.env.STORAGE_ENDPOINT_URL ||
-    process.env.AWS_ENDPOINT_URL_S3;
-
-  const accessKeyId =
-    process.env.NEON_STORAGE_ACCESS_KEY_ID ||
-    process.env.STORAGE_ACCESS_KEY_ID ||
-    process.env.AWS_ACCESS_KEY_ID;
-
-  const secretAccessKey =
-    process.env.NEON_STORAGE_SECRET_ACCESS_KEY ||
-    process.env.STORAGE_SECRET_ACCESS_KEY ||
-    process.env.AWS_SECRET_ACCESS_KEY;
-
-  const region =
-    process.env.NEON_STORAGE_REGION ||
-    process.env.STORAGE_REGION ||
-    process.env.AWS_REGION ||
-    'us-east-1';
-
-  return { endpoint, accessKeyId, secretAccessKey, region };
-}
-
-function getS3Client() {
-  const { endpoint, accessKeyId, secretAccessKey, region } = getS3Config();
-
-  if (!endpoint || !accessKeyId || !secretAccessKey) {
-    return null;
-  }
-
-  return new S3Client({
-    endpoint,
-    region,
-    credentials: {
-      accessKeyId,
-      secretAccessKey,
-    },
-    forcePathStyle: true,
-  });
-}
-
 export async function POST(request: NextRequest) {
   try {
     const authUser = getAuthUserFromRequest(request);
@@ -80,6 +39,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const limited = await enforceRateLimit([{ name: 'upload', id: authUser.id, limit: 20, windowSeconds: 3600 }]);
+    if (limited) return limited;
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
@@ -108,34 +70,27 @@ export async function POST(request: NextRequest) {
     // Compute cryptographic SHA-256 hash for smart contract verification
     const sha256Hash = '0x' + crypto.createHash('sha256').update(buffer).digest('hex');
 
-    const cleanFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const objectKey = `orders/${authUser.id}/${Date.now()}-${cleanFilename}`;
-    const bucket = 'deliverables';
-
     const s3 = getS3Client();
-
-    let fileUrl = '';
-
-    if (s3) {
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: bucket,
-          Key: objectKey,
-          Body: buffer,
-          ContentType: file.type || 'application/octet-stream',
-        })
-      );
-
-      const { endpoint } = getS3Config();
-      fileUrl = `${endpoint}/${bucket}/${objectKey}`;
-    } else {
-      console.warn('Neon S3 credentials not configured, returning local reference');
-      fileUrl = `https://storage.mercadopleis.club/${objectKey}`;
+    if (!s3) {
+      console.error('Object storage credentials are not configured; refusing the upload');
+      return NextResponse.json({ error: 'File storage is temporarily unavailable' }, { status: 503 });
     }
+
+    const objectKey = buildObjectKey(authUser.id, file.name);
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: DELIVERABLES_BUCKET,
+        Key: objectKey,
+        Body: buffer,
+        ContentType: file.type || 'application/octet-stream',
+      })
+    );
 
     return NextResponse.json({
       success: true,
-      url: fileUrl,
+      // Private reference, not a public URL: files are downloaded through GET /api/orders/{id}/deliverable.
+      url: toStorageRef(objectKey),
+      key: objectKey,
       hash: sha256Hash,
       filename: file.name,
       size: file.size,

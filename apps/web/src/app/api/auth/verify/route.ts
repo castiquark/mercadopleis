@@ -4,8 +4,12 @@ import { db, users } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { validateAndConsumeNonce, signUserToken } from '@/lib/serverAuth';
 import { parseSiweMessage, validateSiweMessage } from '@/lib/siwe';
+import { enforceRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request: NextRequest) {
+  const limited = await enforceRateLimit([{ name: 'auth:verify:ip', id: getClientIp(request), limit: 20, windowSeconds: 60 }]);
+  if (limited) return limited;
+
   try {
     const body = await request.json();
     const { address, signature, message } = body;

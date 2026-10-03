@@ -3,6 +3,7 @@ import { db, disputes, orders } from '@mercadopleis/database';
 import { eq, desc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { LIMITS, isSafeHttpUrl } from '@/lib/validation';
+import { enforceRateLimit, getClientIp } from '@/lib/rateLimit';
 import { createPublicClient, http, parseEventLogs } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
@@ -111,6 +112,9 @@ export async function POST(request: NextRequest) {
   if (!authUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const limited = await enforceRateLimit([{ name: 'disputes:open', id: authUser.id, limit: 10, windowSeconds: 3600 }]);
+  if (limited) return limited;
 
   try {
     const body = await request.json();

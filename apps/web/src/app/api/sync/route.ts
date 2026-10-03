@@ -1,3 +1,4 @@
+import { enforceRateLimit, getClientIp } from '@/lib/rateLimit';
 import { NextRequest, NextResponse } from 'next/server';
 import { createPublicClient, http, parseAbiItem, formatUnits } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
@@ -54,6 +55,9 @@ async function ensureServiceForSeller(sellerId: string, grossAmountUsdc: string,
 }
 
 export async function GET(request: NextRequest) {
+  const limited = await enforceRateLimit([{ name: 'sync:ip', id: getClientIp(request), limit: 12, windowSeconds: 60 }]);
+  if (limited) return limited;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const requestedChainId = Number(searchParams.get('chainId')) || 

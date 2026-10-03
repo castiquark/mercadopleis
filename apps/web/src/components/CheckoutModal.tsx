@@ -384,6 +384,18 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
               )}
             </button>
           )}
+
+          <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500">
+            {language === 'en' ? 'By continuing you accept the ' : 'Al continuar aceptas los '}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-300">
+              {language === 'en' ? 'Terms' : 'Términos'}
+            </a>
+            {language === 'en' ? ' and the ' : ' y la '}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-300">
+              {language === 'en' ? 'Privacy Policy' : 'Política de Privacidad'}
+            </a>
+            .
+          </p>
         </div>
       </div>
     </div>

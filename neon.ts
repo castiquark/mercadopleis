@@ -2,6 +2,6 @@ import { defineConfig } from "@neon/config/v1";
 
 export default defineConfig({
   buckets: {
-    deliverables: { access: "public_read" },
+    deliverables: { access: "private" },
   },
 });

@@ -335,3 +335,40 @@ export async function fetchServiceReviews(serviceId: string) {
     return [];
   }
 }
+
+/**
+ * Uploads a deliverable to private storage. Returns a private reference (`storage:...`), never a public URL,
+ * plus the SHA-256 hash that the seller commits on-chain.
+ */
+export async function uploadDeliverable(file: File): Promise<{ url: string; hash: string; filename: string; size: number }> {
+  const token = getAuthToken();
+  if (!token) throw new Error('Inicia sesión con tu wallet (SIWE) para subir archivos.');
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch('/api/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Error al subir el archivo');
+  }
+  return { url: data.url, hash: data.hash, filename: data.filename, size: data.size };
+}
+
+/** Resolves where to fetch an order's deliverable: a short-lived signed URL for uploads, or the external link. */
+export async function getDeliverableAccess(orderId: string): Promise<{ type: 'storage' | 'external'; url: string }> {
+  const token = getAuthToken();
+  if (!token) throw new Error('Inicia sesión con tu wallet (SIWE) para ver el entregable.');
+
+  const res = await fetch(`${API_URL}/orders/${orderId}/deliverable`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'No se pudo obtener el entregable');
+  return { type: data.type, url: data.url };
+}

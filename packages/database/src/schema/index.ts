@@ -14,6 +14,7 @@ export * from './disputes';
 export * from './reviews';
 export * from './blockchainTransactions';
 export * from './orderMessages';
+export * from './rateLimits';
 
 export const usersRelations = relations(users, ({ many }) => ({
   services: many(services),
