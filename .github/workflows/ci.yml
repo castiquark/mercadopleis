@@ -40,8 +40,9 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
-      - name: Typecheck and build web app
+      - name: Lint, typecheck and build web app
         run: |
+          pnpm --filter @mercadopleis/web lint
           pnpm --filter @mercadopleis/web exec tsc --noEmit
           pnpm --filter @mercadopleis/web build
 

@@ -12,18 +12,12 @@ import {
   Clock,
   Star,
   CheckCircle2,
-  Share2,
   Check,
-  ExternalLink,
   MapPin,
-  Globe,
   Compass,
 } from 'lucide-react';
 import { fetchServiceReviews } from '@/lib/api';
 import { useAccount } from 'wagmi';
-
-
-const FALLBACK_SERVICES: Service[] = [];
 
 export default function ServiceDetailPage() {
   const { language } = useLanguage();
@@ -354,7 +348,7 @@ export default function ServiceDetailPage() {
                       </div>
 
                       <p className="mt-2 text-slate-300 leading-relaxed">
-                        "{rev.comment}"
+                        &ldquo;{rev.comment}&rdquo;
                       </p>
                     </div>
                   ))

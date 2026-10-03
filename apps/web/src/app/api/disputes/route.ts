@@ -3,7 +3,7 @@ import { db, disputes, orders } from '@mercadopleis/database';
 import { eq, desc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { LIMITS, isSafeHttpUrl } from '@/lib/validation';
-import { enforceRateLimit, getClientIp } from '@/lib/rateLimit';
+import { enforceRateLimit } from '@/lib/rateLimit';
 import { createPublicClient, http, parseEventLogs } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';

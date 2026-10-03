@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, orders, services, users } from '@mercadopleis/database';
+import { db, orders, services } from '@mercadopleis/database';
 import { and, eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { calculateOrderAmounts, MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';

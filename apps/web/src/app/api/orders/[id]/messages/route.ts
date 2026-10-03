@@ -3,7 +3,7 @@ import { db, orders, orderMessages } from '@mercadopleis/database';
 import { eq, asc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { validateMessage } from '@/lib/validation';
-import { enforceRateLimit, getClientIp } from '@/lib/rateLimit';
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 export async function GET(
   request: NextRequest,

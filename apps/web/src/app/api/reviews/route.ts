@@ -3,7 +3,7 @@ import { db, reviews, orders, users } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { LIMITS } from '@/lib/validation';
-import { enforceRateLimit, getClientIp } from '@/lib/rateLimit';
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 export async function POST(request: NextRequest) {
   try {

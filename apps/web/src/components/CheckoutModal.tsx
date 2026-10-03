@@ -6,7 +6,7 @@ import { useLanguage } from '@/lib/languageContext';
 import { useAccount, useWriteContract, useReadContract, usePublicClient } from 'wagmi';
 import { parseUnits, formatUnits, parseEventLogs } from 'viem';
 import { Erc20Abi, MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
-import { Shield, Clock, CheckCircle2, AlertCircle, X, ExternalLink, Droplet, MapPin } from 'lucide-react';
+import { Shield, Clock, CheckCircle2, AlertCircle, X, Droplet, MapPin } from 'lucide-react';
 import { FaucetButton } from './FaucetButton';
 import { isUserRejection } from '../lib/web3Errors';
 import { BUILDER_DATA_SUFFIX } from '@/lib/builderCode';

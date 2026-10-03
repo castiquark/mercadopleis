@@ -6,6 +6,7 @@ allowBuilds:
   bufferutil: true
   esbuild: true
   keccak: true
+  unrs-resolver: false
   utf-8-validate: true
 
 onlyBuiltDependencies:

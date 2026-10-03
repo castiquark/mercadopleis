@@ -6,19 +6,15 @@ import { useAccount, usePublicClient, useReadContract, useWriteContract } from '
 import { parseUnits, formatUnits } from 'viem';
 import { Erc20Abi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
-import { 
-  Droplet, 
-  CheckCircle2, 
-  Loader2, 
-  ExternalLink, 
-  ShieldCheck, 
-  Wallet, 
-  ArrowRight, 
-  Plus, 
-  Copy, 
-  Check, 
-  HelpCircle,
-  Coins
+import {
+  Droplet,
+  CheckCircle2,
+  Loader2,
+  ExternalLink,
+  ArrowRight,
+  Plus,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { isUserRejection } from '../../lib/web3Errors';
 import { useLanguage } from '@/lib/languageContext';

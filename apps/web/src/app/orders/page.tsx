@@ -17,7 +17,6 @@ import {
   UploadCloud,
   FileCheck,
   ExternalLink,
-  PlusCircle,
   ArrowRight,
   RefreshCw,
   Star,
@@ -33,7 +32,6 @@ import {
   Check,
   ShoppingBag,
   Trash2,
-  Gavel,
 } from 'lucide-react';
 import { OrderTimelineAndChat } from '@/components/OrderTimelineAndChat';
 import { DeliverableLink } from '@/components/DeliverableLink';
@@ -217,7 +215,7 @@ export default function OrdersDashboardPage() {
     } catch (e) {
       console.warn('Orders load note:', e);
     }
-  }, [user?.id, address]);
+  }, [user?.id, address, activeChainId, en]);
 
   useEffect(() => {
     loadOrders();
@@ -882,7 +880,7 @@ export default function OrdersDashboardPage() {
                           </span>
                           {(order.review?.comment || (reviewedOrders[order.id] && reviewComment)) && (
                             <span className="block max-w-full text-[11px] text-slate-400 italic sm:max-w-xs text-right truncate">
-                              "{order.review?.comment || reviewComment}"
+                              &ldquo;{order.review?.comment || reviewComment}&rdquo;
                             </span>
                           )}
                         </div>
@@ -909,7 +907,7 @@ export default function OrdersDashboardPage() {
                         </span>
                         {order.review?.comment && (
                           <span className="block max-w-full text-[11px] text-slate-400 italic sm:max-w-xs text-right truncate">
-                            "{order.review.comment}"
+                            &ldquo;{order.review.comment}&rdquo;
                           </span>
                         )}
                       </div>

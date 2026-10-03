@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, orders, disputes } from '@mercadopleis/database';
+import { db, orders } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { isSafeHttpUrl } from '@/lib/validation';
@@ -163,8 +163,6 @@ export async function PATCH(
       status,
       txHash,
       txHashRelease,
-      txHashFunding,
-      onChainOrderId,
       deliverableUrl,
       deliveryUrl,
       deliverableHash,

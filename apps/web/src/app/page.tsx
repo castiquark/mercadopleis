@@ -8,7 +8,7 @@ import { ServiceCard } from '@/components/ServiceCard';
 import { CheckoutModal } from '@/components/CheckoutModal';
 import { Service } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
-import { ShieldCheck, Search, Zap, CheckCircle, MapPin, Globe, Compass, X, Filter } from 'lucide-react';
+import { ShieldCheck, Search, Zap, CheckCircle, MapPin, Globe, X } from 'lucide-react';
 
 const INITIAL_SERVICES: Service[] = [];
 

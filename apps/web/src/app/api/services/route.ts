@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, services, users } from '@mercadopleis/database';
+import { db, services } from '@mercadopleis/database';
 import { eq, desc, and, gte, lte, ilike, or } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { validateServiceInput } from '@/lib/validation';
-import { enforceRateLimit, getClientIp } from '@/lib/rateLimit';
+import { enforceRateLimit } from '@/lib/rateLimit';
 import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 

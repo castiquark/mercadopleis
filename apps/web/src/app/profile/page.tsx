@@ -9,12 +9,9 @@ import { fetchMyOrders } from '@/lib/api';
 import { EMPTY_STATS, computeStats, type ReputationStats } from '@/lib/reputation';
 import {
   UserCheck,
-  Shield,
   Star,
-  DollarSign,
   CheckCircle,
   Copy,
-  ExternalLink,
   ArrowLeft,
   Sparkles,
   Save,

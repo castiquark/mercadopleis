@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
 import { useAccount, useSignMessage } from 'wagmi';
 import { getNonce, verifySignature, getAuthToken, clearAuthToken } from './api';
 
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
-  const fetchUserProfile = async (authToken: string, currentAddress?: string | null) => {
+  const fetchUserProfile = useCallback(async (authToken: string, currentAddress?: string | null) => {
     try {
       const res = await fetch(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${authToken}` },
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(null);
       setUser(null);
     }
-  };
+  }, [API_URL]);
 
   // Sync session on mount and whenever active wallet address or connection state changes
   useEffect(() => {
@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(null);
       setUser(null);
     }
-  }, [address, isConnected]);
+  }, [address, isConnected, fetchUserProfile]);
 
   const signIn = async (): Promise<boolean> => {
     if (!address || !isConnected) return false;
