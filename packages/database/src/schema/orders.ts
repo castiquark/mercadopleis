@@ -9,6 +9,8 @@ export const orders = pgTable('orders', {
   buyerId: uuid('buyer_id').references(() => users.id).notNull(),
   sellerId: uuid('seller_id').references(() => users.id).notNull(),
   chainId: integer('chain_id').notNull().default(8453),
+  // Escrow contract the order lives in (lowercase). Order ids restart at 1 on every new deployment.
+  escrowAddress: varchar('escrow_address', { length: 42 }),
   grossAmountUsdc: numeric('gross_amount_usdc', { precision: 12, scale: 2 }).notNull(),
   platformFeeBps: integer('platform_fee_bps').notNull().default(300),
   platformFeeUsdc: numeric('platform_fee_usdc', { precision: 12, scale: 2 }).notNull(),
@@ -25,6 +27,6 @@ export const orders = pgTable('orders', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
-  // Contract order ids are only unique per chain/escrow deployment.
-  uniqueIndex('orders_chain_contract_order_unique').on(table.chainId, table.contractOrderId),
+  // Contract order ids are only unique within one escrow contract on one chain.
+  uniqueIndex('orders_chain_escrow_order_unique').on(table.chainId, table.escrowAddress, table.contractOrderId),
 ]);

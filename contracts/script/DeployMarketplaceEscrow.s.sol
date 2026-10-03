@@ -5,8 +5,10 @@ import {Script, console} from "forge-std/Script.sol";
 import {MarketplaceEscrow} from "../src/MarketplaceEscrow.sol";
 
 contract DeployMarketplaceEscrow is Script {
-    // Base Sepolia Native USDC
+    // Base Sepolia Circle test USDC
     address public constant BASE_SEPOLIA_USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
+    // Mintable test USDC used by the app's /faucet and the e2e scripts
+    address public constant BASE_SEPOLIA_MOCK_USDC = 0x6Fa1279f6c760fA993B7f9aC75de5a141d7D2D8A;
 
     function run() external returns (MarketplaceEscrow escrow) {
         uint256 deployerPrivateKey = vm.envOr("DEPLOYER_PRIVATE_KEY", uint256(0));
@@ -37,6 +39,7 @@ contract DeployMarketplaceEscrow is Script {
         );
 
         escrow.setAcceptedToken(usdc, true);
+        escrow.setAcceptedToken(BASE_SEPOLIA_MOCK_USDC, true);
 
         vm.stopBroadcast();
 

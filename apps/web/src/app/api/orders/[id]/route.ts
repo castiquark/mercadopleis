@@ -326,6 +326,6 @@ export async function PATCH(
     return NextResponse.json({ order: updatedOrder });
   } catch (err: any) {
     console.error('Error in PATCH /api/orders/[id]:', err);
-    return NextResponse.json({ error: 'Failed to update order', details: err?.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
   }
 }

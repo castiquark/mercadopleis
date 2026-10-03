@@ -83,7 +83,7 @@ async function main() {
   check(arbitrator.toLowerCase() === deployer.address.toLowerCase(), 'deployer wallet is the escrow arbitrator on Sepolia');
 
   console.log('\n-- Setup: gas + test USDC --');
-  for (const [to, v] of [[seller.address, '0.00001'], [buyer.address, '0.00002']] as const) {
+  for (const [to, v] of [[seller.address, process.env.E2E_SELLER_ETH || '0.00001'], [buyer.address, process.env.E2E_BUYER_ETH || '0.00002']] as const) {
     const h = await dep.sendTransaction({ to, value: parseEther(v) });
     await pub.waitForTransactionReceipt({ hash: h });
   }

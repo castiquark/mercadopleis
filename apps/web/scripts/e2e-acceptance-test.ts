@@ -93,14 +93,14 @@ async function main() {
   console.log('--- 2. Funding Wallets with Base Sepolia ETH for Gas ---');
   const fundSellerTx = await deployerClient.sendTransaction({
     to: sellerAccount.address,
-    value: parseEther('0.000004'),
+    value: parseEther(process.env.E2E_SELLER_ETH || '0.000004'),
   });
   await publicClient.waitForTransactionReceipt({ hash: fundSellerTx });
   console.log(`  ✓ Funded Seller: 0.000004 ETH (Tx: ${fundSellerTx})`);
 
   const fundBuyerTx = await deployerClient.sendTransaction({
     to: buyerAccount.address,
-    value: parseEther('0.000008'),
+    value: parseEther(process.env.E2E_BUYER_ETH || '0.000008'),
   });
   await publicClient.waitForTransactionReceipt({ hash: fundBuyerTx });
   console.log(`  ✓ Funded Buyer:  0.000008 ETH (Tx: ${fundBuyerTx})`);

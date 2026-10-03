@@ -176,6 +176,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Error resolving dispute:', error);
-    return NextResponse.json({ error: 'Failed to resolve dispute', details: error?.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to resolve dispute' }, { status: 500 });
   }
 }

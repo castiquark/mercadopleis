@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveNetwork } from './networks';
+import { currentEscrowKey, resolveNetwork } from './networks';
 
 const MAINNET_USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
@@ -32,5 +32,16 @@ describe('resolveNetwork', () => {
 
   it('uses the same escrow address on both supported chains', () => {
     expect(resolveNetwork(8453).escrow).toBe(resolveNetwork(84532).escrow);
+  });
+});
+
+describe('currentEscrowKey', () => {
+  it('is the lowercase registry address, used to tell escrow deployments apart', () => {
+    for (const chainId of [8453, 84532]) {
+      const key = currentEscrowKey(chainId);
+      expect(key).toBe(key.toLowerCase());
+      expect(key).toBe(resolveNetwork(chainId).escrow.toLowerCase());
+      expect(key).toMatch(/^0x[0-9a-f]{40}$/);
+    }
   });
 });

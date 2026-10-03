@@ -1,10 +1,14 @@
 import { enforceRateLimit, getClientIp } from '@/lib/rateLimit';
 import { NextRequest, NextResponse } from 'next/server';
-import { createPublicClient, http, parseAbiItem, formatUnits } from 'viem';
+import { createPublicClient, http, parseEventLogs, formatUnits } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { db, orders, disputes, blockchainTransactions, users, services } from '@mercadopleis/database';
 import { and, eq, desc } from 'drizzle-orm';
-import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
+import { ESCROW_ADDRESSES, ESCROW_DEPLOY_BLOCKS, MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
+
+// Public RPCs reject large getLogs ranges, so scan in small windows and catch up over several calls.
+const CHUNK_BLOCKS = 2_000n;
+const MAX_CHUNKS_PER_RUN = 25n; // up to 50,000 blocks per call
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 
 export const dynamic = 'force-dynamic';
@@ -73,6 +77,7 @@ export async function GET(request: NextRequest) {
 
     // Per-chain registry only: a single env var cannot be right for both networks.
     const escrowAddress = ESCROW_ADDRESSES[targetChainId];
+    const escrowKey = escrowAddress.toLowerCase();
 
     const client = createPublicClient({
       chain: targetChain,
@@ -93,8 +98,13 @@ export async function GET(request: NextRequest) {
     } else if (latestTx && latestTx.blockNumber) {
       fromBlock = BigInt(latestTx.blockNumber) + 1n;
     } else {
-      const blocksToScan = BigInt(searchParams.get('blocks') || '1000');
-      fromBlock = currentBlock > blocksToScan ? currentBlock - blocksToScan : 0n;
+      const deployBlock = ESCROW_DEPLOY_BLOCKS[targetChainId];
+      if (deployBlock !== undefined) {
+        fromBlock = BigInt(deployBlock);
+      } else {
+        const blocksToScan = BigInt(searchParams.get('blocks') || '1000');
+        fromBlock = currentBlock > blocksToScan ? currentBlock - blocksToScan : 0n;
+      }
     }
 
     if (fromBlock > currentBlock) {
@@ -107,54 +117,28 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 2. Scan All 6 Escrow Lifecycle Events
-    // Event 1: OrderFunded
-    const orderFundedLogs = await client.getLogs({
-      address: escrowAddress,
-      event: parseAbiItem('event OrderFunded(uint256 indexed orderId, address indexed buyer, address indexed seller, address token, uint256 amount, uint256 deadline)'),
-      fromBlock,
-      toBlock: currentBlock,
-    });
+    // 2. Scan the escrow lifecycle events in bounded windows. RPC providers reject large getLogs ranges, and a
+    //    single failing range would otherwise block the indexer forever. Each call catches up by at most
+    //    MAX_CHUNKS_PER_RUN windows and the checkpoint only advances to what was actually scanned.
+    const scanTo = (() => {
+      const cap = fromBlock + CHUNK_BLOCKS * MAX_CHUNKS_PER_RUN - 1n;
+      return currentBlock < cap ? currentBlock : cap;
+    })();
 
-    // Event 2: DeliverySubmitted
-    const deliveryLogs = await client.getLogs({
-      address: escrowAddress,
-      event: parseAbiItem('event DeliverySubmitted(uint256 indexed orderId, address indexed seller, bytes32 deliveryHash, uint256 autoReleaseTime)'),
-      fromBlock,
-      toBlock: currentBlock,
-    });
+    const rawLogs: any[] = [];
+    for (let start = fromBlock; start <= scanTo; start += CHUNK_BLOCKS) {
+      const end = start + CHUNK_BLOCKS - 1n < scanTo ? start + CHUNK_BLOCKS - 1n : scanTo;
+      rawLogs.push(...(await client.getLogs({ address: escrowAddress, fromBlock: start, toBlock: end })));
+    }
 
-    // Event 3: OrderReleased
-    const releaseLogs = await client.getLogs({
-      address: escrowAddress,
-      event: parseAbiItem('event OrderReleased(uint256 indexed orderId, uint256 sellerPayout, uint256 platformFee)'),
-      fromBlock,
-      toBlock: currentBlock,
-    });
-
-    // Event 4: OrderRefunded
-    const refundLogs = await client.getLogs({
-      address: escrowAddress,
-      event: parseAbiItem('event OrderRefunded(uint256 indexed orderId, address indexed buyer, uint256 refundAmount)'),
-      fromBlock,
-      toBlock: currentBlock,
-    });
-
-    // Event 5: DisputeOpened
-    const disputeOpenedLogs = await client.getLogs({
-      address: escrowAddress,
-      event: parseAbiItem('event DisputeOpened(uint256 indexed orderId, address indexed openedBy)'),
-      fromBlock,
-      toBlock: currentBlock,
-    });
-
-    // Event 6: DisputeResolved
-    const disputeResolvedLogs = await client.getLogs({
-      address: escrowAddress,
-      event: parseAbiItem('event DisputeResolved(uint256 indexed orderId, uint256 sellerPayout, uint256 buyerRefund, uint256 platformFee)'),
-      fromBlock,
-      toBlock: currentBlock,
-    });
+    const decoded = parseEventLogs({ abi: MarketplaceEscrowAbi, logs: rawLogs, strict: false }) as any[];
+    const byEvent = (name: string) => decoded.filter((l) => l.eventName === name);
+    const orderFundedLogs = byEvent('OrderFunded');
+    const deliveryLogs = byEvent('DeliverySubmitted');
+    const releaseLogs = byEvent('OrderReleased');
+    const refundLogs = byEvent('OrderRefunded');
+    const disputeOpenedLogs = byEvent('DisputeOpened');
+    const disputeResolvedLogs = byEvent('DisputeResolved');
 
     // 3. Reconcile Events with Database
 
@@ -167,7 +151,7 @@ export async function GET(request: NextRequest) {
       const deadline = Number((log.args as any).deadline);
 
       let existing = await db.query.orders.findFirst({
-        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId)),
+        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId), eq(orders.escrowAddress, escrowKey)),
       });
 
       if (!existing && buyerAddr && sellerAddr) {
@@ -190,8 +174,9 @@ export async function GET(request: NextRequest) {
               buyerId: buyerUser.id,
               sellerId: sellerUser.id,
               chainId: targetChainId,
+              escrowAddress: escrowKey,
               grossAmountUsdc: grossAmountStr,
-              platformFeeBps: 300,
+              platformFeeBps: CONTRACT_CONFIG.FEE_BPS,
               platformFeeUsdc: platformFeeNum.toFixed(2),
               sellerAmountUsdc: sellerAmountNum.toFixed(2),
               status: 'FUNDED',
@@ -231,7 +216,7 @@ export async function GET(request: NextRequest) {
       const deliveryHash = (log.args as any).deliveryHash;
       const autoReleaseDeadline = Number((log.args as any).autoReleaseTime);
       const existing = await db.query.orders.findFirst({
-        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId)),
+        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId), eq(orders.escrowAddress, escrowKey)),
       });
       if (existing) {
         await db
@@ -254,7 +239,7 @@ export async function GET(request: NextRequest) {
     for (const log of releaseLogs) {
       const orderId = Number((log.args as any).orderId);
       const existing = await db.query.orders.findFirst({
-        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId)),
+        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId), eq(orders.escrowAddress, escrowKey)),
       });
       if (existing) {
         await db
@@ -277,7 +262,7 @@ export async function GET(request: NextRequest) {
     for (const log of refundLogs) {
       const orderId = Number((log.args as any).orderId);
       const existing = await db.query.orders.findFirst({
-        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId)),
+        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId), eq(orders.escrowAddress, escrowKey)),
       });
       if (existing) {
         await db
@@ -302,7 +287,7 @@ export async function GET(request: NextRequest) {
       const openedByWallet = ((log.args as any).openedBy as string).toLowerCase();
 
       const existing = await db.query.orders.findFirst({
-        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId)),
+        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId), eq(orders.escrowAddress, escrowKey)),
       });
 
       if (existing) {
@@ -355,7 +340,7 @@ export async function GET(request: NextRequest) {
       const buyerRefund = (log.args as any).buyerRefund as bigint;
 
       const existing = await db.query.orders.findFirst({
-        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId)),
+        where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId), eq(orders.escrowAddress, escrowKey)),
       });
 
       if (existing) {
@@ -397,10 +382,10 @@ export async function GET(request: NextRequest) {
 
     // 4. Save Persistent Checkpoint Cursor
     await db.insert(blockchainTransactions).values({
-      txHash: `checkpoint_${targetChainId}_${currentBlock}`,
+      txHash: `checkpoint_${targetChainId}_${scanTo}`,
       chainId: targetChainId,
       eventType: 'SYNC_CHECKPOINT',
-      blockNumber: Number(currentBlock),
+      blockNumber: Number(scanTo),
       status: 'CONFIRMED',
     }).onConflictDoNothing();
 
@@ -410,7 +395,9 @@ export async function GET(request: NextRequest) {
       chainId: targetChainId,
       escrowAddress,
       scannedFromBlock: fromBlock.toString(),
+      scannedToBlock: scanTo.toString(),
       currentBlock: currentBlock.toString(),
+      upToDate: scanTo >= currentBlock,
       eventsFound: {
         orderFunded: orderFundedLogs.length,
         deliverySubmitted: deliveryLogs.length,
@@ -422,6 +409,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (err: any) {
     console.error('[Sync] Error during blockchain event reconciliation:', err);
-    return NextResponse.json({ error: 'Sync failed', details: err?.message }, { status: 500 });
+    return NextResponse.json({ error: 'Sync failed' }, { status: 500 });
   }
 }

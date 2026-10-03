@@ -1,6 +1,11 @@
 import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 
+/** Lowercase address of the escrow currently deployed on a chain; the key that identifies where an order lives. */
+export function currentEscrowKey(chainId: number): string {
+  return ESCROW_ADDRESSES[chainId].toLowerCase();
+}
+
 export interface ResolvedNetwork {
   chainId: number;
   supported: boolean;

@@ -11,6 +11,15 @@ export const ESCROW_ADDRESSES: Record<number, `0x${string}`> = {
 };
 
 /**
+ * Block in which each escrow was deployed. The indexer starts here when it has no checkpoint, so orders created
+ * before the first sync are never missed. Fill this in right after deploying a new escrow.
+ */
+export const ESCROW_DEPLOY_BLOCKS: Record<number, number | undefined> = {
+  [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: undefined,
+  [CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID]: undefined,
+};
+
+/**
  * Calculates platform fee and seller net payout matching smart contract arithmetic exactly.
  */
 export function calculateOrderAmounts(grossAmountUsdc: number, feeBps: number = CONTRACT_CONFIG.FEE_BPS) {

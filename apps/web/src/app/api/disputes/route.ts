@@ -200,6 +200,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ dispute: newDispute }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating dispute:', error);
-    return NextResponse.json({ error: 'Failed to open dispute', details: error?.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to open dispute' }, { status: 500 });
   }
 }

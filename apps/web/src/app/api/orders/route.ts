@@ -7,6 +7,7 @@ import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { createPublicClient, http, parseEventLogs, parseUnits } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { currentEscrowKey } from '@/lib/networks';
 
 interface VerifiedFunding {
   isValid: boolean;
@@ -182,7 +183,11 @@ export async function POST(request: NextRequest) {
 
     // Check if this contractOrderId is already registered in DB
     const existingOrder = await db.query.orders.findFirst({
-      where: and(eq(orders.contractOrderId, verification.orderId), eq(orders.chainId, verification.chainId)),
+      where: and(
+        eq(orders.contractOrderId, verification.orderId),
+        eq(orders.chainId, verification.chainId),
+        eq(orders.escrowAddress, currentEscrowKey(verification.chainId))
+      ),
     });
 
     if (existingOrder) {
@@ -213,6 +218,7 @@ export async function POST(request: NextRequest) {
         sellerId: service.sellerId,
         contractOrderId: verification.orderId,
         chainId: verification.chainId,
+        escrowAddress: currentEscrowKey(verification.chainId),
         txHashFunding,
         grossAmountUsdc: grossAmount.toString(),
         platformFeeBps: feeBps,
@@ -238,6 +244,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (err: any) {
     console.error('Error creating order:', err);
-    return NextResponse.json({ error: 'Failed to create order', details: err?.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
   }
 }
