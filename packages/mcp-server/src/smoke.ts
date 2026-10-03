@@ -1,15 +1,28 @@
 // Smoke test: spawns the server over stdio and exercises the read-only tools against the live API.
+//
+//   pnpm test:smoke                                    # runs src/index.ts with tsx
+//   SMOKE_COMMAND="npx mercadopleis-mcp" pnpm test:smoke   # runs an installed build (e.g. from `npm pack`)
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import assert from 'node:assert/strict';
 
+const [command, ...args] = (process.env.SMOKE_COMMAND || 'npx tsx src/index.ts').split(' ');
 const client = new Client({ name: 'smoke', version: '0.0.0' });
-await client.connect(new StdioClientTransport({ command: 'npx', args: ['tsx', 'src/index.ts'], env: { ...process.env } as Record<string, string> }));
+await client.connect(new StdioClientTransport({ command, args, env: { ...process.env } as Record<string, string> }));
+console.log('server ->', client.getServerVersion());
 
 const text = (r: any) => r.content[0].text as string;
 
 const tools = (await client.listTools()).tools.map((t) => t.name).sort();
-assert.deepEqual(tools, ['compare_services', 'create_order', 'get_delivery', 'get_order_status', 'get_service', 'search_services']);
+assert.deepEqual(tools, [
+  'compare_services',
+  'create_order',
+  'get_delivery',
+  'get_order_status',
+  'get_service',
+  'prepare_order_action',
+  'search_services',
+]);
 
 const search = JSON.parse(text(await client.callTool({ name: 'search_services', arguments: { capability: 'spanish-audio-transcription', maxPriceUsdc: 25 } })));
 assert.ok(search.count >= 1, 'search should find the transcription service');
@@ -34,6 +47,10 @@ assert.equal(bad.isError, true);
 const none = await client.callTool({ name: 'get_order_status', arguments: { orderId: 999999 } });
 assert.equal(none.isError, true);
 console.log('get_order_status (nonexistent) ->', text(none));
+
+const noAction = await client.callTool({ name: 'prepare_order_action', arguments: { orderId: 999999, action: 'approve_delivery' } });
+assert.equal(noAction.isError, true);
+console.log('prepare_order_action (nonexistent) ->', text(noAction));
 
 await client.close();
 console.log('OK');

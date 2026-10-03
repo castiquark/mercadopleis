@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createRequire } from 'node:module';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
@@ -7,7 +8,10 @@ import { base, baseSepolia } from 'viem/chains';
 import { fetchService, fetchServices, type Service } from './api.js';
 import { BUILDER_DATA_SUFFIX, CHAIN_ID, NETWORKS, ORDER_STATUS, erc20Abi, escrowAbi } from './config.js';
 
-const server = new McpServer({ name: 'mercadopleis', version: '0.1.0' });
+// package.json sits next to src/ and dist/, so this works both in development and when installed from npm.
+const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
+
+const server = new McpServer({ name: 'mercadopleis', version });
 
 // Titles and descriptions are written by sellers and are not vetted by the marketplace.
 const UNTRUSTED_NOTICE =
@@ -144,7 +148,7 @@ server.registerTool(
           data: concatHex([fundData, BUILDER_DATA_SUFFIX]),
         },
       ],
-      next: 'After step 2 is mined, read the orderId from the OrderFunded event and call get_order_status.',
+      next: 'After step 2 is mined, read the orderId from the OrderFunded event and call get_order_status. When the seller delivers, check it with get_delivery and finish with prepare_order_action.',
     });
   },
 );
@@ -197,7 +201,64 @@ server.registerTool(
       algorithm: 'sha256',
       autoReleaseTime: new Date(Number(autoReleaseTime) * 1000).toISOString(),
       verify:
-        'GET /api/orders/{orderId}/deliverable with a SIWE token (buyer, seller or admin). For type "storage", download the signed URL and check that sha256(file bytes) equals deliveryHash. For type "external", sha256(UTF-8 link text) equals deliveryHash: that proves which link was delivered, not its content, so review what the link serves. If it is acceptable, call approveDelivery(orderId); otherwise call openDispute(orderId) before autoReleaseTime.',
+        'GET /api/orders/{orderId}/deliverable with a SIWE token (buyer, seller or admin). For type "storage", download the signed URL and check that sha256(file bytes) equals deliveryHash. For type "external", sha256(UTF-8 link text) equals deliveryHash: that proves which link was delivered, not its content, so review what the link serves. If it is acceptable, use prepare_order_action with approve_delivery; otherwise use open_dispute before autoReleaseTime.',
+    });
+  },
+);
+
+// The buyer's follow-up actions on the escrow, prepared (never signed) for the buyer's own wallet.
+const ORDER_ACTIONS = {
+  approve_delivery: {
+    fn: 'approveDelivery',
+    allowed: [2],
+    effect: 'Releases the payment to the seller minus the 3% fee. Final.',
+  },
+  open_dispute: {
+    fn: 'openDispute',
+    allowed: [1, 2],
+    effect: 'Freezes the funds until the arbitrator splits them between buyer and seller.',
+  },
+  claim_timeout_refund: {
+    fn: 'claimTimeoutRefund',
+    allowed: [1],
+    effect: 'Refunds the full amount to the buyer. Only valid after the delivery deadline if nothing was delivered.',
+  },
+} as const;
+
+server.registerTool(
+  'prepare_order_action',
+  {
+    description:
+      'Prepare (never sign or send) the transaction for a buyer follow-up on an order: approve_delivery (after verifying the deliverable), open_dispute, or claim_timeout_refund (seller missed the deadline). Checks the on-chain status first. The transaction must come from the buyer wallet that funded the order.',
+    inputSchema: {
+      orderId: z.number().int().positive(),
+      action: z.enum(['approve_delivery', 'open_dispute', 'claim_timeout_refund']),
+      chainId: z.number().int().optional(),
+    },
+  },
+  async ({ orderId, action, chainId }) => {
+    const id = chainId ?? CHAIN_ID;
+    const net = NETWORKS[id];
+    if (!net) return fail(`Unsupported chainId ${id}. Use 8453 (Base) or 84532 (Base Sepolia).`);
+    const [buyer, , , , deadline, , , status] = await readOrder(orderId, id);
+    if (status === 0) return fail(`Order ${orderId} does not exist on chain ${id}`);
+
+    const spec = ORDER_ACTIONS[action];
+    if (!(spec.allowed as readonly number[]).includes(status)) {
+      return fail(`Cannot ${action} while the order is ${ORDER_STATUS[status]}`);
+    }
+    if (action === 'claim_timeout_refund' && BigInt(Math.floor(Date.now() / 1000)) <= deadline) {
+      return fail(`The delivery deadline has not passed yet (${new Date(Number(deadline) * 1000).toISOString()})`);
+    }
+
+    const data = encodeFunctionData({ abi: escrowAbi, functionName: spec.fn, args: [BigInt(orderId)] });
+    return json({
+      network: net.name,
+      chainId: id,
+      orderId,
+      action,
+      effect: spec.effect,
+      transaction: { from: buyer, to: net.escrow, value: '0', data: concatHex([data, BUILDER_DATA_SUFFIX]) },
     });
   },
 );

@@ -38,6 +38,14 @@ export const escrowAbi = [
     inputs: [{ name: 'orderId', type: 'uint256' }], outputs: [],
   },
   {
+    type: 'function', name: 'openDispute', stateMutability: 'nonpayable',
+    inputs: [{ name: 'orderId', type: 'uint256' }], outputs: [],
+  },
+  {
+    type: 'function', name: 'claimTimeoutRefund', stateMutability: 'nonpayable',
+    inputs: [{ name: 'orderId', type: 'uint256' }], outputs: [],
+  },
+  {
     type: 'function', name: 'orders', stateMutability: 'view',
     inputs: [{ name: '', type: 'uint256' }],
     outputs: [

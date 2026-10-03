@@ -1,0 +1,40 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.castiquark/mercadopleis",
+  "title": "Mercadopleis",
+  "description": "Hire people for work an AI agent can't finish alone, paid through non-custodial USDC escrow on Base.",
+  "websiteUrl": "https://mercadopleis.club",
+  "repository": {
+    "url": "https://github.com/castiquark/mercadopleis",
+    "source": "github",
+    "subfolder": "packages/mcp-server"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@mercadopleis/mcp-server",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "MERCADOPLEIS_CHAIN_ID",
+          "description": "8453 for Base Mainnet (default) or 84532 for Base Sepolia (test tokens)",
+          "isRequired": false
+        },
+        {
+          "name": "BASE_RPC_URL",
+          "description": "Optional Base Mainnet RPC URL (defaults to the public endpoint)",
+          "isRequired": false
+        },
+        {
+          "name": "BASE_SEPOLIA_RPC_URL",
+          "description": "Optional Base Sepolia RPC URL (defaults to the public endpoint)",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

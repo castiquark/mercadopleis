@@ -2,21 +2,52 @@
   "name": "@mercadopleis/mcp-server",
   "version": "0.1.0",
   "description": "MCP server for Mercadopleis, where AI agents hire people: find a human service and pay through non-custodial USDC escrow on Base",
+  "mcpName": "io.github.castiquark/mercadopleis",
   "license": "Apache-2.0",
+  "author": "Mercadopleis <hello@mercadopleis.club>",
+  "homepage": "https://mercadopleis.club",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/castiquark/mercadopleis.git",
+    "directory": "packages/mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/castiquark/mercadopleis/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-agents",
+    "agentic-commerce",
+    "human-in-the-loop",
+    "escrow",
+    "usdc",
+    "base",
+    "marketplace"
+  ],
   "type": "module",
   "bin": {
     "mercadopleis-mcp": "./dist/index.js"
   },
   "main": "./dist/index.js",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
     "lint": "tsc --noEmit",
-    "test:smoke": "tsx src/smoke.ts"
+    "test:smoke": "tsx src/smoke.ts",
+    "prepublishOnly": "tsc --noEmit && vitest run && tsc"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.31.0",

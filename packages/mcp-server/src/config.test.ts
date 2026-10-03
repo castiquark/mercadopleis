@@ -51,6 +51,17 @@ describe('drift guards against the contract', () => {
   });
 });
 
+describe('package metadata', () => {
+  it('server.json (MCP registry) matches package.json name, mcpName and version', () => {
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf8'));
+    const server = JSON.parse(readFileSync(resolve(__dirname, '../server.json'), 'utf8'));
+    expect(server.name).toBe(pkg.mcpName);
+    expect(server.version).toBe(pkg.version);
+    expect(server.packages[0].identifier).toBe(pkg.name);
+    expect(server.packages[0].version).toBe(pkg.version);
+  });
+});
+
 describe('order calldata', () => {
   it('encodes approve and createAndFundOrder with 6-decimal USDC amounts', () => {
     const amount = parseUnits('20.00', 6);
