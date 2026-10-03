@@ -54,7 +54,7 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
         title: '3. Pagos y escrow',
         paragraphs: [
           `El comprador deposita USDC en el contrato de escrow (${L.escrowAddress}). Mercadopleis no custodia fondos: las reglas las ejecuta el contrato.`,
-          'El vendedor registra la entrega con el hash SHA-256 del entregable. El comprador dispone de 5 días desde la entrega para aprobarla o abrir una disputa. Si no hay acción, el vendedor puede reclamar la liberación automática. Si el vendedor no entrega dentro del plazo acordado, el comprador puede reclamar el reembolso íntegro.',
+          'El vendedor registra la entrega con un hash SHA-256: el del archivo, si lo sube a la plataforma, o el del texto del enlace, si entrega un enlace externo. En este último caso el hash prueba qué enlace se entregó, no su contenido, que el vendedor podría cambiar; revísalo antes de aprobar. El comprador dispone de 5 días desde la entrega para aprobarla o abrir una disputa. Si no hay acción, el vendedor puede reclamar la liberación automática. Si el vendedor no entrega dentro del plazo acordado, el comprador puede reclamar el reembolso íntegro.',
           'Comisión: 3% fijo, descontado del cobro del vendedor, y 0% para el comprador. Es una constante del contrato: nadie puede modificarla, ni siquiera su propietario. Se cobra al finalizar el escrow sobre el monto que recibe el vendedor (en una orden normal, el 3% del total); un reembolso íntegro al comprador no tiene comisión. Cada usuario paga el gas de sus transacciones.',
           'Las transacciones en blockchain son irreversibles. Verifica direcciones, red y montos antes de firmar.',
         ],
@@ -138,7 +138,7 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
         title: '3. Payments and escrow',
         paragraphs: [
           `The buyer deposits USDC into the escrow contract (${L.escrowAddress}). Mercadopleis does not hold funds: the contract enforces the rules.`,
-          'The seller records the delivery with the SHA-256 hash of the deliverable. The buyer has 5 days from delivery to approve it or open a dispute. If nothing happens, the seller can claim the automatic release. If the seller does not deliver within the agreed time, the buyer can claim a full refund.',
+          'The seller records the delivery with a SHA-256 hash: of the file, when it is uploaded to the platform, or of the link text, when an external link is delivered. In that case the hash proves which link was delivered, not its content, which the seller could change; review it before approving. The buyer has 5 days from delivery to approve it or open a dispute. If nothing happens, the seller can claim the automatic release. If the seller does not deliver within the agreed time, the buyer can claim a full refund.',
           'Fee: a fixed 3%, deducted from the seller payout, and 0% for the buyer. It is a constant in the contract: nobody can change it, not even its owner. It is charged when the escrow ends on the amount the seller receives (on a normal order, 3% of the total); a full refund to the buyer carries no fee. Each user pays the gas for their own transactions.',
           'Blockchain transactions are irreversible. Check addresses, network and amounts before signing.',
         ],

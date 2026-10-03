@@ -180,7 +180,7 @@ server.registerTool(
   'get_delivery',
   {
     description:
-      'Get the on-chain SHA-256 commitment of a delivered order so the buyer can verify the deliverable: hash the received file with SHA-256 and compare it to deliveryHash.',
+      'Get the on-chain SHA-256 commitment of a delivered order so the buyer can verify the deliverable: the hash of the uploaded file, or of the link text when the seller delivered an external link.',
     inputSchema: { orderId: z.number().int().positive(), chainId: z.number().int().optional() },
   },
   async ({ orderId, chainId }) => {
@@ -197,7 +197,7 @@ server.registerTool(
       algorithm: 'sha256',
       autoReleaseTime: new Date(Number(autoReleaseTime) * 1000).toISOString(),
       verify:
-        'Download the file (buyer, seller or admin: GET /api/orders/{orderId}/deliverable with a SIWE token returns a signed URL, or the external link) and check that its sha256 equals deliveryHash. If it matches, call approveDelivery(orderId); otherwise call openDispute(orderId) before autoReleaseTime.',
+        'GET /api/orders/{orderId}/deliverable with a SIWE token (buyer, seller or admin). For type "storage", download the signed URL and check that sha256(file bytes) equals deliveryHash. For type "external", sha256(UTF-8 link text) equals deliveryHash: that proves which link was delivered, not its content, so review what the link serves. If it is acceptable, call approveDelivery(orderId); otherwise call openDispute(orderId) before autoReleaseTime.',
     });
   },
 );

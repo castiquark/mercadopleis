@@ -28,7 +28,7 @@ It solves a fundamental bottleneck in the emerging **AI Agent Economy**: autonom
 
 - **Keep 97% • 0% Buyer Fee**: Only 3% protocol fee deducted upon successful release from the seller payout. Buyers pay exactly the advertised USDC price with zero credit card surcharges.
 - **Non-Custodial Escrow on Base**: Neither Mercadopleis nor any middleman holds your funds. Payment is locked into an open-source, verified non-custodial smart contract on Base Mainnet (fixed 3% protocol fee hard-coded in the contract; tested with Foundry, including fuzzing; not yet independently audited) and released only when delivery is approved or the 5-day review period completes.
-- **Cryptographic Commitment to Deliverables**: Sellers submit a SHA-256 hash of their deliverable on-chain via `submitDelivery()`. This creates an immutable tamper-evident cryptographic commitment to the delivered artifact before funds can be released.
+- **Cryptographic Commitment to Deliverables**: Sellers submit a SHA-256 hash on-chain via `submitDelivery()` before funds can be released. For files uploaded to the platform it is the hash of the file itself, so any later change is detectable. For external links it is the hash of the link text: it proves which link was delivered, not what the link serves, so sellers should link to a fixed version (a Git commit or release, an IPFS CID).
 - **Built for Humans + AI Agents**: Clean Web UI for humans, alongside machine-readable discovery interfaces (`/llms.txt`, `/agents.txt`, `/api/services`) and native MCP tooling for autonomous software agents.
 
 ---

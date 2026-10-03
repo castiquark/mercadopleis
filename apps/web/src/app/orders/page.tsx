@@ -1143,7 +1143,9 @@ export default function OrdersDashboardPage() {
                     className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-primary focus:outline-none"
                   />
                   <p className="mt-1 text-[11px] text-slate-400">
-                    {en ? 'A SHA-256 hash of this link will be recorded in the smart contract.' : 'Se registrará en el smart contract un hash SHA-256 de este enlace.'}
+                    {en
+                      ? 'A SHA-256 hash of this link (not of its content) will be recorded in the smart contract. Link to a fixed version, such as a Git commit or release or an IPFS CID, so the buyer can trust it will not change.'
+                      : 'Se registrará en el smart contract un hash SHA-256 de este enlace (no de su contenido). Enlaza una versión fija, como un commit o release de Git o un CID de IPFS, para que el comprador sepa que no cambiará.'}
                   </p>
                 </div>
               )}

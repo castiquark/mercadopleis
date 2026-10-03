@@ -1,7 +1,7 @@
 # mercadopleis — Roadmap de Producto y Arquitectura
 
 **Documento:** Roadmap Técnico y Estratégico Integrado — *Outsourcing Layer for the AI Economy*  
-**Versión:** 2.4  
+**Versión:** 2.5  
 **Fecha:** 3 de Octubre de 2026  
 **Estado:** Activo / En Ejecución  
 **Propuesta de Valor:**  
@@ -86,6 +86,20 @@ Autonomous Hiring & Settlement en Base Mainnet
 
 ---
 
+## 🎯 Prioridades Inmediatas (octubre–noviembre de 2026)
+
+**Posicionamiento:** Mercadopleis se enfoca en la intersección **agente → humano (A2H)**: agentes de IA que necesitan contratar a personas para tareas que no pueden resolver solos (curación y validación de datos, red-teaming de prompts, scraping difícil, automatizaciones, transcripción), con pago garantizado en USDC y sin custodio. No compite en micropagos máquina a máquina (por ejemplo x402) ni en contratación tradicional entre personas, sino en el punto donde ambos se encuentran.
+
+| # | Prioridad | Por qué | Estado |
+|---|---|---|---|
+| 1 | **Publicar el servidor MCP** (`@mercadopleis/mcp-server`) en npm y en los directorios de MCP (registro oficial de Model Context Protocol, Smithery, PulseMCP) | Es el canal directo hacia quienes construyen agentes en Claude, Cursor y otros clientes MCP | 🔄 En preparación |
+| 2 | **Gobernanza D1**: claves separadas, propietario en multisig con timelock de 72 h y guardián que solo puede pausar ([diseño](./docs/DISPUTE_RESOLUTION.md#5-gobernanza-del-contrato-owner-con-timelock)) | Hoy el operador es propietario, árbitro y receptor de la comisión; el timelock hace visible cualquier cambio antes de que ocurra | 📋 Planificado |
+| 3 | **Fase 3 adelantada: solicitudes y presupuestos (bounties)** | Resuelve el arranque del mercado: los compradores, humanos o agentes, publican lo que necesitan y eso orienta qué prestadores sumar | 📋 Siguiente fase de producto |
+| 4 | **Auditoría externa** de `MarketplaceEscrow.sol` | Complementa las pruebas de Foundry (fuzz e invariantes) antes de que haya volumen relevante | 📋 Planificado |
+| 5 | **Entregas por enlace más verificables** | Para archivos subidos, el hash on-chain cubre el contenido; para enlaces externos solo cubre el texto del enlace. Se recomendará y luego se exigirá un enlace a una versión fija (commit o release de Git, CID de IPFS) | 🔄 Documentado; validación pendiente |
+
+---
+
 ## 🗺️ Fases de Evolución Estratégica
 
 ```text
@@ -95,7 +109,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 [ FASE 2: Tracción Semilla & Agent Economy Wedge ]           🔄 EN EJECUCIÓN (Semanas 1 a 4)
                         │
                         ▼
-[ FASE 3: Request Marketplace & Presupuestos Inversos (Bounties) ] 📋 PLANIFICADO
+[ FASE 3: Request Marketplace & Presupuestos Inversos (Bounties) ] 🎯 SIGUIENTE PRIORIDAD
                         │
                         ▼
 [ FASE 4: Base Mini Apps & Integración con Farcaster Actions ]     📋 PLANIFICADO
@@ -149,7 +163,7 @@ El escrow v2 permite toda esta evolución **sin redesplegarse**: el rol `arbitra
 * **1.2. Integración de USDC Oficial de Circle:** ✅ Completado
   * Token: [`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`](https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913) (USDC nativo en Base, 6 decimales).
 * **1.3. Frontend en Producción:** ✅ Completado
-  * Despliegue continuo en Netlify Edge, soporte bilingüe (ES/EN), Google Analytics integrado (`G-2GCQ3QTT5D`), viewport móvil optimizado.
+  * Despliegue en Netlify (manual, por lotes), soporte bilingüe (ES/EN), Google Analytics integrado (`G-2GCQ3QTT5D`), viewport móvil optimizado.
 * **1.4. Superficie de Descubrimiento Agentic en 3 Capas:** ✅ Completado
   * [`/llms.txt`](./apps/web/public/llms.txt): Índice curado y conciso (<60 líneas) con enlaces a documentación, contrato y endpoints según la especificación v2.
   * [`/llms-full.txt`](./apps/web/public/llms-full.txt): Manual de integración exhaustivo con métodos Solidity, parámetros de protocolo y guía Viem/TypeScript.
@@ -182,15 +196,15 @@ El escrow v2 permite toda esta evolución **sin redesplegarse**: el rol `arbitra
 
 ### 🎯 Fase 2: Tracción Semilla & Agent Economy Wedge (Semanas 1 a 4)
 
-**Objetivo:** Activar las primeras transacciones reales adquiriendo clientes humanos y desarrolladores de agentes de IA, ampliando el catálogo semilla y manteniendo el protocolo abierto bajo Apache-2.0. El servidor MCP oficial (`@mercadopleis/mcp-server`) ya está implementado en `packages/mcp-server`.
+**Objetivo:** Activar las primeras transacciones reales con el foco agente → humano: desarrolladores de agentes que necesitan subcontratar tareas a personas, y prestadores que quieren cobrar en USDC con una comisión del 3%. El servidor MCP oficial (`@mercadopleis/mcp-server`) ya está implementado en `packages/mcp-server`; su publicación es la prioridad 1.
 
 _El detalle operativo de esta fase se mantiene fuera del repositorio público._
 
 ---
 
-### 📋 Fase 3: Request Marketplace & Presupuestos Inversos (Bounties)
+### 🎯 Fase 3: Request Marketplace & Presupuestos Inversos (Bounties) — siguiente prioridad
 
-**Objetivo:** Permitir que clientes y agentes de IA publiquen solicitudes de tareas específicas que no se encuentran en el catálogo fijo, recibiendo propuestas competitivas.
+**Objetivo:** Permitir que clientes y agentes de IA publiquen solicitudes de tareas específicas que no se encuentran en el catálogo fijo, recibiendo propuestas competitivas. Se adelanta porque un catálogo fijo depende de que existan prestadores antes que la demanda; las solicitudes invierten ese orden y son la forma natural en que un agente pide ayuda humana.
 
 * **3.1. Publicación de Solicitudes (`/requests/new`):**
   * Formulario detallando requerimientos, entregables esperados, fecha límite y presupuesto máximo en USDC.
@@ -199,6 +213,9 @@ _El detalle operativo de esta fase se mantiene fuera del repositorio público._
   * Sistema de propuestas técnicas con cotización personalizada y plazo propuesto.
 * **3.3. Adjudicación y Depósito Directo en Escrow:**
   * Con un clic o llamada de API, el cliente acepta la cotización y deposita los fondos en el smart contract bajo los términos acordados.
+* **3.4. Solicitudes desde agentes (MCP y API):**
+  * Herramientas `post_request` y `list_proposals` en el servidor MCP para que un agente publique una tarea, compare propuestas y prepare el depósito sin custodiar claves.
+  * Usa el mismo escrow v2: no requiere un contrato nuevo.
 
 ---
 
