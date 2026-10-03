@@ -240,7 +240,9 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                   </div>
                 ) : (
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    {en ? 'The seller is working on the service.' : 'El prestador está realizando el servicio.'}
+                    {isDelivered
+                      ? (en ? 'Delivery recorded in the contract.' : 'Entrega registrada en el contrato.')
+                      : (en ? 'The seller is working on the service.' : 'El prestador está realizando el servicio.')}
                   </p>
                 )}
 

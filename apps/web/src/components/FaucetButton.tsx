@@ -1,34 +1,41 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useAccount, useWriteContract, useReadContract } from 'wagmi';
-import { parseUnits, formatUnits } from 'viem';
+import { useAccount, usePublicClient, useWriteContract, useReadContract } from 'wagmi';
+import { parseUnits } from 'viem';
 import { Erc20Abi } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
-import { Droplet, CheckCircle2, Loader2, Sparkles, Plus } from 'lucide-react';
+import { Droplet, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { isUserRejection } from '../lib/web3Errors';
+import { useLanguage } from '@/lib/languageContext';
 
 interface FaucetButtonProps {
   amount?: string;
-  variant?: 'navbar' | 'compact' | 'full';
+  variant?: 'navbar' | 'compact';
   onMintSuccess?: () => void;
 }
 
 export function FaucetButton({ amount = '1000', variant = 'navbar', onMintSuccess }: FaucetButtonProps) {
   const { address, isConnected, chainId } = useAccount();
+  const { language } = useLanguage();
+  const en = language === 'en';
   const [isMinting, setIsMinting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const activeChainId = chainId || CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
-  const isTestnet = activeChainId === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
+  // Test USDC only exists on Base Sepolia.
+  const sepolia = CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
+  const isTestnet = (chainId || sepolia) === sepolia;
   const usdcAddress = CONTRACT_CONFIG.USDC_BASE_SEPOLIA;
+  const publicClient = usePublicClient({ chainId: sepolia });
+  const formattedAmount = Number(amount).toLocaleString(en ? 'en-US' : 'es-ES');
 
-  const { data: balance, refetch: refetchBalance } = useReadContract({
+  const { refetch: refetchBalance } = useReadContract({
     address: usdcAddress,
     abi: Erc20Abi,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
+    chainId: sepolia,
   });
 
   const { writeContractAsync } = useWriteContract();
@@ -44,55 +51,31 @@ export function FaucetButton({ amount = '1000', variant = 'navbar', onMintSucces
       setErrorMessage(null);
       setSuccess(false);
 
-      const parsedAmount = parseUnits(amount, 6);
       const tx = await writeContractAsync({
         address: usdcAddress,
         abi: Erc20Abi,
         functionName: 'mint',
-        args: [address, parsedAmount],
+        args: [address, parseUnits(amount, 6)],
+        chainId: sepolia,
       });
 
-      console.log('Mint transaction submitted:', tx);
+      // Only report success once the mint is mined.
+      await publicClient?.waitForTransactionReceipt({ hash: tx });
       setSuccess(true);
-      setTimeout(async () => {
-        await refetchBalance();
-        if (onMintSuccess) onMintSuccess();
-      }, 2000);
-
+      await refetchBalance();
+      onMintSuccess?.();
       setTimeout(() => setSuccess(false), 4000);
     } catch (err: any) {
       if (isUserRejection(err)) {
-        console.info('[Faucet] Reclamo cancelado por el usuario en su wallet.');
-        setErrorMessage('Reclamo cancelado en tu wallet.');
+        setErrorMessage(en ? 'Cancelled in your wallet.' : 'Reclamo cancelado en tu wallet.');
         setTimeout(() => setErrorMessage(null), 3000);
       } else {
         console.error('Error minting test USDC:', err);
-        setErrorMessage(err?.shortMessage || err?.message || 'Error al reclamar test USDC');
+        setErrorMessage(err?.shortMessage || err?.message || (en ? 'Could not mint test USDC' : 'Error al reclamar USDC de prueba'));
         setTimeout(() => setErrorMessage(null), 5000);
       }
     } finally {
       setIsMinting(false);
-    }
-
-  };
-
-  const handleAddToWallet = async () => {
-    if (typeof window === 'undefined' || !(window as any).ethereum) return;
-    try {
-      await (window as any).ethereum.request({
-        method: 'wallet_watchAsset',
-        params: {
-          type: 'ERC20',
-          options: {
-            address: usdcAddress,
-            symbol: 'USDC',
-            decimals: 6,
-            image: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
-          },
-        },
-      });
-    } catch (err) {
-      console.warn('Could not add token to wallet:', err);
     }
   };
 
@@ -107,22 +90,26 @@ export function FaucetButton({ amount = '1000', variant = 'navbar', onMintSucces
               ? 'border-emerald-500/50 bg-emerald-500/20 text-emerald-300'
               : 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400'
           }`}
-          title="Mintear 1,000 Test USDC en Base Sepolia para probar el marketplace"
+          title={
+            en
+              ? `Mint ${formattedAmount} test USDC on Base Sepolia to try the marketplace`
+              : `Obtén ${formattedAmount} USDC de prueba en Base Sepolia para probar el marketplace`
+          }
         >
           {isMinting ? (
             <>
               <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-300" />
-              <span>Minteando...</span>
+              <span>{en ? 'Minting...' : 'Creando...'}</span>
             </>
           ) : success ? (
             <>
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-              <span>+1,000 USDC!</span>
+              <span>+{formattedAmount} USDC</span>
             </>
           ) : (
             <>
               <Droplet className="h-3.5 w-3.5 text-cyan-400 fill-cyan-400/20" />
-              <span>Faucet Test USDC</span>
+              <span>{en ? 'Test USDC faucet' : 'Faucet USDC de prueba'}</span>
             </>
           )}
         </button>
@@ -136,8 +123,8 @@ export function FaucetButton({ amount = '1000', variant = 'navbar', onMintSucces
     );
   }
 
-  if (variant === 'compact') {
-    return (
+  return (
+    <span className="inline-flex flex-col items-end gap-1">
       <button
         onClick={handleMint}
         disabled={isMinting || !isConnected}
@@ -146,88 +133,21 @@ export function FaucetButton({ amount = '1000', variant = 'navbar', onMintSucces
         {isMinting ? (
           <>
             <Loader2 className="h-3 w-3 animate-spin" />
-            <span>Minteando {amount} USDC...</span>
+            <span>{en ? `Minting ${formattedAmount} USDC...` : `Creando ${formattedAmount} USDC...`}</span>
           </>
         ) : success ? (
           <>
             <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-            <span>¡{amount} USDC Acreditados!</span>
+            <span>{en ? `${formattedAmount} test USDC received` : `¡${formattedAmount} USDC de prueba acreditados!`}</span>
           </>
         ) : (
           <>
             <Sparkles className="h-3 w-3" />
-            <span>Reclamar {amount} USDC de prueba</span>
+            <span>{en ? `Get ${formattedAmount} test USDC` : `Obtener ${formattedAmount} USDC de prueba`}</span>
           </>
         )}
       </button>
-    );
-  }
-
-  // Full card variant (used in dedicated /faucet page or large modals)
-  return (
-    <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-b from-cyan-950/40 via-surface to-background p-6 shadow-2xl backdrop-blur-xl">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shadow-lg shadow-cyan-500/10">
-            <Droplet className="h-6 w-6 fill-cyan-400/30" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-white">Faucet de Test USDC</h3>
-            <p className="text-xs text-slate-400">Red: Base Sepolia Testnet (Chain ID 84532)</p>
-          </div>
-        </div>
-
-        {balance !== undefined && (
-          <div className="text-right">
-            <span className="text-xs text-slate-400">Tu Saldo Actual:</span>
-            <p className="text-sm font-bold text-cyan-300">
-              {Number(formatUnits(balance, 6)).toLocaleString('en-US', { minimumFractionDigits: 2 })}{' '}
-              <span className="text-xs text-slate-400">USDC</span>
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-6 flex flex-col sm:flex-row gap-3">
-        <button
-          onClick={handleMint}
-          disabled={isMinting || !isConnected}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-cyan-500/25 transition hover:brightness-110 active:scale-98 disabled:opacity-50"
-        >
-          {isMinting ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Minteando {amount} USDC...</span>
-            </>
-          ) : success ? (
-            <>
-              <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-              <span>¡Reclamados {amount} USDC con Éxito!</span>
-            </>
-          ) : (
-            <>
-              <Droplet className="h-4 w-4" />
-              <span>Reclamar {amount} Test USDC Gratis</span>
-            </>
-          )}
-        </button>
-
-        <button
-          onClick={handleAddToWallet}
-          type="button"
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-4 py-3 text-xs font-semibold text-slate-300 transition hover:bg-surface-elevated hover:text-white"
-          title="Agregar el token a tu MetaMask u otra billetera"
-        >
-          <Plus className="h-3.5 w-3.5 text-cyan-400" />
-          <span>Agregar token a Billetera</span>
-        </button>
-      </div>
-
-      {errorMessage && (
-        <p className="mt-3 text-xs text-red-400 bg-red-950/40 border border-red-800/40 p-2 rounded-lg">
-          {errorMessage}
-        </p>
-      )}
-    </div>
+      {errorMessage && <span className="text-[11px] text-red-400">{errorMessage}</span>}
+    </span>
   );
 }

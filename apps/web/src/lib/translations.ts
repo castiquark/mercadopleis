@@ -5,7 +5,6 @@ export type Language = 'es' | 'en';
 export const translations = {
   es: {
     // Nav
-    escrowBadge: 'Escrow Non-Custodial en Base',
     postService: 'Publicar Servicio',
     myOrders: 'Mis Órdenes',
     adminPanel: 'Panel Admin',
@@ -15,14 +14,7 @@ export const translations = {
     exploreServices: 'Explorar Servicios',
     
     // Home / Hero
-    heroTitle: 'Servicios para la Economía de IA',
-    heroSubtitle: 'Contrata personas y servicios técnicos para proyectos de IA, flujos automatizados y datasets. Pagos en USDC en Base protegidos por smart contract escrow (0% recargo al comprador, 97% al prestador).',
-    searchPlaceholder: 'Buscar transcripción, datasets, agentes, n8n, scraping, solidity...',
     allCategories: 'Todos',
-    catDev: 'Desarrollo',
-    catDesign: 'Diseño',
-    catMarketing: 'Marketing',
-    catConsulting: 'Consultoría',
     noServicesFound: 'No se encontraron servicios',
     noServicesDesc: 'Intenta con otro término de búsqueda o selecciona otra categoría.',
     clearFilters: 'Limpiar Filtros',
@@ -34,9 +26,6 @@ export const translations = {
     modeBoth: 'Híbrido (Digital o Presencial)',
     deliveryModeLabel: 'Modalidad de Prestación',
     deliveryModeHelp: 'Elige si el trabajo se realiza de manera 100% remota/digital o de forma presencial/física.',
-    inPersonBadge: 'Presencial',
-    digitalBadge: 'Remoto',
-    hybridBadge: 'Híbrido',
     locationSectionTitle: 'Ubicación Geográfica del Servicio Presencial',
     locationSectionSubtitle: 'Indica dónde se realiza el servicio o el área de cobertura para que clientes cercanos puedan encontrarte.',
     countryLabel: 'País',
@@ -45,9 +34,7 @@ export const translations = {
     localityPlaceholder: 'ej. Punta del Este, La Barra, Pocitos, Palermo...',
     addressOrRefLabel: 'Punto de encuentro, Dirección o Zona de Cobertura (Opcional)',
     addressOrRefPlaceholder: 'ej. A convenir con el cliente / Zona Península / En local comercial...',
-    filterLocationTitle: 'Filtro por Ubicación',
     filterLocationPlaceholder: 'Filtrar por ciudad, barrio o balneario...',
-    allLocations: 'Todas las ubicaciones',
     
     // Orders
     ordersTitle: 'Panel de Órdenes',
@@ -71,6 +58,8 @@ export const translations = {
     refundNotYet: 'Disponible cuando venza el plazo de entrega',
     sellerDeliveredNotice: 'Entrega registrada. Si el comprador no la aprueba ni abre una disputa, podrás cobrar a partir del {date}.',
     sellerDeliveredNoticeNoDate: 'Entrega registrada. Si el comprador no la aprueba ni abre una disputa, podrás cobrar 5 días después de la entrega.',
+    sellerCanClaimNow: 'El período de revisión terminó: ya puedes cobrar el pago.',
+    buyerReviewOver: 'El período de revisión terminó: el vendedor ya puede cobrar. Aún puedes aprobar o abrir una disputa mientras no lo haga.',
     claimPayment: 'Cobrar pago',
     paymentNotYet: 'Disponible cuando termine el período de revisión',
     contractFinalized: 'Contrato finalizado y fondos liberados.',
@@ -133,7 +122,6 @@ export const translations = {
   },
   en: {
     // Nav
-    escrowBadge: 'Non-Custodial Escrow on Base',
     postService: 'Post Service',
     myOrders: 'My Orders',
     adminPanel: 'Admin Panel',
@@ -143,14 +131,7 @@ export const translations = {
     exploreServices: 'Explore Services',
     
     // Home / Hero
-    heroTitle: 'Services for the AI Economy',
-    heroSubtitle: 'Hire human talent and technical services for AI models, automated workflows, and research. Settle in USDC on Base with smart contract escrow (0% buyer fee, 97% to the seller).',
-    searchPlaceholder: 'Search transcription, datasets, agents, n8n, scraping, solidity...',
     allCategories: 'All',
-    catDev: 'Development',
-    catDesign: 'Design',
-    catMarketing: 'Marketing',
-    catConsulting: 'Consulting',
     noServicesFound: 'No services found',
     noServicesDesc: 'Try another search query or select a different category.',
     clearFilters: 'Clear Filters',
@@ -162,9 +143,6 @@ export const translations = {
     modeBoth: 'Hybrid (Digital or In-Person)',
     deliveryModeLabel: 'Delivery Mode',
     deliveryModeHelp: 'Choose whether the work is performed 100% remotely/online or physically in person.',
-    inPersonBadge: 'In-Person',
-    digitalBadge: 'Remote',
-    hybridBadge: 'Hybrid',
     locationSectionTitle: 'In-Person Geographic Location',
     locationSectionSubtitle: 'Specify where the service takes place or the service area so nearby clients can find you.',
     countryLabel: 'Country',
@@ -173,9 +151,7 @@ export const translations = {
     localityPlaceholder: 'e.g. Punta del Este, La Barra, Downtown, Brooklyn...',
     addressOrRefLabel: 'Meeting Point, Address or Coverage Area (Optional)',
     addressOrRefPlaceholder: 'e.g. To be agreed with client / Central Area / On-site...',
-    filterLocationTitle: 'Filter by Location',
     filterLocationPlaceholder: 'Filter by city, neighborhood or resort...',
-    allLocations: 'All locations',
     
     // Orders
     ordersTitle: 'Orders Dashboard',
@@ -199,6 +175,8 @@ export const translations = {
     refundNotYet: 'Available once the delivery deadline passes',
     sellerDeliveredNotice: 'Delivery recorded. If the buyer neither approves it nor opens a dispute, you can claim the payment from {date}.',
     sellerDeliveredNoticeNoDate: 'Delivery recorded. If the buyer neither approves it nor opens a dispute, you can claim the payment 5 days after delivery.',
+    sellerCanClaimNow: 'The review period is over: you can claim the payment now.',
+    buyerReviewOver: 'The review period is over: the seller can claim the payment. You can still approve or open a dispute until they do.',
     claimPayment: 'Claim payment',
     paymentNotYet: 'Available once the review period ends',
     contractFinalized: 'Contract completed and escrow funds released.',

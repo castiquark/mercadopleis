@@ -118,6 +118,7 @@ export default function OrdersDashboardPage() {
       ? new Date(unixSeconds * 1000).toLocaleString(language === 'en' ? 'en-US' : 'es-ES', { dateStyle: 'medium', timeStyle: 'short' })
       : null;
   const nowSeconds = Math.floor(Date.now() / 1000);
+  const en = language === 'en';
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,7 +154,7 @@ export default function OrdersDashboardPage() {
       setReviewComment('');
     } catch (err: any) {
       console.error(err);
-      setActionNotice(`Error: ${err?.message || 'Error al guardar la reseña'}`);
+      setActionNotice(`Error: ${err?.message || (en ? 'Could not save the review' : 'Error al guardar la reseña')}`);
     } finally {
       setIsProcessing(false);
     }
@@ -176,7 +177,7 @@ export default function OrdersDashboardPage() {
           return {
             id: bo.id,
             contractOrderId: bo.contractOrderId || null,
-            serviceTitle: bo.service?.title || 'Servicio Contratado',
+            serviceTitle: bo.service?.title || (en ? 'Hired service' : 'Servicio contratado'),
             role: (bo.buyer?.walletAddress?.toLowerCase() === address?.toLowerCase() || (user?.id && bo.buyerId === user.id)) ? 'buyer' : 'seller',
             amountUsdc: parseFloat(bo.grossAmountUsdc),
             sellerAmountUsdc: parseFloat(bo.sellerAmountUsdc),
@@ -242,7 +243,7 @@ export default function OrdersDashboardPage() {
     try {
       assertOrderChain(order);
       setIsProcessing(true);
-      setActionNotice(`Aprobando entrega de Orden #${order.contractOrderId}...`);
+      setActionNotice(en ? `Approving delivery of order #${order.contractOrderId}...` : `Aprobando la entrega de la orden #${order.contractOrderId}...`);
 
       let txHash: `0x${string}`;
 
@@ -268,13 +269,13 @@ export default function OrdersDashboardPage() {
       setOrders((prev) =>
         prev.map((o) => (o.id === order.id ? { ...o, status: 'RELEASED' } : o))
       );
-      setActionNotice(`¡Orden #${order.contractOrderId} aprobada! Fondos liberados al prestador.`);
+      setActionNotice(en ? `Order #${order.contractOrderId} approved. Funds released to the seller.` : `¡Orden #${order.contractOrderId} aprobada! Fondos liberados al prestador.`);
     } catch (err: any) {
       if (isUserRejection(err)) {
         setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
       } else {
         console.error(err);
-        setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error en transacción'}`);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || (en ? 'Transaction error' : 'Error en la transacción')}`);
       }
     } finally {
       setIsProcessing(false);
@@ -297,7 +298,7 @@ export default function OrdersDashboardPage() {
     try {
       assertOrderChain(activeDisputeModalOrder);
       setIsProcessing(true);
-      setActionNotice(`Abriendo disputa formal para Orden #${activeDisputeModalOrder.contractOrderId}...`);
+      setActionNotice(en ? `Opening a dispute for order #${activeDisputeModalOrder.contractOrderId}...` : `Abriendo una disputa para la orden #${activeDisputeModalOrder.contractOrderId}...`);
 
       let disputeTxHash: `0x${string}`;
 
@@ -341,14 +342,14 @@ export default function OrdersDashboardPage() {
         )
       );
 
-      setActionNotice(`¡Disputa abierta con éxito para Orden #${activeDisputeModalOrder.contractOrderId}! Fondos congelados en escrow para arbitraje.`);
+      setActionNotice(en ? `Dispute opened for order #${activeDisputeModalOrder.contractOrderId}. The funds stay frozen in escrow until the arbiter decides.` : `Disputa abierta para la orden #${activeDisputeModalOrder.contractOrderId}. Los fondos quedan congelados en el escrow hasta que decida el árbitro.`);
       setActiveDisputeModalOrder(null);
     } catch (err: any) {
       if (isUserRejection(err)) {
         setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
       } else {
         console.error(err);
-        setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error al abrir disputa'}`);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || (en ? 'Could not open the dispute' : 'Error al abrir la disputa')}`);
       }
     } finally {
       setIsProcessing(false);
@@ -360,7 +361,7 @@ export default function OrdersDashboardPage() {
     try {
       assertOrderChain(order);
       setIsProcessing(true);
-      setActionNotice(`Reclamando reembolso por timeout para Orden #${order.contractOrderId}...`);
+      setActionNotice(en ? `Claiming the refund for order #${order.contractOrderId}...` : `Reclamando el reembolso de la orden #${order.contractOrderId}...`);
 
       let refundTx: `0x${string}`;
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
@@ -388,7 +389,7 @@ export default function OrdersDashboardPage() {
         setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
       } else {
         console.error(err);
-        setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error en transacción'}`);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || (en ? 'Transaction error' : 'Error en la transacción')}`);
       }
     } finally {
       setIsProcessing(false);
@@ -470,7 +471,7 @@ export default function OrdersDashboardPage() {
       setDeliveryHash(data.hash);
     } catch (err: any) {
       console.error('Error uploading file to Neon Object Storage:', err);
-      setUploadError(err.message || 'Error al conectar con Neon Object Storage');
+      setUploadError(err.message || (en ? 'The file could not be uploaded' : 'No se pudo subir el archivo'));
     } finally {
       setIsUploading(false);
     }
@@ -539,7 +540,7 @@ export default function OrdersDashboardPage() {
         )
       );
 
-      setActionNotice(`¡Entrega registrada con éxito! Hash criptográfico ${finalHash.slice(0, 10)}...${finalHash.slice(-6)} asentado en el contrato.`);
+      setActionNotice(en ? `Delivery recorded. Hash ${finalHash.slice(0, 10)}...${finalHash.slice(-6)} is stored in the contract.` : `¡Entrega registrada! El hash ${finalHash.slice(0, 10)}...${finalHash.slice(-6)} quedó guardado en el contrato.`);
       setActiveDeliveryModalOrder(null);
       setDeliveryInputUrl('');
       setDeliveryHash('');
@@ -549,7 +550,7 @@ export default function OrdersDashboardPage() {
         setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
       } else {
         console.error(err);
-        setActionNotice(`Error: ${err?.shortMessage || err?.message || 'Error en transacción'}`);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || (en ? 'Transaction error' : 'Error en la transacción')}`);
       }
     } finally {
       setIsProcessing(false);
@@ -572,7 +573,7 @@ export default function OrdersDashboardPage() {
           <button
             onClick={() => loadOrders()}
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-surface-elevated hover:text-white"
-            title="Actualizar listado de órdenes"
+            title={en ? 'Refresh orders' : 'Actualizar órdenes'}
           >
             <RefreshCw className="h-4 w-4 text-primary-light" />
             <span className="hidden sm:inline">{t('refresh')}</span>
@@ -587,7 +588,7 @@ export default function OrdersDashboardPage() {
               }
             }}
             className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2.5 text-xs font-semibold text-slate-400 transition hover:bg-surface-elevated hover:text-white sm:py-2"
-            title="Limpiar la caché local de órdenes de este navegador"
+            title={en ? "Clear this browser's local order cache" : 'Limpiar la caché local de órdenes de este navegador'}
           >
             <Trash2 className="h-3.5 w-3.5 text-slate-400" />
             <span className="hidden sm:inline">{t('clearCache')}</span>
@@ -611,7 +612,7 @@ export default function OrdersDashboardPage() {
             onClick={() => setActionNotice(null)}
             className="text-xs font-semibold text-slate-400 hover:text-white"
           >
-            Cerrar
+            {en ? 'Close' : 'Cerrar'}
           </button>
         </div>
       )}
@@ -653,7 +654,7 @@ export default function OrdersDashboardPage() {
                 <div className="max-w-xl">
                   <div className="flex items-center gap-3">
                     <span className="rounded bg-surface-elevated px-2 py-0.5 text-xs font-mono text-slate-300">
-                      Smart Contract ID #{order.contractOrderId}
+                      {en ? 'Order' : 'Orden'} #{order.contractOrderId} · {networkName(order.chainId)}
                     </span>
 
                     {/* Status Badge */}
@@ -688,7 +689,7 @@ export default function OrdersDashboardPage() {
 
                   {order.deliveryUrl && (
                     <div className="mt-2 text-xs text-slate-400">
-                      <span>Entregable: </span>
+                      <span>{en ? 'Deliverable:' : 'Entregable:'} </span>
                       <DeliverableLink
                         orderId={order.id}
                         reference={order.deliveryUrl}
@@ -699,7 +700,7 @@ export default function OrdersDashboardPage() {
 
                   {order.deliveryHash && (
                     <p className="mt-1 text-xs font-mono text-slate-500 truncate max-w-md">
-                      Hash on-chain: {order.deliveryHash}
+                      {en ? 'On-chain hash:' : 'Hash on-chain:'} {order.deliveryHash}
                     </p>
                   )}
                 </div>
@@ -712,8 +713,8 @@ export default function OrdersDashboardPage() {
                   </div>
                   <span className="text-xs text-slate-400">
                     {order.role === 'seller'
-                      ? `Neto a recibir: ${order.sellerAmountUsdc} USDC (3% fee deducido)`
-                      : '0% comisión para el comprador'}
+                      ? (en ? `Net to receive: ${order.sellerAmountUsdc} USDC (3% fee deducted)` : `Neto a recibir: ${order.sellerAmountUsdc} USDC (3% de comisión descontado)`)
+                      : (en ? '0% fee for the buyer' : '0% de comisión para el comprador')}
                   </span>
                 </div>
               </div>
@@ -804,9 +805,11 @@ export default function OrdersDashboardPage() {
                       {t('openDispute')}
                     </button>
                     <span className="text-xs text-slate-400 ml-auto">
-                      {order.autoReleaseDeadline
-                        ? t('autoReleaseNotice').replace('{date}', formatDate(order.autoReleaseDeadline)!)
-                        : t('autoReleaseNoticeNoDate')}
+                      {!order.autoReleaseDeadline
+                        ? t('autoReleaseNoticeNoDate')
+                        : nowSeconds >= order.autoReleaseDeadline
+                        ? t('buyerReviewOver')
+                        : t('autoReleaseNotice').replace('{date}', formatDate(order.autoReleaseDeadline)!)}
                     </span>
                   </>
                 )}
@@ -841,9 +844,11 @@ export default function OrdersDashboardPage() {
                 {order.role === 'seller' && order.status === 'DELIVERED' && (
                   <div className="flex w-full flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
                     <span>
-                      {order.autoReleaseDeadline
-                        ? t('sellerDeliveredNotice').replace('{date}', formatDate(order.autoReleaseDeadline)!)
-                        : t('sellerDeliveredNoticeNoDate')}
+                      {!order.autoReleaseDeadline
+                        ? t('sellerDeliveredNoticeNoDate')
+                        : nowSeconds >= order.autoReleaseDeadline
+                        ? t('sellerCanClaimNow')
+                        : t('sellerDeliveredNotice').replace('{date}', formatDate(order.autoReleaseDeadline)!)}
                     </span>
                     {(() => {
                       // Without a known release time the contract decides; it reverts if the window is still open.
@@ -865,7 +870,7 @@ export default function OrdersDashboardPage() {
                 {order.status === 'RELEASED' && (
                   <div className="flex flex-wrap items-center justify-between w-full gap-3">
                     <span className="text-xs text-accent font-semibold flex items-center gap-1.5">
-                      <CheckCircle className="h-4 w-4" /> {language === 'en' ? 'Contract finalized and funds released.' : 'Contrato finalizado y fondos liberados.'}
+                      <CheckCircle className="h-4 w-4" /> {t('contractFinalized')}
                     </span>
 
                     {order.role === 'buyer' && (
@@ -922,7 +927,7 @@ export default function OrdersDashboardPage() {
                 >
                   <MessageSquare className="h-3.5 w-3.5" />
                   <span>
-                    {expandedOrderId === order.id ? 'Ocultar Actividad & Mensajes' : 'Ver Línea de Tiempo & Mensajes'}
+                    {expandedOrderId === order.id ? t('hideTimelineAndChat') : t('viewTimelineAndChat')}
                   </span>
                   {expandedOrderId === order.id ? (
                     <ChevronUp className="h-3.5 w-3.5" />
@@ -932,10 +937,10 @@ export default function OrdersDashboardPage() {
                 </button>
 
                 <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
-                  {order.status === 'DELIVERED' ? (
-                    <span className="text-amber-300">⏱️ Período de 5 días en curso</span>
+                  {order.status === 'DELIVERED' && !(order.autoReleaseDeadline && nowSeconds >= order.autoReleaseDeadline) ? (
+                    <span className="text-amber-300">⏱️ {en ? 'Review period running' : 'Período de revisión en curso'}</span>
                   ) : (
-                    <span className="text-slate-400">🛡️ Smart Escrow Protegido</span>
+                    <span className="text-slate-400">🛡️ {en ? 'Protected by escrow' : 'Protegido por escrow'}</span>
                   )}
                 </span>
               </div>
@@ -966,14 +971,14 @@ export default function OrdersDashboardPage() {
                   href="/"
                   className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover active:scale-95"
                 >
-                  Explorar Catálogo <ArrowRight className="h-4 w-4" />
+                  {t('exploreServices')} <ArrowRight className="h-4 w-4" />
                 </Link>
               ) : (
                 <Link
                   href="/services/new"
                   className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover active:scale-95"
                 >
-                  Publicar Servicio <ArrowRight className="h-4 w-4" />
+                  {t('postService')} <ArrowRight className="h-4 w-4" />
                 </Link>
               )}
             </div>
@@ -991,8 +996,8 @@ export default function OrdersDashboardPage() {
                   <UploadCloud className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Registrar Entrega de Trabajo</h3>
-                  <p className="text-xs text-slate-400">Orden #{activeDeliveryModalOrder.contractOrderId} • {activeDeliveryModalOrder.serviceTitle}</p>
+                  <h3 className="text-lg font-bold text-white">{t('submitDelivery')}</h3>
+                  <p className="text-xs text-slate-400">{en ? 'Order' : 'Orden'} #{activeDeliveryModalOrder.contractOrderId} • {activeDeliveryModalOrder.serviceTitle}</p>
                 </div>
               </div>
               <button
@@ -1016,7 +1021,7 @@ export default function OrdersDashboardPage() {
                 }`}
               >
                 <UploadCloud className="h-4 w-4" />
-                Subir Archivo (Neon Storage)
+                {en ? 'Upload file' : 'Subir archivo'}
               </button>
               <button
                 type="button"
@@ -1028,7 +1033,7 @@ export default function OrdersDashboardPage() {
                 }`}
               >
                 <LinkIcon className="h-4 w-4" />
-                Enlace Externo (GitHub/Figma)
+                {en ? 'External link' : 'Enlace externo'}
               </button>
             </div>
 
@@ -1047,8 +1052,8 @@ export default function OrdersDashboardPage() {
                         {isUploading ? (
                           <div className="flex flex-col items-center gap-2 text-purple-400">
                             <Loader2 className="h-8 w-8 animate-spin" />
-                            <p className="text-xs font-semibold text-white">Subiendo a Neon Object Storage...</p>
-                            <p className="text-[11px] text-slate-400">Calculando hash criptográfico SHA-256</p>
+                            <p className="text-xs font-semibold text-white">{en ? 'Uploading...' : 'Subiendo...'}</p>
+                            <p className="text-[11px] text-slate-400">{en ? 'Computing the SHA-256 hash' : 'Calculando el hash SHA-256'}</p>
                           </div>
                         ) : (
                           <div className="flex flex-col items-center gap-2">
@@ -1056,13 +1061,13 @@ export default function OrdersDashboardPage() {
                               <Upload className="h-6 w-6" />
                             </div>
                             <p className="text-sm font-semibold text-white">
-                              Haz clic o arrastra aquí tu archivo de entrega
+                              {en ? 'Click to choose your delivery file' : 'Haz clic para elegir tu archivo de entrega'}
                             </p>
                             <p className="text-xs text-slate-400">
-                              Soporta .zip, .pdf, .sol, imágenes, videos o documentos (hasta 25MB)
+                              {en ? '.zip, .pdf, .sol, images, videos or documents (up to 25 MB)' : '.zip, .pdf, .sol, imágenes, videos o documentos (hasta 25 MB)'}
                             </p>
                             <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-purple-300">
-                              ⚡ Alojado en Neon Object Storage (AWS S3)
+                              🔒 {en ? 'Private storage' : 'Almacenamiento privado'}
                             </span>
                           </div>
                         )}
@@ -1085,7 +1090,7 @@ export default function OrdersDashboardPage() {
                               {uploadedFileMeta.filename}
                             </p>
                             <p className="text-xs text-slate-400">
-                              {(uploadedFileMeta.size / 1024).toFixed(1)} KB • Almacenamiento privado
+                              {(uploadedFileMeta.size / 1024).toFixed(1)} KB • {en ? 'Private storage' : 'Almacenamiento privado'}
                             </p>
                           </div>
                         </div>
@@ -1098,7 +1103,7 @@ export default function OrdersDashboardPage() {
                           }}
                           className="text-xs text-slate-400 hover:text-red-400"
                         >
-                          Cambiar
+                          {en ? 'Change' : 'Cambiar'}
                         </button>
                       </div>
 
@@ -1106,7 +1111,7 @@ export default function OrdersDashboardPage() {
                       <div className="rounded-lg bg-black/40 p-2.5 font-mono text-[11px] border border-border/40">
                         <div className="flex items-center justify-between text-slate-400 text-[10px] uppercase font-bold mb-1">
                           <span className="flex items-center gap-1 text-purple-400">
-                            <Hash className="h-3 w-3" /> Prueba Criptográfica SHA-256
+                            <Hash className="h-3 w-3" /> {en ? 'SHA-256 proof' : 'Prueba criptográfica SHA-256'}
                           </span>
                           <button
                             type="button"
@@ -1114,14 +1119,14 @@ export default function OrdersDashboardPage() {
                             className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300"
                           >
                             {copiedHash ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                            {copiedHash ? 'Copiado' : 'Copiar'}
+                            {copiedHash ? (en ? 'Copied' : 'Copiado') : (en ? 'Copy' : 'Copiar')}
                           </button>
                         </div>
                         <p className="text-white font-mono break-all select-all">{uploadedFileMeta.hash}</p>
                       </div>
 
                       <p className="text-[11px] text-slate-400">
-                        Archivo privado: solo el comprador, tú y el árbitro podrán descargarlo.
+                        {en ? 'Private file: only the buyer, you and the arbiter can download it.' : 'Archivo privado: solo el comprador, tú y el árbitro podrán descargarlo.'}
                       </p>
                     </div>
                   )}
@@ -1129,7 +1134,7 @@ export default function OrdersDashboardPage() {
               ) : (
                 <div>
                   <label className="block text-xs font-semibold text-slate-300">
-                    Enlace al Entregable (GitHub, Drive, Figma, IPFS, etc.)
+                    {en ? 'Link to the deliverable (GitHub, Drive, Figma, IPFS, etc.)' : 'Enlace al entregable (GitHub, Drive, Figma, IPFS, etc.)'}
                   </label>
                   <input
                     type="url"
@@ -1140,17 +1145,19 @@ export default function OrdersDashboardPage() {
                     className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-primary focus:outline-none"
                   />
                   <p className="mt-1 text-[11px] text-slate-400">
-                    Se generará un hash criptográfico a partir de este enlace para asentarlo en el smart contract.
+                    {en ? 'A SHA-256 hash of this link will be recorded in the smart contract.' : 'Se registrará en el smart contract un hash SHA-256 de este enlace.'}
                   </p>
                 </div>
               )}
 
               <div className="rounded-xl bg-surface-elevated/70 border border-border/50 p-3 text-xs text-slate-300 space-y-1">
                 <p className="font-semibold text-white flex items-center gap-1.5">
-                  <ShieldCheck className="h-4 w-4 text-accent" /> Garantía de Escrow
+                  <ShieldCheck className="h-4 w-4 text-accent" /> {en ? 'What happens next' : 'Qué pasa después'}
                 </p>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Al confirmar, el contrato pasará a estado <strong>DELIVERED</strong> con el hash inmutable registrado en {(activeDeliveryModalOrder.chainId ?? activeChainId) === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID ? 'Base Sepolia' : 'Base Mainnet'}. El comprador tendrá <strong>5 días</strong> para validar la entrega antes del auto-release de los fondos.
+                  {en
+                    ? `The order becomes DELIVERED with the hash recorded on ${networkName(activeDeliveryModalOrder.chainId ?? activeChainId)}. The buyer has 5 days to approve it or open a dispute; after that you can claim the payment.`
+                    : `La orden pasará a ENTREGADA con el hash registrado en ${networkName(activeDeliveryModalOrder.chainId ?? activeChainId)}. El comprador tendrá 5 días para aprobarla o abrir una disputa; después podrás cobrar.`}
                 </p>
               </div>
 
@@ -1160,7 +1167,7 @@ export default function OrdersDashboardPage() {
                   onClick={() => setActiveDeliveryModalOrder(null)}
                   className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-slate-400 hover:text-white"
                 >
-                  Cancelar
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
@@ -1170,10 +1177,10 @@ export default function OrdersDashboardPage() {
                   {isProcessing ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Registrando On-Chain...</span>
+                      <span>{en ? 'Recording on-chain...' : 'Registrando on-chain...'}</span>
                     </>
                   ) : (
-                    <span>Confirmar Entrega</span>
+                    <span>{en ? 'Confirm delivery' : 'Confirmar entrega'}</span>
                   )}
                 </button>
               </div>
@@ -1278,7 +1285,7 @@ export default function OrdersDashboardPage() {
               <div className="flex items-center gap-2 text-red-400">
                 <AlertTriangle className="h-5 w-5" />
                 <h3 className="text-lg font-bold text-white">
-                  Abrir Disputa de Orden #{activeDisputeModalOrder.contractOrderId}
+                  {t('modalDisputeTitle')} #{activeDisputeModalOrder.contractOrderId}
                 </h3>
               </div>
               <button
@@ -1296,12 +1303,12 @@ export default function OrdersDashboardPage() {
             <form onSubmit={handleConfirmDispute} className="mt-5 space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300">
-                  Motivo detallado del reclamo <span className="text-red-400">*</span>
+                  {t('modalDisputeReasonLabel')} <span className="text-red-400">*</span>
                 </label>
                 <textarea
                   required
                   rows={3}
-                  placeholder="Explica detalladamente por qué el trabajo no cumple con lo acordado (ej. fallos de compilación, requerimientos no incluidos, entregable erróneo)..."
+                  placeholder={t('modalDisputeReasonPlaceholder')}
                   value={disputeReason}
                   onChange={(e) => setDisputeReason(e.target.value)}
                   className="mt-1.5 w-full rounded-xl border border-border bg-background p-3 text-xs text-white placeholder-slate-500 focus:border-red-400 focus:outline-none"
@@ -1310,11 +1317,11 @@ export default function OrdersDashboardPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300">
-                  Enlace a pruebas / evidencia (URL pública, GitHub, Google Drive, etc.)
+                  {t('modalDisputeEvidenceLabel')}
                 </label>
                 <input
                   type="url"
-                  placeholder="https://github.com/... o https://drive.google.com/..."
+                  placeholder={en ? 'https://github.com/... or https://drive.google.com/...' : 'https://github.com/... o https://drive.google.com/...'}
                   value={disputeEvidenceUrl}
                   onChange={(e) => setDisputeEvidenceUrl(e.target.value)}
                   className="mt-1.5 w-full rounded-xl border border-border bg-background p-2.5 text-xs text-white placeholder-slate-500 focus:border-red-400 focus:outline-none"
@@ -1322,7 +1329,7 @@ export default function OrdersDashboardPage() {
               </div>
 
               <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-[11px] text-red-300">
-                ⚠️ Las pruebas aportadas y los mensajes intercambiados en la orden serán evaluados para dictar la resolución final.
+                {t('modalDisputeNotice')}
               </div>
 
               <div className="flex gap-3 pt-2">
@@ -1331,14 +1338,14 @@ export default function OrdersDashboardPage() {
                   onClick={() => setActiveDisputeModalOrder(null)}
                   className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-slate-400 hover:text-white"
                 >
-                  Cancelar
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={isProcessing || !disputeReason.trim()}
                   className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-bold text-white shadow-lg shadow-red-500/20 transition hover:bg-red-600 active:scale-95 disabled:opacity-50"
                 >
-                  {isProcessing ? 'Congelando Fondos en Escrow...' : 'Confirmar y Congelar Fondos'}
+                  {isProcessing ? t('freezingEscrow') : t('confirmAndFreeze')}
                 </button>
               </div>
             </form>

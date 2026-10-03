@@ -101,7 +101,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // 2. Prepare EIP-4361 SIWE message
       const domain = window.location.host;
       const origin = window.location.origin;
-      const statement = 'Iniciar sesión en mercadopleis con tu wallet criptográfica.';
+      // Shown in the wallet, which does not know the site language, so it carries both.
+      const statement = 'Sign in to mercadopleis with your wallet. / Inicia sesión en mercadopleis con tu wallet.';
       const issuedAt = new Date().toISOString();
 
       const message = `${domain} wants you to sign in with your Ethereum account:\n${address}\n\n${statement}\n\nURI: ${origin}\nVersion: 1\nChain ID: ${chainId || 8453}\nNonce: ${nonce}\nIssued At: ${issuedAt}`;

@@ -189,7 +189,6 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
       setTimeout(() => onSuccess(realContractOrderId.toString()), 2000);
     } catch (err: any) {
       if (isUserRejection(err)) {
-        console.info('[Wallet] Transacción o firma cancelada por el usuario en su wallet.');
         setErrorMessage(
           language === 'en'
             ? 'Signature or transaction cancelled in your wallet. No funds were debited.'
@@ -197,7 +196,11 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
         );
       } else {
         console.error('Order error:', err);
-        setErrorMessage(err?.shortMessage || err?.message || 'Error al procesar la transacción en la wallet.');
+        setErrorMessage(
+          err?.shortMessage ||
+            err?.message ||
+            (language === 'en' ? 'The transaction could not be processed in your wallet.' : 'Error al procesar la transacción en la wallet.')
+        );
       }
       setStep('quote');
     }

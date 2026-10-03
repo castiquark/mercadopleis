@@ -23,7 +23,8 @@ import {
 } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
+  const en = language === 'en';
   const { address, isConnected } = useAccount();
   const { user, token, isAuthenticated, isLoading, signIn, signOut } = useAuth();
 
@@ -32,6 +33,7 @@ export default function ProfilePage() {
   const [country, setCountry] = useState(user?.country || '');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState<ReputationStats>(EMPTY_STATS);
   const [statsLoaded, setStatsLoaded] = useState(false);
@@ -74,6 +76,7 @@ export default function ProfilePage() {
 
     try {
       setIsSaving(true);
+      setSaveError(null);
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
       const res = await fetch(`${apiUrl}/auth/me`, {
         method: 'PATCH',
@@ -87,9 +90,13 @@ export default function ProfilePage() {
       if (res.ok) {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setSaveError(data.error || (en ? 'The profile could not be saved.' : 'No se pudo guardar el perfil.'));
       }
     } catch (err) {
       console.error('Error saving profile:', err);
+      setSaveError(en ? 'The profile could not be saved.' : 'No se pudo guardar el perfil.');
     } finally {
       setIsSaving(false);
     }
@@ -103,7 +110,7 @@ export default function ProfilePage() {
         className="inline-flex min-h-10 items-center gap-2 text-sm text-slate-400 transition hover:text-white sm:min-h-0"
       >
         <ArrowLeft className="h-4 w-4" />
-        <span>Volver al Catálogo</span>
+        <span>{en ? 'Back to catalog' : 'Volver al catálogo'}</span>
       </Link>
 
       {/* Profile Header Card */}
@@ -116,11 +123,11 @@ export default function ProfilePage() {
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="text-2xl font-bold text-white">
-                  {displayName || user?.username || 'Usuario Web3'}
+                  {displayName || user?.username || (en ? 'Web3 user' : 'Usuario Web3')}
                 </h1>
                 {isAuthenticated && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 border border-accent/20 px-2.5 py-0.5 text-xs font-semibold text-accent">
-                    <UserCheck className="h-3.5 w-3.5" /> Sesión verificada
+                    <UserCheck className="h-3.5 w-3.5" /> {en ? 'Signed in' : 'Sesión verificada'}
                   </span>
                 )}
               </div>
@@ -133,12 +140,12 @@ export default function ProfilePage() {
                 <button
                   onClick={copyAddress}
                   className="-m-2 rounded-lg p-3 text-slate-400 hover:bg-surface-elevated hover:text-white"
-                  title="Copiar dirección"
-                  aria-label="Copiar dirección"
+                  title={en ? 'Copy address' : 'Copiar dirección'}
+                  aria-label={en ? 'Copy address' : 'Copiar dirección'}
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </button>
-                {copied && <span className="text-[10px] text-accent font-sans">¡Copiado!</span>}
+                {copied && <span className="text-[10px] text-accent font-sans">{en ? 'Copied!' : '¡Copiado!'}</span>}
               </div>
             </div>
           </div>
@@ -151,7 +158,7 @@ export default function ProfilePage() {
                 className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface-elevated px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:border-slate-500 transition"
               >
                 <LogOut className="h-3.5 w-3.5 text-red-400" />
-                <span>Cerrar Sesión</span>
+                <span>{en ? 'Sign out' : 'Cerrar sesión'}</span>
               </button>
             ) : isConnected ? (
               <button
@@ -160,10 +167,10 @@ export default function ProfilePage() {
                 className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover shadow-md shadow-primary/20 transition active:scale-95"
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>{isLoading ? 'Firmando...' : 'Firmar Sesión (SIWE)'}</span>
+                <span>{isLoading ? t('signing') : t('signSession')}</span>
               </button>
             ) : (
-              <span className="text-xs text-slate-500">Conecta tu wallet para identificarte</span>
+              <span className="text-xs text-slate-500">{en ? 'Connect your wallet to sign in' : 'Conecta tu wallet para identificarte'}</span>
             )}
           </div>
         </div>
@@ -171,15 +178,15 @@ export default function ProfilePage() {
         {/* Reputation stats: real Base Mainnet activity of the signed-in user only */}
         <div className="mt-8 grid grid-cols-2 gap-4 border-t border-border/80 pt-6 sm:grid-cols-4">
           <div className="rounded-xl border border-border/60 bg-background/50 p-4">
-            <span className="text-xs text-slate-400">Servicios completados</span>
+            <span className="text-xs text-slate-400">{en ? 'Completed services' : 'Servicios completados'}</span>
             <p className="mt-1 text-2xl font-extrabold text-white">{statsLoaded ? stats.completed : '—'}</p>
             <span className="text-[11px] text-accent">
-              {statsLoaded && stats.successRate !== null ? `${stats.successRate}% tasa de éxito` : 'Sin entregas liberadas aún'}
+              {statsLoaded && stats.successRate !== null ? (en ? `${stats.successRate}% success rate` : `${stats.successRate}% tasa de éxito`) : (en ? 'No released orders yet' : 'Sin entregas liberadas aún')}
             </span>
           </div>
 
           <div className="rounded-xl border border-border/60 bg-background/50 p-4">
-            <span className="text-xs text-slate-400">Calificación promedio</span>
+            <span className="text-xs text-slate-400">{en ? 'Average rating' : 'Calificación promedio'}</span>
             <div className="mt-1 flex items-baseline gap-1.5">
               <span className="text-2xl font-extrabold text-white">
                 {statsLoaded && stats.avgRating !== null ? stats.avgRating.toFixed(2) : '—'}
@@ -188,45 +195,56 @@ export default function ProfilePage() {
             </div>
             <span className="text-[11px] text-slate-400">
               {statsLoaded && stats.reviewCount > 0
-                ? `Sobre ${stats.reviewCount} ${stats.reviewCount === 1 ? 'reseña' : 'reseñas'}`
-                : 'Sin reseñas todavía'}
+                ? (en ? `From ${stats.reviewCount} ${stats.reviewCount === 1 ? 'review' : 'reviews'}` : `Sobre ${stats.reviewCount} ${stats.reviewCount === 1 ? 'reseña' : 'reseñas'}`)
+                : (en ? 'No reviews yet' : 'Sin reseñas todavía')}
             </span>
           </div>
 
           <div className="rounded-xl border border-border/60 bg-background/50 p-4">
-            <span className="text-xs text-slate-400">Disputas abiertas</span>
+            <span className="text-xs text-slate-400">{en ? 'Open disputes' : 'Disputas abiertas'}</span>
             <p className={`mt-1 text-2xl font-extrabold ${stats.openDisputes > 0 ? 'text-amber-400' : 'text-white'}`}>
               {statsLoaded ? stats.openDisputes : '—'}
             </p>
             <span className="text-[11px] text-slate-400">
-              {statsLoaded ? (stats.openDisputes > 0 ? 'En mediación' : 'Ninguna abierta') : 'Inicia sesión para verlo'}
+              {statsLoaded
+                ? (stats.openDisputes > 0 ? (en ? 'Under review' : 'En revisión') : (en ? 'None open' : 'Ninguna abierta'))
+                : (en ? 'Sign in to see it' : 'Inicia sesión para verlo')}
             </span>
           </div>
 
           <div className="rounded-xl border border-border/60 bg-background/50 p-4">
-            <span className="text-xs text-slate-400">Volumen transaccionado</span>
+            <span className="text-xs text-slate-400">{en ? 'Volume' : 'Volumen transaccionado'}</span>
             <div className="mt-1 flex items-baseline gap-1">
               <span className="text-2xl font-extrabold text-white">
                 {statsLoaded ? stats.volumeUsdc.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—'}
               </span>
               <span className="text-xs font-bold text-usdc">USDC</span>
             </div>
-            <span className="text-[11px] text-slate-400">Liquidado en Base Mainnet</span>
+            <span className="text-[11px] text-slate-400">{en ? 'Settled on Base Mainnet' : 'Liquidado en Base Mainnet'}</span>
           </div>
         </div>
       </div>
 
       {/* Edit Profile Form */}
       <div className="mt-8 rounded-2xl border border-border bg-surface p-6 sm:p-8">
-        <h2 className="text-lg font-bold text-white">Editar Perfil Público</h2>
+        <h2 className="text-lg font-bold text-white">{en ? 'Edit public profile' : 'Editar perfil público'}</h2>
         <p className="mt-1 text-xs text-slate-400">
-          Esta información será visible para compradores y prestadores en tus servicios publicados.
+          {en
+            ? 'Buyers and sellers will see this information on the services you publish.'
+            : 'Esta información será visible para compradores y prestadores en tus servicios publicados.'}
         </p>
 
         {saveSuccess && (
           <div className="mt-4 flex items-center gap-2 rounded-xl border border-accent/30 bg-accent/10 p-3 text-xs font-semibold text-accent">
             <CheckCircle className="h-4 w-4 shrink-0 text-accent" />
-            <span>Perfil actualizado exitosamente en PostgreSQL.</span>
+            <span>{en ? 'Profile updated.' : 'Perfil actualizado.'}</span>
+          </div>
+        )}
+
+        {saveError && (
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs font-semibold text-red-400">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{saveError}</span>
           </div>
         )}
 
@@ -234,7 +252,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                Nombre a Mostrar
+                {en ? 'Display name' : 'Nombre a mostrar'}
               </label>
               <input
                 type="text"
@@ -247,14 +265,14 @@ export default function ProfilePage() {
 
             <div>
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                País (Código ISO 2 letras)
+                {en ? 'Country (2-letter ISO code)' : 'País (código ISO de 2 letras)'}
               </label>
               <input
                 type="text"
                 maxLength={2}
                 value={country}
                 onChange={(e) => setCountry(e.target.value.toUpperCase())}
-                placeholder="ej. UY, AR, US"
+                placeholder={en ? 'e.g. US, UY, AR' : 'ej. UY, AR, US'}
                 className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-primary focus:outline-none uppercase"
               />
             </div>
@@ -262,13 +280,17 @@ export default function ProfilePage() {
 
           <div>
             <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-              Biografía / Presentación Profesional
+              {en ? 'Bio' : 'Biografía / presentación profesional'}
             </label>
             <textarea
               rows={3}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Desarrollador fullstack con 5 años de experiencia en Solidity, Next.js y contratos auditables..."
+              placeholder={
+                en
+                  ? 'Full-stack developer with 5 years of experience in Solidity and Next.js...'
+                  : 'Desarrollador fullstack con 5 años de experiencia en Solidity y Next.js...'
+              }
               className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-primary focus:outline-none"
             />
           </div>
@@ -279,12 +301,12 @@ export default function ProfilePage() {
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover active:scale-95 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
-            <span>{isSaving ? 'Guardando en Base de Datos...' : 'Guardar Cambios'}</span>
+            <span>{isSaving ? (en ? 'Saving...' : 'Guardando...') : (en ? 'Save changes' : 'Guardar cambios')}</span>
           </button>
 
           {!isAuthenticated && isConnected && (
             <p className="text-xs text-amber-400">
-              Debes firmar sesión con tu wallet para guardar cambios en tu perfil.
+              {en ? 'Sign in with your wallet to save changes to your profile.' : 'Debes firmar sesión con tu wallet para guardar cambios en tu perfil.'}
             </p>
           )}
         </form>
