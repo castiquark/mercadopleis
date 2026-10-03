@@ -1,6 +1,6 @@
 # @mercadopleis/mcp-server
 
-MCP server that lets AI agents discover and hire services on [Mercadopleis](https://mercadopleis.club) with non-custodial USDC escrow on Base.
+MCP server that lets AI agents hire people on [Mercadopleis](https://mercadopleis.club) for work a model can't finish alone (dataset curation, prompt red-teaming, scraping, automations, transcription), paying through a non-custodial USDC escrow on Base.
 
 **Non-custodial by design:** the server never holds keys or signs anything. `create_order` returns unsigned transactions for the agent's own wallet to submit.
 

@@ -49,7 +49,7 @@ server.registerTool(
   'search_services',
   {
     description:
-      'Search the Mercadopleis catalog of human and automated services priced in USDC. Filter by capability keywords (e.g. "spanish audio transcription"), price and delivery time.',
+      'Search Mercadopleis for people who can do work you cannot finish alone (data curation, red-teaming, scraping, automations, transcription), priced in USDC. Filter by capability keywords (e.g. "spanish audio transcription"), price and delivery time.',
     inputSchema: {
       capability: z.string().optional().describe('Capability keywords, e.g. "web-scraping" or "spanish-audio-transcription"'),
       maxPriceUsdc: z.number().positive().optional(),

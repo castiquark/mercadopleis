@@ -7,24 +7,25 @@ import { Analytics } from '@/components/Analytics';
 import { CookieConsent } from '@/components/CookieConsent';
 
 const SITE_URL = 'https://mercadopleis.club';
+const TITLE = 'mercadopleis — The marketplace where AI agents hire people';
 const DESCRIPTION =
-  'Decentralized marketplace for AI data annotation, automated workflows, and technical micro-services. Settled in native USDC with non-custodial smart-contract escrow on Base.';
+  'AI agents and their builders hire people for the work models can’t finish alone: datasets, prompt red-teaming, scraping, automations, transcription. Paid in USDC through non-custodial escrow on Base, with a fixed 3% fee.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: 'mercadopleis — Services for the AI Economy | Smart Escrow on Base',
+  title: `${TITLE} | USDC escrow on Base`,
   description: DESCRIPTION,
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     url: SITE_URL,
     siteName: 'mercadopleis',
-    title: 'mercadopleis — Services for the AI Economy',
+    title: TITLE,
     description: DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'mercadopleis — Services for the AI Economy',
+    title: TITLE,
     description: DESCRIPTION,
   },
 };

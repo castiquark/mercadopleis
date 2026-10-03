@@ -102,22 +102,22 @@ export default function HomePage() {
         <div className="relative z-10 max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-primary-light">
             <Zap className="h-3.5 w-3.5 text-accent" />
-            <span>{language === 'en' ? 'Smart Escrow on Base • Native USDC' : 'Escrow Inteligente en Base • USDC Nativo'}</span>
+            <span>{language === 'en' ? 'AI agents → people • USDC escrow on Base' : 'Agentes de IA → personas • Escrow en USDC sobre Base'}</span>
           </div>
 
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
             {language === 'en' ? (
               <>
-                Services for the{' '}
+                The marketplace where AI agents{' '}
                 <span className="bg-gradient-to-r from-primary-light via-blue-400 to-accent bg-clip-text text-transparent">
-                  AI Economy
+                  hire people
                 </span>
               </>
             ) : (
               <>
-                Servicios para la{' '}
+                El marketplace donde los agentes de IA{' '}
                 <span className="bg-gradient-to-r from-primary-light via-blue-400 to-accent bg-clip-text text-transparent">
-                  Economía de IA
+                  contratan personas
                 </span>
               </>
             )}
@@ -125,8 +125,8 @@ export default function HomePage() {
 
           <p className="mt-4 text-base text-slate-300 sm:text-lg">
             {language === 'en'
-              ? 'Hire people and technical services for AI models, automated workflows, and datasets. Pay in USDC. Your funds stay in a smart contract escrow until you approve the delivery or the review period ends.'
-              : 'Contrata personas y servicios técnicos para modelos de IA, flujos automatizados y datasets. Paga en USDC. Tus fondos quedan en un smart contract escrow hasta que apruebas la entrega o termina el período de revisión.'}
+              ? 'For the work models can’t finish alone: curating datasets, red-teaming prompts, scraping hard sites, building automations, transcribing audio. Agents and their builders hire people here and pay in USDC; the money waits in a non-custodial escrow on Base until the work is approved.'
+              : 'Para el trabajo que un modelo no termina solo: curar datasets, poner a prueba prompts, extraer datos de sitios difíciles, armar automatizaciones, transcribir audio. Agentes y quienes los construyen contratan personas aquí y pagan en USDC; el dinero espera en un escrow sin custodio en Base hasta que el trabajo se aprueba.'}
           </p>
 
           {/* Search Input */}
@@ -140,6 +140,24 @@ export default function HomePage() {
               className="w-full bg-transparent px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none"
             />
           </div>
+
+          {/* Entry point for agent builders */}
+          <p className="mt-4 text-sm text-slate-400">
+            {language === 'en' ? 'Building an agent? Connect it with the ' : '¿Construyes un agente? Conéctalo con el '}
+            <a
+              href="https://github.com/castiquark/mercadopleis/tree/main/packages/mcp-server"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-primary-light hover:underline"
+            >
+              {language === 'en' ? 'MCP server' : 'servidor MCP'}
+            </a>
+            {language === 'en' ? ' or read ' : ' o lee '}
+            <a href="/llms.txt" className="font-mono text-primary-light hover:underline">
+              /llms.txt
+            </a>
+            .
+          </p>
         </div>
 
         {/* Decorative Grid glow */}
@@ -149,24 +167,36 @@ export default function HomePage() {
       {/* Value Pillars */}
       <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface/50 p-4">
-          <ShieldCheck className="h-6 w-6 text-accent shrink-0" />
+          <Zap className="h-6 w-6 text-amber-400 shrink-0" />
           <div className="text-xs">
-            <p className="font-semibold text-white">{language === 'en' ? '0% Buyer Fee • Keep 97%' : '0% Recargo Comprador • Cobras 97%'}</p>
-            <p className="text-slate-400">{language === 'en' ? 'Fixed 3% fee, vs up to 20% on Web2 platforms.' : 'Comisión fija del 3%, frente a hasta 20% en plataformas Web2.'}</p>
+            <p className="font-semibold text-white">{language === 'en' ? 'Built for agents' : 'Hecho para agentes'}</p>
+            <p className="text-slate-400">
+              {language === 'en'
+                ? 'MCP server, API and llms.txt: an agent finds the service and prepares the payment for its own wallet.'
+                : 'Servidor MCP, API y llms.txt: un agente encuentra el servicio y prepara el pago para su propia wallet.'}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface/50 p-4">
           <CheckCircle className="h-6 w-6 text-primary-light shrink-0" />
           <div className="text-xs">
-            <p className="font-semibold text-white">{language === 'en' ? 'Non-Custodial Escrow' : 'Escrow No Custodial'}</p>
-            <p className="text-slate-400">{language === 'en' ? 'USDC locked on Base. 5-day review window before release.' : 'USDC en Base. 5 días de revisión garantizada antes de liberar.'}</p>
+            <p className="font-semibold text-white">{language === 'en' ? 'Done by people' : 'Lo hacen personas'}</p>
+            <p className="text-slate-400">
+              {language === 'en'
+                ? 'Real people do what models can’t, and record each delivery on-chain with a SHA-256 hash.'
+                : 'Personas reales hacen lo que un modelo no puede, y registran cada entrega on-chain con un hash SHA-256.'}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface/50 p-4">
-          <Zap className="h-6 w-6 text-amber-400 shrink-0" />
+          <ShieldCheck className="h-6 w-6 text-accent shrink-0" />
           <div className="text-xs">
-            <p className="font-semibold text-white">{language === 'en' ? 'Human + Agent Services' : 'Servicios para Humanos y Agentes'}</p>
-            <p className="text-slate-400">{language === 'en' ? 'Cryptographic SHA-256 deliverable proof onchain.' : 'Entrega con comprobante criptográfico SHA-256 en Base.'}</p>
+            <p className="font-semibold text-white">{language === 'en' ? 'Fixed 3% • no custodian' : '3% fijo • sin custodio'}</p>
+            <p className="text-slate-400">
+              {language === 'en'
+                ? '0% for the buyer, vs up to 20% on Web2 platforms. USDC escrow on Base with a 5-day review.'
+                : '0% para el comprador, frente a hasta 20% en plataformas Web2. Escrow en USDC sobre Base con 5 días de revisión.'}
+            </p>
           </div>
         </div>
       </section>

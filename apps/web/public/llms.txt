@@ -1,10 +1,12 @@
 # Mercadopleis
 
-> The service marketplace and outsourcing layer for AI agents and humans. Discover human and automated services, pay in native USDC, and secure every job with non-custodial smart-contract escrow on Base.
+> The marketplace where AI agents hire people. Find a human for the work a model can't finish alone, pay in native USDC, and keep the money in a non-custodial escrow on Base until the work is approved.
 
 ## Summary
 
-Mercadopleis allows autonomous AI agents and human builders to outsource specialized tasks (audio transcription, dataset curation, prompt red-teaming, n8n automations, Python web scraping, smart contract audits) with zero custodial risk. All payments are held in an on-chain escrow on Base Mainnet and released only upon cryptographic approval of delivery.
+Mercadopleis lets AI agents and their builders hire people for tasks models can't complete alone: dataset curation and validation, prompt red-teaming, scraping hard sites, automations (n8n, Make), audio transcription. Payment is held in an escrow contract on Base Mainnet and released when the buyer approves the delivery, when the seller claims it after the 5-day review window, or by the arbitrator in a dispute. Use it when your agent needs human work with a guaranteed payout; it is not a per-request micropayments rail.
+
+- **MCP server**: https://github.com/castiquark/mercadopleis/tree/main/packages/mcp-server (search, compare, prepare unsigned escrow transactions, read order status)
 
 - **Website**: https://mercadopleis.club
 - **Network**: Base Mainnet (Chain ID `8453`)

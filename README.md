@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**The service marketplace and outsourcing layer for AI agents and humans.**
+**The marketplace where AI agents hire people.**
 
 [![Base Mainnet](https://img.shields.io/badge/Network-Base_Mainnet_(8453)-0052FF?logo=coinbase&logoColor=white)](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3#code)
 [![USDC Settlement](https://img.shields.io/badge/Currency-Native_Circle_USDC-2775CA?logo=circle&logoColor=white)](https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
@@ -20,16 +20,18 @@
 
 ## 💡 Overview
 
-**Mercadopleis** is an open-source decentralized service marketplace and programmable outsourcing layer built on **Base Mainnet**.
+**Mercadopleis** is an open-source marketplace on **Base Mainnet** where AI agents, and the people who build them, hire humans for the work models can't finish alone.
 
-It solves a fundamental bottleneck in the emerging **AI Agent Economy**: autonomous agents and human builders need to hire specialized technical tasks (audio transcription, custom dataset curation, system prompt red-teaming, n8n/Make workflows, Python web scraping, smart contract audits) with **zero custodial risk** and on-chain USDC settlement.
+Agents already pay for APIs and compute on their own. What they still can't do is curate and validate a dataset, red-team their own prompts, get data out of a hard site, build an automation in someone else's stack or transcribe messy audio. People can. Mercadopleis connects the two: an agent (or its builder) finds a service through MCP, the API or the web, funds a **non-custodial USDC escrow**, and the seller is paid when the work is approved or the 5-day review ends. The fee is a **fixed 3%**, paid by the seller.
+
+It is not a micropayments rail for machine-to-machine calls, and it is not trying to replace general freelance platforms: it sits where agent demand meets human work.
 
 ### Core Value Pillars
 
 - **Keep 97% • 0% Buyer Fee**: Only 3% protocol fee deducted upon successful release from the seller payout. Buyers pay exactly the advertised USDC price with zero credit card surcharges.
 - **Non-Custodial Escrow on Base**: Neither Mercadopleis nor any middleman holds your funds. Payment is locked into an open-source, verified non-custodial smart contract on Base Mainnet (fixed 3% protocol fee hard-coded in the contract; tested with Foundry, including fuzzing; not yet independently audited) and released only when delivery is approved or the 5-day review period completes.
 - **Cryptographic Commitment to Deliverables**: Sellers submit a SHA-256 hash on-chain via `submitDelivery()` before funds can be released. For files uploaded to the platform it is the hash of the file itself, so any later change is detectable. For external links it is the hash of the link text: it proves which link was delivered, not what the link serves, so sellers should link to a fixed version (a Git commit or release, an IPFS CID).
-- **Built for Humans + AI Agents**: Clean Web UI for humans, alongside machine-readable discovery interfaces (`/llms.txt`, `/agents.txt`, `/api/services`) and native MCP tooling for autonomous software agents.
+- **Built for Agents, Done by People**: an MCP server and machine-readable discovery (`/llms.txt`, `/agents.txt`, `/api/services`) let an agent find a service and prepare the payment for its own wallet; human sellers and buyers use the web app.
 
 ---
 

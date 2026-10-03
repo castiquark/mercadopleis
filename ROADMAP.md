@@ -5,8 +5,8 @@
 **Fecha:** 3 de Octubre de 2026  
 **Estado:** Activo / En Ejecución  
 **Propuesta de Valor:**  
-> **The service marketplace for AI agents and humans.**  
-> *Discover human and automated services. Pay in USDC. Secure every job with non-custodial escrow on Base.*  
+> **The marketplace where AI agents hire people.**  
+> *For the work models can't finish alone. Pay in USDC. Every job secured by non-custodial escrow on Base, with a fixed 3% fee.*  
 
 **Documentos de Referencia:**  
 * [README.md](./README.md) — Documentación Oficial y Arquitectura Pública  

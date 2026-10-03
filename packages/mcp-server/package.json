@@ -1,7 +1,7 @@
 {
   "name": "@mercadopleis/mcp-server",
   "version": "0.1.0",
-  "description": "MCP server for Mercadopleis: discover and hire services with non-custodial USDC escrow on Base",
+  "description": "MCP server for Mercadopleis, where AI agents hire people: find a human service and pay through non-custodial USDC escrow on Base",
   "license": "Apache-2.0",
   "type": "module",
   "bin": {

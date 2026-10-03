@@ -21,9 +21,18 @@ export function Navbar() {
         {/* Brand */}
         <div className="flex min-w-0 items-center gap-3 sm:gap-6">
           <Link href="/" aria-label="mercadopleis" className="flex shrink-0 items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary font-bold text-white shadow-lg shadow-primary/30">
-              M
-            </div>
+            {/* Same mark as the favicon (app/icon.svg) */}
+            <svg viewBox="0 0 64 64" className="h-9 w-9 shrink-0 rounded-lg shadow-lg shadow-primary/30" aria-hidden="true">
+              <rect width="64" height="64" rx="14" fill="#0052FF" />
+              <path
+                d="M17 45V31a7.5 7.5 0 0 1 15 0v14M32 31a7.5 7.5 0 0 1 15 0v14"
+                fill="none"
+                stroke="#fff"
+                strokeWidth="6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
             <span className="hidden text-base font-bold tracking-tight text-white xs:inline sm:text-xl">
               mercado<span className="text-primary-light">pleis</span>
             </span>
