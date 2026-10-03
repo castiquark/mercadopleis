@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/lib/languageContext';
+import { fetchMyOrders } from '@/lib/api';
+import { EMPTY_STATS, computeStats, type ReputationStats } from '@/lib/reputation';
 import {
   UserCheck,
   Shield,
@@ -31,6 +33,8 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [stats, setStats] = useState<ReputationStats>(EMPTY_STATS);
+  const [statsLoaded, setStatsLoaded] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -39,6 +43,23 @@ export default function ProfilePage() {
       setCountry(user.country || 'UY');
     }
   }, [user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isAuthenticated || !user?.id) {
+      setStats(EMPTY_STATS);
+      setStatsLoaded(false);
+      return;
+    }
+    fetchMyOrders().then((orders) => {
+      if (cancelled) return;
+      setStats(Array.isArray(orders) ? computeStats(orders, user.id) : EMPTY_STATS);
+      setStatsLoaded(Array.isArray(orders));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, user?.id]);
 
   const copyAddress = () => {
     if (!address) return;
@@ -97,9 +118,11 @@ export default function ProfilePage() {
                 <h1 className="text-2xl font-bold text-white">
                   {displayName || user?.username || 'Usuario Web3'}
                 </h1>
-                <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 border border-accent/20 px-2.5 py-0.5 text-xs font-semibold text-accent">
-                  <UserCheck className="h-3.5 w-3.5" /> Wallet Verificada
-                </span>
+                {isAuthenticated && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 border border-accent/20 px-2.5 py-0.5 text-xs font-semibold text-accent">
+                    <UserCheck className="h-3.5 w-3.5" /> Wallet Verificada
+                  </span>
+                )}
               </div>
 
               {/* Wallet address & copy */}
@@ -145,36 +168,50 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Reputation Stats Grid (Section 18 & 19.3) */}
+        {/* Reputation stats: real Base Mainnet activity of the signed-in user only */}
         <div className="mt-8 grid grid-cols-2 gap-4 border-t border-border/80 pt-6 sm:grid-cols-4">
           <div className="rounded-xl border border-border/60 bg-background/50 p-4">
             <span className="text-xs text-slate-400">Servicios completados</span>
-            <p className="mt-1 text-2xl font-extrabold text-white">83</p>
-            <span className="text-[11px] text-accent">98% tasa de éxito</span>
+            <p className="mt-1 text-2xl font-extrabold text-white">{statsLoaded ? stats.completed : '—'}</p>
+            <span className="text-[11px] text-accent">
+              {statsLoaded && stats.successRate !== null ? `${stats.successRate}% tasa de éxito` : 'Sin entregas liberadas aún'}
+            </span>
           </div>
 
           <div className="rounded-xl border border-border/60 bg-background/50 p-4">
             <span className="text-xs text-slate-400">Calificación promedio</span>
             <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-2xl font-extrabold text-white">4.98</span>
-              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              <span className="text-2xl font-extrabold text-white">
+                {statsLoaded && stats.avgRating !== null ? stats.avgRating.toFixed(2) : '—'}
+              </span>
+              {stats.avgRating !== null && <Star className="h-4 w-4 fill-amber-400 text-amber-400" />}
             </div>
-            <span className="text-[11px] text-slate-400">Sobre 83 reseñas</span>
+            <span className="text-[11px] text-slate-400">
+              {statsLoaded && stats.reviewCount > 0
+                ? `Sobre ${stats.reviewCount} ${stats.reviewCount === 1 ? 'reseña' : 'reseñas'}`
+                : 'Sin reseñas todavía'}
+            </span>
           </div>
 
           <div className="rounded-xl border border-border/60 bg-background/50 p-4">
             <span className="text-xs text-slate-400">Disputas abiertas</span>
-            <p className="mt-1 text-2xl font-extrabold text-accent">0</p>
-            <span className="text-[11px] text-slate-400">Historial limpio</span>
+            <p className={`mt-1 text-2xl font-extrabold ${stats.openDisputes > 0 ? 'text-amber-400' : 'text-white'}`}>
+              {statsLoaded ? stats.openDisputes : '—'}
+            </p>
+            <span className="text-[11px] text-slate-400">
+              {statsLoaded ? (stats.openDisputes > 0 ? 'En mediación' : 'Ninguna abierta') : 'Inicia sesión para verlo'}
+            </span>
           </div>
 
           <div className="rounded-xl border border-border/60 bg-background/50 p-4">
             <span className="text-xs text-slate-400">Volumen transaccionado</span>
             <div className="mt-1 flex items-baseline gap-1">
-              <span className="text-2xl font-extrabold text-white">12,430</span>
+              <span className="text-2xl font-extrabold text-white">
+                {statsLoaded ? stats.volumeUsdc.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—'}
+              </span>
               <span className="text-xs font-bold text-usdc">USDC</span>
             </div>
-            <span className="text-[11px] text-slate-400">Liquidado en Base</span>
+            <span className="text-[11px] text-slate-400">Liquidado en Base Mainnet</span>
           </div>
         </div>
       </div>
