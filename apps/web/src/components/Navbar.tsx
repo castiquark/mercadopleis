@@ -75,8 +75,8 @@ export function Navbar() {
             </Link>
           )}
 
-          {/* Faucet only on Base Sepolia (chainId 84532) */}
-          {(!chainId || chainId === 84532) && (
+          {/* Test-token faucet only while the wallet is on Base Sepolia (chainId 84532); real users never see it */}
+          {chainId === 84532 && (
             <Link
               href="/faucet"
               className="hidden sm:flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/20 hover:border-cyan-400"

@@ -131,6 +131,12 @@ See [`SECURITY.md`](./SECURITY.md) for vulnerability disclosure policies.
 
 ---
 
+## 🧪 Try It Without Real Money (Base Sepolia)
+
+The same contract address is deployed on Base Sepolia (chain ID `84532`), so builders can test the full flow with free test tokens: mint test USDC at [`/faucet`](https://mercadopleis.club/faucet), fund an escrow order, deliver and release. Testnet activity never counts toward reputation. Details for agents are in [`/llms-full.txt`](https://mercadopleis.club/llms-full.txt) (section 7). For the MCP server, set `MERCADOPLEIS_CHAIN_ID=84532`.
+
+---
+
 ## 📁 Repository Structure
 
 ```text

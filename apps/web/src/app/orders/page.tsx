@@ -57,7 +57,6 @@ interface MockOrder {
   autoReleaseDeadline?: number;
   sellerAddress: string;
   buyerAddress: string;
-  isDemo?: boolean;
   dispute?: {
     id: string;
     reason: string;
@@ -76,14 +75,11 @@ interface MockOrder {
   } | null;
 }
 
-const INITIAL_DEMO_ORDERS: MockOrder[] = [];
-
 export default function OrdersDashboardPage() {
   const { isConnected, chainId, address } = useAccount();
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'buyer' | 'seller'>('buyer');
-  const [showDemoOrders, setShowDemoOrders] = useState(false);
   const [orders, setOrders] = useState<MockOrder[]>([]);
   const [activeDeliveryModalOrder, setActiveDeliveryModalOrder] = useState<MockOrder | null>(null);
   const [deliveryInputUrl, setDeliveryInputUrl] = useState('');
@@ -186,7 +182,6 @@ export default function OrdersDashboardPage() {
             autoReleaseDeadline: bo.autoReleaseDeadline,
             sellerAddress: bo.seller?.walletAddress || '',
             buyerAddress: bo.buyer?.walletAddress || address || '',
-            isDemo: false,
             dispute: bo.dispute || null,
             review: bo.review || null,
           };
@@ -194,9 +189,9 @@ export default function OrdersDashboardPage() {
         setReviewedOrders((prev) => ({ ...loadedReviews, ...prev }));
       }
 
-      // Combine dynamic orders + local custom orders (+ demo orders only if toggled)
+      // Combine API orders with the locally cached orders of this browser
       const baseList = [...dynamicOrders, ...localCustom];
-      const ordersToDisplay = showDemoOrders ? [...baseList, ...INITIAL_DEMO_ORDERS] : baseList;
+      const ordersToDisplay = baseList;
 
       const existingIds = new Set<string>();
       const combined: MockOrder[] = [];
@@ -212,7 +207,7 @@ export default function OrdersDashboardPage() {
     } catch (e) {
       console.warn('Orders load note:', e);
     }
-  }, [user?.id, address, showDemoOrders]);
+  }, [user?.id, address]);
 
   useEffect(() => {
     loadOrders();
@@ -547,11 +542,11 @@ export default function OrdersDashboardPage() {
               if (typeof window !== 'undefined') {
                 localStorage.removeItem('mercadopleis_custom_orders');
                 loadOrders();
-                setActionNotice(language === 'en' ? 'Local test orders cache cleared.' : 'Caché local de órdenes de prueba eliminada.');
+                setActionNotice(language === 'en' ? 'Local orders cache cleared.' : 'Caché local de órdenes eliminada.');
               }
             }}
             className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2.5 text-xs font-semibold text-slate-400 transition hover:bg-surface-elevated hover:text-white sm:py-2"
-            title="Limpiar datos temporales de prueba en tu navegador"
+            title="Limpiar la caché local de órdenes de este navegador"
           >
             <Trash2 className="h-3.5 w-3.5 text-slate-400" />
             <span className="hidden sm:inline">{t('clearCache')}</span>
@@ -924,14 +919,6 @@ export default function OrdersDashboardPage() {
                   Publicar Servicio <ArrowRight className="h-4 w-4" />
                 </Link>
               )}
-
-              <button
-                type="button"
-                onClick={() => setShowDemoOrders((prev) => !prev)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-surface px-4 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition"
-              >
-                <span>{showDemoOrders ? 'Ocultar datos de prueba' : 'Ver órdenes demo de prueba'}</span>
-              </button>
             </div>
           </div>
         )}

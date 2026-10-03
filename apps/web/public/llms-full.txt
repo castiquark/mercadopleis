@@ -147,16 +147,23 @@ Mercadopleis provides public JSON endpoints with CORS enabled (`Access-Control-A
 - **Response Format**: Detailed service metadata including delivery timeline, full requirements, seller profile, and past completed orders.
 
 ### C. Register Order Index
+Funds are held by the escrow contract, not by this API. Registering the order only links the on-chain order to the service so it shows up in the dashboard. The API verifies the funding transaction on-chain (on the order's chain) before recording anything.
+
 - **Endpoint**: `POST https://mercadopleis.club/api/orders`
+- **Auth**: `Authorization: Bearer <JWT>` obtained with Sign-In with Ethereum (EIP-4361):
+  1. `GET /api/auth/nonce?address=0x...` returns `{ "nonce": "..." }`
+  2. Sign an EIP-4361 message with `domain` = `mercadopleis.club`, `URI` = `https://mercadopleis.club`, `Version: 1`, `Chain ID` = `8453` (or `84532` on testnet), the nonce, and an `Issued At` timestamp no older than 10 minutes.
+  3. `POST /api/auth/verify` with `{ "address", "signature", "message" }` returns `{ "token": "..." }`.
 - **Body**:
 ```json
 {
   "serviceId": "uuid-of-service",
   "contractOrderId": 1,
   "txHashFunding": "0x...",
-  "buyerWallet": "0x..."
+  "chainId": 8453
 }
 ```
+`contractOrderId` is the `orderId` emitted by the `OrderFunded` event of your `createAndFundOrder` transaction. `chainId` is `8453` (Base Mainnet, default) or `84532` (Base Sepolia).
 
 ---
 
@@ -216,21 +223,41 @@ const txHash = await walletClient.writeContract({
   args: [targetService.seller.walletAddress, USDC_ADDRESS, amount, targetService.deliveryDays],
 });
 
-// 4. Notify Marketplace Backend
+// 4. Notify Marketplace Backend (needs a SIWE token, see section 4.C)
+const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+const [funded] = parseEventLogs({ abi: marketplaceEscrowAbi, logs: receipt.logs, eventName: 'OrderFunded' });
 await fetch('https://mercadopleis.club/api/orders', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${siweToken}` },
   body: JSON.stringify({
     serviceId: targetService.id,
+    contractOrderId: Number(funded.args.orderId),
     txHashFunding: txHash,
-    buyerWallet: account.address,
+    chainId: 8453,
   }),
 });
 ```
 
 ---
 
-## 7. Community & Contribution
+## 7. Testing Without Real Money (Base Sepolia)
+
+Everything above works on **Base Sepolia** (chain ID `84532`) with free test tokens. Use it to build and debug an integration before spending real USDC. Testnet orders are real transactions on a test network: they have no monetary value and do not count toward seller reputation, which is computed from Base Mainnet activity only.
+
+- **Network**: Base Sepolia, chain ID `84532`
+- **Escrow contract**: `0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48` (same address as mainnet)
+- **Test USDC** (mintable, 6 decimals): `0x6Fa1279f6c760fA993B7f9aC75de5a141d7D2D8A`
+- **Test ETH for gas**: any Base Sepolia faucet
+- **Test USDC faucet**: https://mercadopleis.club/faucet (connect a wallet on Base Sepolia)
+- **MCP server**: run `@mercadopleis/mcp-server` with `MERCADOPLEIS_CHAIN_ID=84532` to get unsigned transactions for the testnet contracts
+- **API**: send `chainId: 84532` in `POST /api/orders`; SIWE messages use `Chain ID: 84532`
+- The catalog is shared, so you can hire a listed service on testnet. The seller sees it as a testnet order.
+
+The test flow is: mint test USDC, approve the escrow, `createAndFundOrder`, seller `submitDelivery`, buyer `approveDelivery`, then check `orders(orderId)` on the contract.
+
+---
+
+## 8. Community & Contribution
 
 - **Discussion & Support**: https://warpcast.com/~/channel/mercadopleis
 - **Base Builder Hub**: Deployed natively on Base L2 for ultra-low transaction fees (<$0.01 gas per escrow operation).
