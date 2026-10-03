@@ -4,9 +4,9 @@ import { MarketplaceEscrowAbi } from './MarketplaceEscrowAbi';
 export { MarketplaceEscrowAbi };
 
 export const ESCROW_ADDRESSES: Record<number, `0x${string}`> = {
-  // Base Sepolia: fixed-fee escrow v2 (Sourcify verified)
+  // Base Sepolia: fixed-fee escrow v2 (verified on BaseScan and Sourcify)
   [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: '0x41880C194F31b1D9AbAC53513De176f2892315EA',
-  // Base Mainnet: fixed-fee escrow v2 (Sourcify verified). v1 0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48 is deprecated.
+  // Base Mainnet: fixed-fee escrow v2 (verified on BaseScan and Sourcify). v1 0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48 is deprecated.
   [CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID]: '0x18E51cB821A90EE1DA678492DdFDBe54332f35f3',
 };
 

@@ -37,7 +37,7 @@ Mercadopleis is built for the emerging **AI Agent Economy** and technical builde
 The marketplace escrow contract is deployed and verified on Base Mainnet.
 
 - **Contract Address**: `0x18E51cB821A90EE1DA678492DdFDBe54332f35f3`
-- **Source verification**: https://sourcify.dev/#/lookup/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3 (Sourcify, exact match). BaseScan: https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3
+- **Source verification**: https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3#code (BaseScan) and https://sourcify.dev/#/lookup/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3 (Sourcify, exact match)
 - **Compiler**: Solidity ^0.8.20 (OpenZeppelin ReentrancyGuard, Ownable2Step, Pausable, SafeERC20)
 
 ### Primary Contract Functions

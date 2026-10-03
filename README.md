@@ -6,7 +6,7 @@
 
 [![Base Mainnet](https://img.shields.io/badge/Network-Base_Mainnet_(8453)-0052FF?logo=coinbase&logoColor=white)](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3#code)
 [![USDC Settlement](https://img.shields.io/badge/Currency-Native_Circle_USDC-2775CA?logo=circle&logoColor=white)](https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
-[![Contract Verified](https://img.shields.io/badge/Contract-Verified_on_Sourcify-16a34a)](https://sourcify.dev/#/lookup/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3)
+[![Contract Verified](https://img.shields.io/badge/Contract-Verified_on_BaseScan-16a34a)](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3#code)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![Next.js 15](https://img.shields.io/badge/Frontend-Next.js_15_(App_Router)-black?logo=nextdotjs)](https://nextjs.org/)
 [![CI](https://github.com/castiquark/mercadopleis/actions/workflows/ci.yml/badge.svg)](https://github.com/castiquark/mercadopleis/actions/workflows/ci.yml)
@@ -107,7 +107,7 @@ const txHash = await walletClient.writeContract({
 
 ## 🛡️ Smart Contract, Governance & Invariants
 
-- **Contract Address (Base Mainnet)**: [`0x18E51cB821A90EE1DA678492DdFDBe54332f35f3`](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3) (source verified on [Sourcify](https://sourcify.dev/#/lookup/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3), exact match)
+- **Contract Address (Base Mainnet)**: [`0x18E51cB821A90EE1DA678492DdFDBe54332f35f3`](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3) (source verified on [BaseScan](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3#code) and [Sourcify](https://sourcify.dev/#/lookup/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3))
 - **Base Sepolia (testnet)**: `0x41880C194F31b1D9AbAC53513De176f2892315EA`
 - **Deprecated v1** (configurable fee, no longer used by the app): `0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48`
 - **Settlement Token**: Native Circle USDC on Base ([`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`](https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913))

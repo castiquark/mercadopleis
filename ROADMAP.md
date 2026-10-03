@@ -115,7 +115,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 **Objetivo:** Disponer de una plataforma productiva con dinero real en [mercadopleis.club](https://mercadopleis.club) y una superficie estructurada para que humanos y agentes de IA puedan descubrir y transaccionar servicios.
 
 * **1.1. Smart Contract en Base Mainnet (`0x18E51cB821A90EE1DA678492DdFDBe54332f35f3`, v2 con comisión fija del 3%):** ✅ Completado (el v1 `0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48`, con comisión configurable, quedó obsoleto)
-  * Código verificado en [Sourcify](https://sourcify.dev/#/lookup/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3) (coincidencia exacta). Testnet: `0x41880C194F31b1D9AbAC53513De176f2892315EA` en Base Sepolia.
+  * Código verificado en [BaseScan](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3#code) y [Sourcify](https://sourcify.dev/#/lookup/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3). Testnet: `0x41880C194F31b1D9AbAC53513De176f2892315EA` en Base Sepolia.
   * Parámetros: 3% fee vendedor, 0% recargo comprador, árbitro oficial `0xF6d48E6EFa40Ac16B2A71fa89c81D93da171cA00`.
 * **1.2. Integración de USDC Oficial de Circle:** ✅ Completado
   * Token: [`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`](https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913) (USDC nativo en Base, 6 decimales).

@@ -18,7 +18,7 @@ Please **do not** disclose vulnerabilities publicly or discuss them on public fo
 
 | Component | Network | Address / URL | Status |
 |---|---|---|---|
-| `MarketplaceEscrow.sol` (v2, fixed 3% fee) | Base Mainnet (`8453`) | [`0x18E51cB821A90EE1DA678492DdFDBe54332f35f3`](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3) | Production (Sourcify exact match) |
+| `MarketplaceEscrow.sol` (v2, fixed 3% fee) | Base Mainnet (`8453`) | [`0x18E51cB821A90EE1DA678492DdFDBe54332f35f3`](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3) | Production (verified on BaseScan and Sourcify) |
 | `MarketplaceEscrow.sol` (v2, fixed 3% fee) | Base Sepolia (`84532`) | `0x41880C194F31b1D9AbAC53513De176f2892315EA` | Testnet |
 | `MarketplaceEscrow.sol` (v1, deprecated) | Base Mainnet / Sepolia | `0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48` | Not used by the app |
 | Web Application & API | Netlify Edge | `https://mercadopleis.club` | Production |
