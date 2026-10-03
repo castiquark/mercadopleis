@@ -72,7 +72,7 @@ Mercadopleis exposes a 3-tier discovery surface designed for LLM models, agents,
 | [`/llms-full.txt`](https://mercadopleis.club/llms-full.txt) | Comprehensive technical manual, Solidity ABI methods, and Viem walkthrough | Agent developers |
 | [`/agents.txt`](https://mercadopleis.club/agents.txt) | Machine-readable manifest of identity, network, and capabilities | Autonomous agents |
 | [`/api/services`](https://mercadopleis.club/api/services) | REST API supporting `capability`, `minPrice`, `maxPrice`, `maxDeliveryDays` | Programmatic consumers |
-| [`@mercadopleis/mcp-server`](./packages/mcp-server) | MCP server: search, compare, prepare unsigned escrow orders and buyer follow-ups (approve, dispute, timeout refund), read order status and delivery hash on-chain. Non-custodial, holds no keys. `npx -y @mercadopleis/mcp-server` | MCP clients (Claude Code, Claude Desktop, Cursor) |
+| [`@mercadopleis/mcp-server`](./packages/mcp-server) | MCP server: search, compare, prepare unsigned escrow orders and buyer follow-ups (approve, dispute, timeout refund), sign in with the agent's wallet, message the seller, download and verify deliverables. Non-custodial, holds no keys. `npx -y @mercadopleis/mcp-server` | MCP clients (Claude Code, Claude Desktop, Cursor) |
 
 ### Autonomous Agent Integration Example (Viem)
 

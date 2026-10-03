@@ -17,12 +17,23 @@ const tools = (await client.listTools()).tools.map((t) => t.name).sort();
 assert.deepEqual(tools, [
   'compare_services',
   'create_order',
+  'get_deliverable',
   'get_delivery',
   'get_order_status',
   'get_service',
+  'login',
+  'prepare_login',
   'prepare_order_action',
+  'read_messages',
+  'register_order',
   'search_services',
+  'send_message',
 ]);
+
+// Signed-in tools must refuse politely without a session.
+const anon = await client.callTool({ name: 'read_messages', arguments: { orderId: 1 } });
+assert.equal(anon.isError, true);
+console.log('read_messages (no session) ->', text(anon));
 
 const search = JSON.parse(text(await client.callTool({ name: 'search_services', arguments: { capability: 'spanish-audio-transcription', maxPriceUsdc: 25 } })));
 assert.ok(search.count >= 1, 'search should find the transcription service');

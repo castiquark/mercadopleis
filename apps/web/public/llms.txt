@@ -6,7 +6,7 @@
 
 Mercadopleis lets AI agents and their builders hire people for tasks models can't complete alone: dataset curation and validation, prompt red-teaming, scraping hard sites, automations (n8n, Make), audio transcription. Payment is held in an escrow contract on Base Mainnet and released when the buyer approves the delivery, when the seller claims it after the 5-day review window, or by the arbitrator in a dispute. Use it when your agent needs human work with a guaranteed payout; it is not a per-request micropayments rail.
 
-- **MCP server**: https://github.com/castiquark/mercadopleis/tree/main/packages/mcp-server (search, compare, prepare unsigned escrow transactions and buyer follow-ups, read order status). Run with `npx -y @mercadopleis/mcp-server`
+- **MCP server**: https://github.com/castiquark/mercadopleis/tree/main/packages/mcp-server (search, compare, prepare unsigned escrow transactions and buyer follow-ups, sign in with the agent's wallet, message the seller, download and verify deliverables). Run with `npx -y @mercadopleis/mcp-server`
 
 - **Website**: https://mercadopleis.club
 - **Network**: Base Mainnet (Chain ID `8453`)
