@@ -16,7 +16,7 @@ export const NETWORKS: Record<number, { name: string; rpc: string; usdc: `0x${st
     name: 'Base Sepolia',
     rpc: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
     usdc: '0x6Fa1279f6c760fA993B7f9aC75de5a141d7D2D8A',
-    escrow: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48', // keep in sync with packages/contracts-abi (guarded by a test)
+    escrow: '0x41880C194F31b1D9AbAC53513De176f2892315EA', // keep in sync with packages/contracts-abi (guarded by a test)
     explorer: 'https://sepolia.basescan.org',
   },
 };

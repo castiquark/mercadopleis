@@ -5,7 +5,7 @@ export { MarketplaceEscrowAbi };
 
 export const ESCROW_ADDRESSES: Record<number, `0x${string}`> = {
   // Base Sepolia Testnet (Deployed on Base Sepolia)
-  [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
+  [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: '0x41880C194F31b1D9AbAC53513De176f2892315EA',
   // Base Mainnet (Deployed & Verified on Base Mainnet)
   [CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID]: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
 };
@@ -15,7 +15,7 @@ export const ESCROW_ADDRESSES: Record<number, `0x${string}`> = {
  * before the first sync are never missed. Fill this in right after deploying a new escrow.
  */
 export const ESCROW_DEPLOY_BLOCKS: Record<number, number | undefined> = {
-  [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: undefined,
+  [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: 47611736,
   [CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID]: undefined,
 };
 

@@ -7,8 +7,8 @@ import { and, eq, desc } from 'drizzle-orm';
 import { ESCROW_ADDRESSES, ESCROW_DEPLOY_BLOCKS, MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
 
 // Public RPCs reject large getLogs ranges, so scan in small windows and catch up over several calls.
-const CHUNK_BLOCKS = 2_000n;
-const MAX_CHUNKS_PER_RUN = 25n; // up to 50,000 blocks per call
+const CHUNK_BLOCKS = 1_000n; // Base public RPC rejects eth_getLogs ranges above 1,000 blocks
+const MAX_CHUNKS_PER_RUN = 30n; // up to 30,000 blocks (~16 h on Base) per call; call again to continue
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 
 export const dynamic = 'force-dynamic';
