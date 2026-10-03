@@ -20,7 +20,7 @@ const SEPOLIA = CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
 /**
  * Maps the wallet's chain to the escrow and USDC addresses. Disconnected wallets resolve to Base Mainnet.
  * Any other chain is reported as unsupported and keeps the Mainnet addresses so callers can never
- * silently send a transaction to testnet addresses (the escrow address is identical on both chains).
+ * silently send a transaction to testnet addresses.
  */
 export function resolveNetwork(walletChainId?: number | null): ResolvedNetwork {
   const chainId = walletChainId ?? MAINNET;

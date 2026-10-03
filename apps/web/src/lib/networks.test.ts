@@ -30,8 +30,8 @@ describe('resolveNetwork', () => {
     }
   });
 
-  it('uses the same escrow address on both supported chains', () => {
-    expect(resolveNetwork(8453).escrow).toBe(resolveNetwork(84532).escrow);
+  it('uses a different escrow per network (Mainnet and Sepolia are separate deployments)', () => {
+    expect(resolveNetwork(8453).escrow).not.toBe(resolveNetwork(84532).escrow);
   });
 });
 

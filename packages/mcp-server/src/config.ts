@@ -9,7 +9,7 @@ export const NETWORKS: Record<number, { name: string; rpc: string; usdc: `0x${st
     name: 'Base Mainnet',
     rpc: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
     usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-    escrow: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48', // keep in sync with packages/contracts-abi (guarded by a test)
+    escrow: '0x18E51cB821A90EE1DA678492DdFDBe54332f35f3', // keep in sync with packages/contracts-abi (guarded by a test)
     explorer: 'https://basescan.org',
   },
   84532: {

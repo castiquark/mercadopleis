@@ -45,7 +45,8 @@ Claude Desktop / Cursor config:
 ## Test
 
 ```bash
-pnpm --filter @mercadopleis/mcp-server test   # spawns the server and calls the tools against the live API (read-only)
+pnpm --filter @mercadopleis/mcp-server test         # unit tests (calldata, drift guards against the contract)
+pnpm --filter @mercadopleis/mcp-server test:smoke   # spawns the server and calls the tools against the live API (read-only)
 ```
 
-Escrow contract: `0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48` (Base Mainnet, verified on BaseScan).
+Escrow contract: `0x18E51cB821A90EE1DA678492DdFDBe54332f35f3` (Base Mainnet, source verified on Sourcify; fixed 3% fee). Base Sepolia: `0x41880C194F31b1D9AbAC53513De176f2892315EA`.

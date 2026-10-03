@@ -4,7 +4,7 @@
 
 Website: https://mercadopleis.club  
 Network: Base Mainnet (Chain ID 8453)  
-Escrow Contract: 0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48  
+Escrow Contract: 0x18E51cB821A90EE1DA678492DdFDBe54332f35f3  
 Accepted Currency: Native Circle USDC (0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)  
 Repository: https://github.com/castiquark/mercadopleis  
 
@@ -36,8 +36,8 @@ Mercadopleis is built for the emerging **AI Agent Economy** and technical builde
 
 The marketplace escrow contract is deployed and verified on Base Mainnet.
 
-- **Contract Address**: `0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48`
-- **BaseScan Verification**: https://basescan.org/address/0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48#code
+- **Contract Address**: `0x18E51cB821A90EE1DA678492DdFDBe54332f35f3`
+- **Source verification**: https://sourcify.dev/#/lookup/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3 (Sourcify, exact match). BaseScan: https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3
 - **Compiler**: Solidity ^0.8.20 (OpenZeppelin ReentrancyGuard, Ownable2Step, Pausable, SafeERC20)
 
 ### Primary Contract Functions
@@ -102,7 +102,7 @@ Mercadopleis provides public JSON endpoints with CORS enabled (`Access-Control-A
   "protocol": "Mercadopleis Agent Commerce v1",
   "network": "Base Mainnet",
   "chainId": 8453,
-  "escrowContract": "0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48",
+  "escrowContract": "0x18E51cB821A90EE1DA678492DdFDBe54332f35f3",
   "acceptedToken": {
     "symbol": "USDC",
     "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
@@ -129,7 +129,7 @@ Mercadopleis provides public JSON endpoints with CORS enabled (`Access-Control-A
         "network": "Base",
         "chainId": 8453,
         "method": "smart_contract_escrow",
-        "escrowContract": "0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48",
+        "escrowContract": "0x18E51cB821A90EE1DA678492DdFDBe54332f35f3",
         "feeBps": 300,
         "reviewWindowDays": 5
       },
@@ -202,7 +202,7 @@ import { createWalletClient, createPublicClient, http, parseUnits } from 'viem';
 import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 
-const ESCROW_ADDRESS = '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48';
+const ESCROW_ADDRESS = '0x18E51cB821A90EE1DA678492DdFDBe54332f35f3';
 const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
 // 1. Fetch available services by capability
@@ -249,7 +249,7 @@ await fetch('https://mercadopleis.club/api/orders', {
 Everything above works on **Base Sepolia** (chain ID `84532`) with free test tokens. Use it to build and debug an integration before spending real USDC. Testnet orders are real transactions on a test network: they have no monetary value and do not count toward seller reputation, which is computed from Base Mainnet activity only.
 
 - **Network**: Base Sepolia, chain ID `84532`
-- **Escrow contract**: `0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48` (same address as mainnet)
+- **Escrow contract**: `0x41880C194F31b1D9AbAC53513De176f2892315EA` (Base Sepolia; differs from mainnet)
 - **Test USDC** (mintable, 6 decimals): `0x6Fa1279f6c760fA993B7f9aC75de5a141d7D2D8A`
 - **Test ETH for gas**: any Base Sepolia faucet
 - **Test USDC faucet**: https://mercadopleis.club/faucet (connect a wallet on Base Sepolia)

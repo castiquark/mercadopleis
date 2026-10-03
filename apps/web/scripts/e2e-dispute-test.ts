@@ -11,6 +11,7 @@ import { createPublicClient, createWalletClient, defineChain, http, parseAbiItem
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { Attribution } from 'ox/erc8021';
+import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -26,7 +27,7 @@ const baseSepolia = defineChain({
 
 const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org';
 const ESCROW = ESCROW_ADDRESSES[84532]; // registry address for Base Sepolia
-const USDC = (process.env.NEXT_PUBLIC_USDC_ADDRESS || '0x6Fa1279f6c760fA993B7f9aC75de5a141d7D2D8A') as `0x${string}`;
+const USDC = CONTRACT_CONFIG.USDC_BASE_SEPOLIA; // mintable test USDC accepted by the Sepolia escrow
 const API_BASE = process.env.API_BASE || 'http://localhost:3000/api';
 const DEPLOYER_KEY = process.env.DEPLOYER_PRIVATE_KEY as `0x${string}`;
 const SUFFIX = Attribution.toDataSuffix({ codes: ['bc_dmphihka'] });

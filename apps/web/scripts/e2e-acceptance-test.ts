@@ -10,6 +10,7 @@ import {
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { Attribution } from 'ox/erc8021';
+import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -27,7 +28,7 @@ const baseSepolia = defineChain({
 
 const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org';
 const ESCROW_ADDRESS = ESCROW_ADDRESSES[84532]; // registry address for Base Sepolia
-const USDC_ADDRESS = (process.env.NEXT_PUBLIC_USDC_ADDRESS || '0x6Fa1279f6c760fA993B7f9aC75de5a141d7D2D8A') as `0x${string}`;
+const USDC_ADDRESS = CONTRACT_CONFIG.USDC_BASE_SEPOLIA; // mintable test USDC accepted by the Sepolia escrow
 const DEPLOYER_KEY = process.env.DEPLOYER_PRIVATE_KEY as `0x${string}`;
 const API_BASE = process.env.API_BASE || 'http://localhost:3000/api';
 // Base Builder Code (ERC-8021) suffix expected on escrow transactions

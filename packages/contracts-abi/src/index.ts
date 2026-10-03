@@ -4,10 +4,10 @@ import { MarketplaceEscrowAbi } from './MarketplaceEscrowAbi';
 export { MarketplaceEscrowAbi };
 
 export const ESCROW_ADDRESSES: Record<number, `0x${string}`> = {
-  // Base Sepolia Testnet (Deployed on Base Sepolia)
+  // Base Sepolia: fixed-fee escrow v2 (Sourcify verified)
   [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: '0x41880C194F31b1D9AbAC53513De176f2892315EA',
-  // Base Mainnet (Deployed & Verified on Base Mainnet)
-  [CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID]: '0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48',
+  // Base Mainnet: fixed-fee escrow v2 (Sourcify verified). v1 0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48 is deprecated.
+  [CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID]: '0x18E51cB821A90EE1DA678492DdFDBe54332f35f3',
 };
 
 /**
@@ -16,7 +16,7 @@ export const ESCROW_ADDRESSES: Record<number, `0x${string}`> = {
  */
 export const ESCROW_DEPLOY_BLOCKS: Record<number, number | undefined> = {
   [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: 47611736,
-  [CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID]: undefined,
+  [CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID]: 52101644,
 };
 
 /**

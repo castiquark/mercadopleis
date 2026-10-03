@@ -216,8 +216,8 @@ export default function OrdersDashboardPage() {
 
   const filteredOrders = orders.filter((o) => o.role === activeTab);
 
-  // The escrow address is the same on every chain, so acting on an order while the wallet is on another
-  // network would hit a different order with the same id. Refuse and tell the user which network to use.
+  // Each network has its own escrow, so acting on an order while the wallet is on another network would
+  // target a different contract (or a different order with the same id). Refuse and tell the user which network to use.
   const assertOrderChain = (order: { chainId?: number }) => {
     if (order.chainId && order.chainId !== activeChainId) {
       const name = order.chainId === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID ? 'Base Sepolia' : 'Base Mainnet';
