@@ -75,8 +75,14 @@ export async function POST(request: NextRequest) {
     if (!existingUser) {
       const shortAddr = `${address.slice(0, 6)}...${address.slice(-4)}`;
       const randomSuffix = Math.floor(Math.random() * 10000);
-      const username = isFeeCollectorAdmin ? 'admin' : `user_${address.slice(2, 8)}_${randomSuffix}`;
-      const displayName = isFeeCollectorAdmin ? 'Administrador' : shortAddr;
+      const { ADMIN_WALLET_ADDRESS } = await import('@mercadopleis/types');
+      const isOwnerWallet = normalized === ADMIN_WALLET_ADDRESS;
+      const username = isOwnerWallet
+        ? 'admin'
+        : isFeeCollectorAdmin
+          ? `arbitro_${address.slice(2, 8).toLowerCase()}`
+          : `user_${address.slice(2, 8)}_${randomSuffix}`;
+      const displayName = isOwnerWallet ? 'Administrador' : isFeeCollectorAdmin ? 'Árbitro' : shortAddr;
 
       const [newUser] = await db
         .insert(users)

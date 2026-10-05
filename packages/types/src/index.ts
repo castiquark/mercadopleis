@@ -228,10 +228,15 @@ export const CONTRACT_CONFIG = {
   USDC_BASE_MAINNET: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as `0x${string}`,
 } as const;
 
+// Escrow owner and fee recipient (deployer).
 export const ADMIN_WALLET_ADDRESS = '0xF6d48E6EFa40Ac16B2A71fa89c81D93da171cA00'.toLowerCase();
+// Dispute arbitrator: resolves disputes from the admin panel.
+export const ARBITRATOR_WALLET_ADDRESS = '0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb'.toLowerCase();
+
+const ADMIN_WALLETS = [ADMIN_WALLET_ADDRESS, ARBITRATOR_WALLET_ADDRESS];
 
 export function isAdminWallet(address?: string | null): boolean {
   if (!address) return false;
-  return address.toLowerCase() === ADMIN_WALLET_ADDRESS;
+  return ADMIN_WALLETS.includes(address.toLowerCase());
 }
 
