@@ -4,18 +4,17 @@ import jwt from 'jsonwebtoken';
 // A minimal chainable fake of the drizzle calls used by serverAuth.
 const mocks = vi.hoisted(() => {
   const returning = vi.fn();
-  const where = vi.fn(() => ({ returning }));
-  const set = vi.fn(() => ({ where }));
-  const update = vi.fn(() => ({ set }));
-  const values = vi.fn(async () => undefined);
+  const deleteWhere = vi.fn(() => Object.assign(Promise.resolve(undefined), { returning }));
+  const del = vi.fn(() => ({ where: deleteWhere }));
+  const onConflictDoUpdate = vi.fn(async () => undefined);
+  const values = vi.fn(() => ({ onConflictDoUpdate }));
   const insert = vi.fn(() => ({ values }));
-  const findFirst = vi.fn();
-  return { returning, where, set, update, values, insert, findFirst };
+  return { returning, deleteWhere, del, onConflictDoUpdate, values, insert };
 });
 
 vi.mock('@mercadopleis/database', () => ({
-  db: { update: mocks.update, insert: mocks.insert, query: { users: { findFirst: mocks.findFirst } } },
-  users: {},
+  db: { insert: mocks.insert, delete: mocks.del },
+  authNonces: {},
 }));
 
 import {
@@ -112,27 +111,23 @@ describe('JWT sign and verify', () => {
 });
 
 describe('generateNonceForAddress', () => {
-  it('creates a nonce that expires in about 5 minutes and stores it on a new user', async () => {
-    mocks.findFirst.mockResolvedValue(undefined);
+  it('creates a nonce that expires in about 5 minutes and upserts it in auth_nonces', async () => {
     const before = Date.now();
     const nonce = await generateNonceForAddress(ADDRESS);
     const [raw, expires] = nonce.split('_');
     expect(raw).toMatch(/^[0-9a-f]{32}$/);
     expect(Number(expires)).toBeGreaterThanOrEqual(before + 5 * 60_000 - 1000);
     expect(Number(expires)).toBeLessThanOrEqual(Date.now() + 5 * 60_000 + 1000);
-    expect(mocks.insert).toHaveBeenCalledTimes(1);
-    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.values).toHaveBeenCalledWith(expect.objectContaining({ walletAddress: ADDRESS.toLowerCase(), nonce }));
+    expect(mocks.onConflictDoUpdate).toHaveBeenCalledTimes(1);
   });
 
-  it('updates the existing user instead of inserting', async () => {
-    mocks.findFirst.mockResolvedValue({ id: 'u1' });
+  it('never creates a user (only the nonce table is written)', async () => {
     await generateNonceForAddress(ADDRESS);
-    expect(mocks.update).toHaveBeenCalledTimes(1);
-    expect(mocks.insert).not.toHaveBeenCalled();
+    expect(mocks.insert).toHaveBeenCalledTimes(1);
   });
 
   it('generates a different nonce each time', async () => {
-    mocks.findFirst.mockResolvedValue({ id: 'u1' });
     const [a, b] = [await generateNonceForAddress(ADDRESS), await generateNonceForAddress(ADDRESS)];
     expect(a).not.toBe(b);
   });
@@ -144,17 +139,17 @@ describe('validateAndConsumeNonce', () => {
   it('rejects an empty nonce without touching the database', async () => {
     const res = await validateAndConsumeNonce(ADDRESS, '');
     expect(res.isValid).toBe(false);
-    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.del).not.toHaveBeenCalled();
   });
 
   it('rejects an expired nonce and clears it', async () => {
     const res = await validateAndConsumeNonce(ADDRESS, `abc_${Date.now() - 1000}`);
     expect(res).toMatchObject({ isValid: false, error: expect.stringContaining('expired') });
-    expect(mocks.update).toHaveBeenCalledTimes(1);
+    expect(mocks.del).toHaveBeenCalledTimes(1);
   });
 
   it('accepts and consumes a fresh nonce exactly once', async () => {
-    mocks.returning.mockResolvedValueOnce([{ id: 'u1' }]);
+    mocks.returning.mockResolvedValueOnce([{ walletAddress: ADDRESS.toLowerCase() }]);
     expect(await validateAndConsumeNonce(ADDRESS, future())).toEqual({ isValid: true });
   });
 
@@ -165,7 +160,7 @@ describe('validateAndConsumeNonce', () => {
   });
 
   it('replay: the second use of the same nonce is rejected', async () => {
-    mocks.returning.mockResolvedValueOnce([{ id: 'u1' }]).mockResolvedValueOnce([]);
+    mocks.returning.mockResolvedValueOnce([{ walletAddress: 'x' }]).mockResolvedValueOnce([]);
     const nonce = future();
     expect((await validateAndConsumeNonce(ADDRESS, nonce)).isValid).toBe(true);
     expect((await validateAndConsumeNonce(ADDRESS, nonce)).isValid).toBe(false);

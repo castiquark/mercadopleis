@@ -4,7 +4,7 @@ import { enforceRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function GET(request: NextRequest) {
   const address = request.nextUrl.searchParams.get('address')?.toLowerCase();
-  if (!address || !address.startsWith('0x')) {
+  if (!address || !/^0x[0-9a-f]{40}$/.test(address)) {
     return NextResponse.json({ error: 'Valid wallet address required' }, { status: 400 });
   }
 

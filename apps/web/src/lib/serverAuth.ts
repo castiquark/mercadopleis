@@ -20,8 +20,8 @@ export function getJwtSecret(): string {
   return secret || 'dev-only-insecure-jwt-secret-do-not-use-in-production';
 }
 
-import { db, users } from '@mercadopleis/database';
-import { eq, and } from 'drizzle-orm';
+import { db, authNonces } from '@mercadopleis/database';
+import { eq, and, gt, lt } from 'drizzle-orm';
 
 export interface TokenPayload {
   id: string;
@@ -29,32 +29,22 @@ export interface TokenPayload {
   role: string;
 }
 
+const NONCE_TTL_MS = 5 * 60 * 1000;
+
+// Nonces live in auth_nonces (one pending challenge per wallet), so requesting one never creates a user.
 export async function generateNonceForAddress(address: string): Promise<string> {
   const normalized = address.toLowerCase();
   const rawNonce = crypto.randomBytes(16).toString('hex');
-  const expiresAt = Date.now() + 5 * 60 * 1000; // 5 min expiration
+  const expiresAt = Date.now() + NONCE_TTL_MS;
   const nonce = `${rawNonce}_${expiresAt}`;
 
-  const existing = await db.query.users.findFirst({
-    where: eq(users.walletAddress, normalized),
-  });
+  await db
+    .insert(authNonces)
+    .values({ walletAddress: normalized, nonce, expiresAt: new Date(expiresAt) })
+    .onConflictDoUpdate({ target: authNonces.walletAddress, set: { nonce, expiresAt: new Date(expiresAt) } });
 
-  if (existing) {
-    await db
-      .update(users)
-      .set({ nonce, updatedAt: new Date() })
-      .where(eq(users.id, existing.id));
-  } else {
-    const shortAddr = `${address.slice(0, 6)}...${address.slice(-4)}`;
-    const randomSuffix = Math.floor(Math.random() * 10000);
-    await db.insert(users).values({
-      walletAddress: normalized,
-      username: `user_${address.slice(2, 8)}_${randomSuffix}`,
-      displayName: shortAddr,
-      nonce,
-      role: 'USER',
-    });
-  }
+  // Housekeeping: drop challenges that expired more than an hour ago.
+  await db.delete(authNonces).where(lt(authNonces.expiresAt, new Date(Date.now() - 60 * 60 * 1000)));
 
   return nonce;
 }
@@ -74,24 +64,26 @@ export async function validateAndConsumeNonce(
   if (parts.length === 2) {
     const expiresAt = Number(parts[1]);
     if (!isNaN(expiresAt) && Date.now() > expiresAt) {
-      // Invalidate if found in DB
       await db
-        .update(users)
-        .set({ nonce: null, updatedAt: new Date() })
-        .where(and(eq(users.walletAddress, normalized), eq(users.nonce, clientNonce)));
+        .delete(authNonces)
+        .where(and(eq(authNonces.walletAddress, normalized), eq(authNonces.nonce, clientNonce)));
       return { isValid: false, error: 'Nonce has expired. Please request a new nonce.' };
     }
   }
 
-  // Atomically consume nonce in a single SQL operation:
-  // UPDATE users SET nonce = NULL, updatedAt = NOW() WHERE wallet_address = normalized AND nonce = clientNonce RETURNING *
-  const updated = await db
-    .update(users)
-    .set({ nonce: null, updatedAt: new Date() })
-    .where(and(eq(users.walletAddress, normalized), eq(users.nonce, clientNonce)))
+  // Consume atomically: the row is deleted only if wallet, nonce and expiry all match, so a nonce works once.
+  const consumed = await db
+    .delete(authNonces)
+    .where(
+      and(
+        eq(authNonces.walletAddress, normalized),
+        eq(authNonces.nonce, clientNonce),
+        gt(authNonces.expiresAt, new Date())
+      )
+    )
     .returning();
 
-  if (!updated || updated.length === 0) {
+  if (!consumed || consumed.length === 0) {
     return {
       isValid: false,
       error: 'Nonce invalid, already consumed, or expired. Request a new challenge nonce.',

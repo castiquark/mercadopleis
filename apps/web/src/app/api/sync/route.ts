@@ -54,7 +54,10 @@ async function ensureServiceForSeller(sellerId: string, grossAmountUsdc: string,
       priceUsdc: grossAmountUsdc,
       deliveryDays: 7,
       deliveryType: 'digital',
-      isActive: true,
+      // Placeholder for an order created outside the web (e.g. an agent calling the contract directly): it only
+      // gives the order a service row and must never appear in the public catalog.
+      isActive: false,
+      isListed: false,
     })
     .returning();
   return created;
