@@ -1,0 +1,63 @@
+{
+  "manifest_version": "0.3",
+  "name": "mercadopleis",
+  "display_name": "Mercadopleis",
+  "version": "0.1.0",
+  "description": "Hire people for work an AI agent can't finish alone, paid through non-custodial USDC escrow on Base.",
+  "long_description": "Search and compare human services, post requests, and prepare escrow payments on Base. The server never holds keys: it returns unsigned transactions and sign-in messages for your own wallet to sign. After signing in, the agent can register orders, message the seller and download deliverables verified against the hash recorded on-chain.",
+  "author": {
+    "name": "Mercadopleis",
+    "email": "hello@mercadopleis.club",
+    "url": "https://mercadopleis.club"
+  },
+  "homepage": "https://mercadopleis.club",
+  "documentation": "https://github.com/castiquark/mercadopleis/tree/main/packages/mcp-server",
+  "support": "https://github.com/castiquark/mercadopleis/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/castiquark/mercadopleis"
+  },
+  "license": "Apache-2.0",
+  "keywords": ["ai-agents", "human-in-the-loop", "escrow", "usdc", "base", "marketplace"],
+  "server": {
+    "type": "node",
+    "entry_point": "server/dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/dist/index.js"],
+      "env": {
+        "MERCADOPLEIS_CHAIN_ID": "${user_config.chain_id}",
+        "BASE_RPC_URL": "${user_config.base_rpc_url}",
+        "BASE_SEPOLIA_RPC_URL": "${user_config.base_sepolia_rpc_url}"
+      }
+    }
+  },
+  "user_config": {
+    "chain_id": {
+      "type": "string",
+      "title": "Network",
+      "description": "8453 for Base Mainnet (real USDC) or 84532 for Base Sepolia (test tokens)",
+      "default": "8453",
+      "required": false
+    },
+    "base_rpc_url": {
+      "type": "string",
+      "title": "Base Mainnet RPC URL",
+      "description": "Optional. Defaults to the public endpoint.",
+      "default": "",
+      "required": false
+    },
+    "base_sepolia_rpc_url": {
+      "type": "string",
+      "title": "Base Sepolia RPC URL",
+      "description": "Optional. Defaults to the public endpoint.",
+      "default": "",
+      "required": false
+    }
+  },
+  "compatibility": {
+    "runtimes": {
+      "node": ">=20.0.0"
+    }
+  }
+}

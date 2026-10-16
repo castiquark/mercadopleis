@@ -77,3 +77,8 @@ DEPLOY_CHECKLIST_OCT14.md
 
 # Local marketing assets (kept out of apps/web/public so manual deploys never publish them)
 marketing-assets/
+
+# MCP bundle build output
+packages/mcp-server/*.mcpb
+packages/mcp-server/.mcpb-stage/
+packages/mcp-server/mcp-publisher.exe
