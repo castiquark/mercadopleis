@@ -19,7 +19,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand */}
-        <div className="flex min-w-0 items-center gap-3 sm:gap-6">
+        <div className="flex shrink-0 items-center gap-3 xl:gap-6">
           <Link href="/" aria-label="mercadopleis" className="flex shrink-0 items-center gap-2">
             {/* Same mark as the favicon (app/icon.svg) */}
             <svg viewBox="0 0 64 64" className="h-9 w-9 shrink-0 rounded-lg shadow-lg shadow-primary/30" aria-hidden="true">
@@ -33,12 +33,21 @@ export function Navbar() {
                 strokeLinejoin="round"
               />
             </svg>
-            <span className="hidden text-base font-bold tracking-tight text-white xs:inline sm:text-xl">
+            <span className="hidden text-base font-bold tracking-tight text-white xs:inline lg:text-xl">
               mercado<span className="text-primary-light">pleis</span>
             </span>
           </Link>
 
-          <div className="hidden items-center gap-1.5 rounded-full border border-border/80 bg-surface px-3 py-1 text-xs text-slate-300 md:flex">
+          {chainId === 84532 && (
+            <span className="hidden rounded border border-amber-500/30 bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300 md:inline 2xl:hidden">
+              TEST
+            </span>
+          )}
+          <div
+            className={`hidden items-center gap-1.5 rounded-full border border-border/80 bg-surface px-3 py-1 text-xs text-slate-300 ${
+              chainId === 84532 ? '2xl:flex' : 'xl:flex'
+            }`}
+          >
             <ShieldCheck className="h-3.5 w-3.5 text-accent" />
             <span>
               {chainId === 84532
@@ -57,10 +66,12 @@ export function Navbar() {
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <Link
             href="/services/new"
-            className="hidden items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white md:flex"
+            className="hidden items-center gap-1.5 rounded-lg border border-border bg-surface p-3 xl:px-3.5 xl:py-2 text-sm font-medium text-slate-200 transition hover:bg-surface-elevated hover:text-white lg:flex"
+            title={t('postService')}
+            aria-label={t('postService')}
           >
             <PlusCircle className="h-4 w-4 text-primary-light" />
-            <span>{t('postService')}</span>
+            <span className="hidden xl:inline">{t('postService')}</span>
           </Link>
 
           <Link
@@ -70,7 +81,7 @@ export function Navbar() {
             aria-label={t('requests')}
           >
             <ClipboardList className="h-4 w-4 text-slate-400" />
-            <span className="hidden lg:inline">{t('requests')}</span>
+            <span className="hidden xl:inline">{t('requests')}</span>
           </Link>
 
           <Link
@@ -80,17 +91,18 @@ export function Navbar() {
             aria-label={t('myOrders')}
           >
             <ShoppingBag className="h-4 w-4 text-slate-400" />
-            <span className="hidden sm:inline">{t('myOrders')}</span>
+            <span className="hidden xl:inline">{t('myOrders')}</span>
           </Link>
 
           {isAdmin && (
             <Link
               href="/admin/disputes"
-              className="hidden items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-300 transition hover:bg-amber-500/20 hover:text-white lg:flex"
-              title="Panel de Mediación de Disputas"
+              className="hidden items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-300 transition hover:bg-amber-500/20 hover:text-white lg:flex"
+              title={t('adminPanel')}
+              aria-label={t('adminPanel')}
             >
               <Scale className="h-3.5 w-3.5 text-amber-400" />
-              <span>{t('adminPanel')}</span>
+              <span className="hidden 2xl:inline">{t('adminPanel')}</span>
             </Link>
           )}
 
@@ -98,17 +110,18 @@ export function Navbar() {
           {chainId === 84532 && (
             <Link
               href="/faucet"
-              className="hidden sm:flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/20 hover:border-cyan-400"
-              title="Faucet de Test USDC en Base Sepolia"
+              className="hidden lg:flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/20 hover:border-cyan-400"
+              title={t('faucet')}
+              aria-label={t('faucet')}
             >
               <Droplet className="h-3.5 w-3.5 fill-cyan-400/20 text-cyan-400" />
-              <span className="hidden sm:inline">{t('faucet')}</span>
+              <span className="hidden 2xl:inline">{t('faucet')}</span>
             </Link>
           )}
 
           {/* Quick Faucet Mint Button if connected to Base Sepolia */}
           {isConnected && chainId === 84532 && (
-            <div className="hidden md:block">
+            <div className="hidden 2xl:block">
               <FaucetButton variant="navbar" amount="1000" />
             </div>
           )}
@@ -134,9 +147,11 @@ export function Navbar() {
             <Link
               href="/profile"
               className="hidden sm:flex items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-semibold text-accent transition hover:bg-accent/20"
+              title={user.displayName || user.username}
+              aria-label={user.displayName || user.username}
             >
               <UserCheck className="h-3.5 w-3.5" />
-              <span>{user.displayName || user.username}</span>
+              <span className="hidden 2xl:inline">{user.displayName || user.username}</span>
             </Link>
           )}
 

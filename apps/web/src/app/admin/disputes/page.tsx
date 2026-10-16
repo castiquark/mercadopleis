@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import NotFound from '@/app/not-found';
 import { useAccount, useWriteContract } from 'wagmi';
 import { parseUnits } from 'viem';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES, calculateOrderAmounts } from '@mercadopleis/contracts-abi';
@@ -184,8 +184,10 @@ export default function AdminDisputesPage() {
 
   // If not authorized (not connected, or connected with a non-admin wallet):
   // Never reveal an admin screen or 403 message — simply render a clean 404
+  // Rendered directly: throwing notFound() from this client component crashed the page when the wallet
+  // disconnected while it was open.
   if (!isConnected || !isAuthorized) {
-    notFound();
+    return <NotFound />;
   }
 
   // State 3: Authorized Administrator view
