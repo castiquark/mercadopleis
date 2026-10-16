@@ -7,8 +7,10 @@ import { and, eq, desc } from 'drizzle-orm';
 import { ESCROW_ADDRESSES, ESCROW_DEPLOY_BLOCKS, MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
 
 // Public RPCs reject large getLogs ranges, so scan in small windows and catch up over several calls.
-const CHUNK_BLOCKS = 1_000n; // Base public RPC rejects eth_getLogs ranges above 1,000 blocks
-const MAX_CHUNKS_PER_RUN = 30n; // up to 30,000 blocks (~16 h on Base) per call; call again to continue
+// Each provider caps eth_getLogs differently (public Base: 1,000 blocks; public Base Sepolia: 200), so the window
+// can be raised with SYNC_LOG_CHUNK_BLOCKS when a dedicated RPC allows more.
+const DEFAULT_CHUNK_BLOCKS = { mainnet: 1_000n, sepolia: 200n };
+const MAX_CHUNKS_PER_RUN = 30n; // call again to continue
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 
 export const dynamic = 'force-dynamic';
@@ -76,6 +78,10 @@ export async function GET(request: NextRequest) {
       : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
 
     // Per-chain registry only: a single env var cannot be right for both networks.
+    const CHUNK_BLOCKS = process.env.SYNC_LOG_CHUNK_BLOCKS && Number(process.env.SYNC_LOG_CHUNK_BLOCKS) > 0
+      ? BigInt(Math.floor(Number(process.env.SYNC_LOG_CHUNK_BLOCKS)))
+      : isSepolia ? DEFAULT_CHUNK_BLOCKS.sepolia : DEFAULT_CHUNK_BLOCKS.mainnet;
+
     const escrowAddress = ESCROW_ADDRESSES[targetChainId];
     const escrowKey = escrowAddress.toLowerCase();
 
@@ -92,19 +98,24 @@ export async function GET(request: NextRequest) {
       orderBy: [desc(blockchainTransactions.blockNumber)],
     });
 
+    const deployBlock = ESCROW_DEPLOY_BLOCKS[targetChainId];
     let fromBlock: bigint;
-    if (searchParams.get('fromBlock')) {
-      fromBlock = BigInt(searchParams.get('fromBlock')!);
-    } else if (latestTx && latestTx.blockNumber) {
+    if (latestTx && latestTx.blockNumber) {
       fromBlock = BigInt(latestTx.blockNumber) + 1n;
+    } else if (deployBlock !== undefined) {
+      fromBlock = BigInt(deployBlock);
     } else {
-      const deployBlock = ESCROW_DEPLOY_BLOCKS[targetChainId];
-      if (deployBlock !== undefined) {
-        fromBlock = BigInt(deployBlock);
-      } else {
-        const blocksToScan = BigInt(searchParams.get('blocks') || '1000');
-        fromBlock = currentBlock > blocksToScan ? currentBlock - blocksToScan : 0n;
-      }
+      fromBlock = currentBlock > 1000n ? currentBlock - 1000n : 0n;
+    }
+    // Rows from an older escrow deployment can leave the cursor before the current contract existed.
+    if (deployBlock !== undefined && fromBlock < BigInt(deployBlock)) fromBlock = BigInt(deployBlock);
+
+    // This endpoint is public: an explicit fromBlock may only rescan backwards (reconciliation is idempotent).
+    // Moving the cursor forward would let anyone make the indexer skip events.
+    const requestedFrom = searchParams.get('fromBlock');
+    if (requestedFrom && /^\d+$/.test(requestedFrom)) {
+      const requested = BigInt(requestedFrom);
+      if (requested < fromBlock && (deployBlock === undefined || requested >= BigInt(deployBlock))) fromBlock = requested;
     }
 
     if (fromBlock > currentBlock) {
