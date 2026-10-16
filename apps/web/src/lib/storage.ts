@@ -1,7 +1,9 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-export const DELIVERABLES_BUCKET = 'deliverables';
+// Private bucket: files are only reachable through short-lived signed URLs handed to the parties of the order.
+// (The original "deliverables" bucket was created public and Neon cannot change a bucket's visibility.)
+export const DELIVERABLES_BUCKET = process.env.DELIVERABLES_BUCKET || 'deliverables-private';
 export const DOWNLOAD_URL_TTL_SECONDS = 300;
 
 export function getS3Config() {

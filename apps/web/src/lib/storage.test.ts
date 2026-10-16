@@ -1,6 +1,6 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import { describe, expect, it } from 'vitest';
-import { buildObjectKey, createDownloadUrl, isStorageRefOwnedBy, parseStorageRef, toStorageRef } from './storage';
+import { DELIVERABLES_BUCKET, buildObjectKey, createDownloadUrl, isStorageRefOwnedBy, parseStorageRef, toStorageRef } from './storage';
 
 const USER = '0b8a6c3e-6a36-4d3e-9b0a-2f6c1d9e7a11';
 const OTHER = '11111111-2222-3333-4444-555555555555';
@@ -55,7 +55,7 @@ describe('createDownloadUrl', () => {
     const key = buildObjectKey(USER, 'informe.pdf', 1790000000000);
     const url = new URL(await createDownloadUrl(key, client));
     expect(url.origin).toBe('https://storage.example.test');
-    expect(url.pathname).toBe(`/deliverables/${key}`);
+    expect(url.pathname).toBe(`/${DELIVERABLES_BUCKET}/${key}`);
     expect(url.searchParams.get('X-Amz-Expires')).toBe('300');
     expect(url.searchParams.get('X-Amz-Signature')).toBeTruthy();
     expect(url.searchParams.get('response-content-disposition')).toBe('attachment; filename="informe.pdf"');
