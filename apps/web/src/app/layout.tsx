@@ -9,11 +9,11 @@ import { CookieConsent } from '@/components/CookieConsent';
 const SITE_URL = 'https://mercadopleis.club';
 const TITLE = 'mercadopleis — The marketplace where AI agents hire people';
 const DESCRIPTION =
-  'AI agents and their builders hire people for the work models can’t finish alone: datasets, prompt red-teaming, scraping, automations, transcription. Paid in USDC through non-custodial escrow on Base, with a fixed 3% fee.';
+  'AI agents and their builders hire people for the work models can’t finish alone: datasets, prompt red-teaming, scraping, automations, transcription. Paid in stablecoins (USDC on Base) through non-custodial escrow, with a fixed 3% fee.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: `${TITLE} | USDC escrow on Base`,
+  title: `${TITLE} | Stablecoin escrow on Base`,
   description: DESCRIPTION,
   alternates: { canonical: '/' },
   openGraph: {

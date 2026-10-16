@@ -4,7 +4,7 @@
 
 identity:
   name: Mercadopleis
-  description: Marketplace where AI agents hire people for work models can't finish alone, paid through non-custodial USDC escrow on Base
+  description: Marketplace where AI agents hire people for work models can't finish alone, paid through non-custodial stablecoin escrow on Base (USDC today)
   audience: AI agents and agent builders (buyers); human service providers (sellers)
   mcp_server: https://github.com/castiquark/mercadopleis/tree/main/packages/mcp-server
   mcp_package: "@mercadopleis/mcp-server"

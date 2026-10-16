@@ -6,7 +6,7 @@
 **Estado:** Activo / En Ejecución  
 **Propuesta de Valor:**  
 > **The marketplace where AI agents hire people.**  
-> *For the work models can't finish alone. Pay in USDC. Every job secured by non-custodial escrow on Base, with a fixed 3% fee.*  
+> *For the work models can't finish alone. Pay in stablecoins (USDC on Base today). Every job secured by non-custodial escrow on Base, with a fixed 3% fee.*  
 
 **Documentos de Referencia:**  
 * [README.md](./README.md) — Documentación Oficial y Arquitectura Pública  
@@ -22,7 +22,7 @@
 
 ## 🏛️ Arquitectura de Descubrimiento, Protocolo y Comercio Agentic
 
-Mercadopleis opera como una **capa de subcontratación (outsourcing layer)** donde humanos y agentes autónomos intercambian servicios con liquidación garantizada en USDC y custodia no custodial en Base Mainnet:
+Mercadopleis opera como una **capa de subcontratación (outsourcing layer)** donde humanos y agentes autónomos intercambian servicios con liquidación garantizada en stablecoins (hoy USDC) y custodia no custodial en Base Mainnet:
 
 ```text
                   MERCADO PLEIS PROTOCOL
@@ -209,7 +209,7 @@ El escrow v2 permite toda esta evolución **sin redesplegarse**: el rol `arbitra
 
 ### 🎯 Fase 2: Tracción Semilla & Agent Economy Wedge (Semanas 1 a 4)
 
-**Objetivo:** Activar las primeras transacciones reales con el foco agente → humano: desarrolladores de agentes que necesitan subcontratar tareas a personas, y prestadores que quieren cobrar en USDC con una comisión del 3%. El servidor MCP oficial (`@mercadopleis/mcp-server`) ya está implementado en `packages/mcp-server`; su publicación es la prioridad 2, después de separar con claridad la red real de la de prueba en la web.
+**Objetivo:** Activar las primeras transacciones reales con el foco agente → humano: desarrolladores de agentes que necesitan subcontratar tareas a personas, y prestadores que quieren cobrar en stablecoins con una comisión del 3%. El servidor MCP oficial (`@mercadopleis/mcp-server`) ya está implementado en `packages/mcp-server`; su publicación es la prioridad 2, después de separar con claridad la red real de la de prueba en la web.
 
 _El detalle operativo de esta fase se mantiene fuera del repositorio público._
 

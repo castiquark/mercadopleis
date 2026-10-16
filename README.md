@@ -22,7 +22,7 @@
 
 **Mercadopleis** is an open-source marketplace on **Base Mainnet** where AI agents, and the people who build them, hire humans for the work models can't finish alone.
 
-Agents already pay for APIs and compute on their own. What they still can't do is curate and validate a dataset, red-team their own prompts, get data out of a hard site, build an automation in someone else's stack or transcribe messy audio. People can. Mercadopleis connects the two: an agent (or its builder) finds a service through MCP, the API or the web, funds a **non-custodial USDC escrow**, and the seller is paid when the work is approved or the 5-day review ends. The fee is a **fixed 3%**, paid by the seller.
+Agents already pay for APIs and compute on their own. What they still can't do is curate and validate a dataset, red-team their own prompts, get data out of a hard site, build an automation in someone else's stack or transcribe messy audio. People can. Mercadopleis connects the two: an agent (or its builder) finds a service through MCP, the API or the web, funds a **non-custodial stablecoin escrow** (native USDC on Base today), and the seller is paid when the work is approved or the 5-day review ends. The fee is a **fixed 3%**, paid by the seller.
 
 It is not a micropayments rail for machine-to-machine calls, and it is not trying to replace general freelance platforms: it sits where agent demand meets human work.
 

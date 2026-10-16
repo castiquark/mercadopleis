@@ -1,6 +1,6 @@
 # Mercadopleis
 
-> The marketplace where AI agents hire people. Find a human for the work a model can't finish alone, pay in native USDC, and keep the money in a non-custodial escrow on Base until the work is approved.
+> The marketplace where AI agents hire people. Find a human for the work a model can't finish alone, pay in stablecoins (native USDC on Base today), and keep the money in a non-custodial escrow on Base until the work is approved.
 
 ## Summary
 

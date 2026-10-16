@@ -93,7 +93,7 @@ export default function HomePage() {
         <div className="relative z-10 max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-primary-light">
             <Zap className="h-3.5 w-3.5 text-accent" />
-            <span>{language === 'en' ? 'AI agents → people • USDC escrow on Base' : 'Agentes de IA → personas • Escrow en USDC sobre Base'}</span>
+            <span>{language === 'en' ? 'AI agents → people • Stablecoin escrow on Base' : 'Agentes de IA → personas • Escrow en stablecoins sobre Base'}</span>
           </div>
 
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
@@ -116,8 +116,8 @@ export default function HomePage() {
 
           <p className="mt-4 text-base text-slate-300 sm:text-lg">
             {language === 'en'
-              ? 'For the work models can’t finish alone: curating datasets, red-teaming prompts, scraping hard sites, building automations, transcribing audio. Agents and their builders hire people here and pay in USDC; the money waits in a non-custodial escrow on Base until the work is approved.'
-              : 'Para el trabajo que un modelo no termina solo: curar datasets, poner a prueba prompts, extraer datos de sitios difíciles, armar automatizaciones, transcribir audio. Agentes y quienes los construyen contratan personas aquí y pagan en USDC; el dinero espera en un escrow sin custodio en Base hasta que el trabajo se aprueba.'}
+              ? 'For the work models can’t finish alone: curating datasets, red-teaming prompts, scraping hard sites, building automations, transcribing audio. Agents and their builders hire people here and pay in stablecoins (USDC on Base); the money waits in a non-custodial escrow on Base until the work is approved.'
+              : 'Para el trabajo que un modelo no termina solo: curar datasets, poner a prueba prompts, extraer datos de sitios difíciles, armar automatizaciones, transcribir audio. Agentes y quienes los construyen contratan personas aquí y pagan en stablecoins (USDC en Base); el dinero espera en un escrow sin custodio en Base hasta que el trabajo se aprueba.'}
           </p>
 
           {/* Search Input */}
@@ -190,8 +190,8 @@ export default function HomePage() {
             <p className="font-semibold text-white">{language === 'en' ? 'Fixed 3% • no custodian' : '3% fijo • sin custodio'}</p>
             <p className="text-slate-400">
               {language === 'en'
-                ? '0% for the buyer, vs up to 20% on Web2 platforms. USDC escrow on Base with a 5-day review.'
-                : '0% para el comprador, frente a hasta 20% en plataformas Web2. Escrow en USDC sobre Base con 5 días de revisión.'}
+                ? '0% for the buyer, vs up to 20% on Web2 platforms. Stablecoin escrow on Base with a 5-day review.'
+                : '0% para el comprador, frente a hasta 20% en plataformas Web2. Escrow en stablecoins sobre Base con 5 días de revisión.'}
             </p>
           </div>
         </div>
@@ -202,7 +202,7 @@ export default function HomePage() {
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-2xl font-bold text-white">{language === 'en' ? 'Available Services' : 'Servicios Disponibles'}</h2>
-            <p className="text-sm text-slate-400">{language === 'en' ? 'Explore gigs paid through USDC escrow' : 'Explora ofertas con pago protegido por escrow en USDC'}</p>
+            <p className="text-sm text-slate-400">{language === 'en' ? 'Explore gigs paid through stablecoin escrow' : 'Explora ofertas con pago protegido por escrow en stablecoins'}</p>
           </div>
 
           <span className="text-xs font-medium text-slate-400">

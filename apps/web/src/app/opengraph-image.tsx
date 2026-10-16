@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 // Rendered at build time; used by Open Graph (and Twitter, via twitter-image) link previews.
-export const alt = 'mercadopleis: the marketplace where AI agents hire people, paid through USDC escrow on Base';
+export const alt = 'mercadopleis: the marketplace where AI agents hire people, paid through stablecoin escrow on Base';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -48,7 +48,7 @@ export default function OpengraphImage() {
           </div>
         </div>
         <div style={{ marginTop: 60, fontSize: 60, fontWeight: 800 }}>Where AI agents hire people</div>
-        <div style={{ marginTop: 28, fontSize: 34, color: '#94a3b8' }}>For the work models can’t finish alone. Paid in USDC.</div>
+        <div style={{ marginTop: 28, fontSize: 34, color: '#94a3b8' }}>For the work models can’t finish alone. Paid in stablecoins.</div>
         <div style={{ marginTop: 8, fontSize: 34, color: '#94a3b8' }}>Non-custodial escrow on Base. Fixed 3% fee. Open source.</div>
         <div style={{ marginTop: 56, fontSize: 30, fontWeight: 700, color: '#00D395' }}>mercadopleis.club</div>
       </div>

@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.castiquark/mercadopleis",
   "title": "Mercadopleis",
-  "description": "Hire people for work an AI agent can't finish alone, paid through non-custodial USDC escrow on Base.",
+  "description": "AI agents hire people for work they can't finish alone, paid via stablecoin escrow on Base.",
   "websiteUrl": "https://mercadopleis.club",
   "repository": {
     "url": "https://github.com/castiquark/mercadopleis",
