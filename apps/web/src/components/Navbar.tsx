@@ -6,9 +6,11 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/lib/languageContext';
-import { ShieldCheck, PlusCircle, ShoppingBag, KeyRound, UserCheck, Scale, Droplet, ClipboardList } from 'lucide-react';
+import { PlusCircle, ShoppingBag, KeyRound, UserCheck, Scale, Droplet, ClipboardList } from 'lucide-react';
 import { FaucetButton } from './FaucetButton';
 import { LanguageSwitch } from './LanguageSwitch';
+import { NetworkSwitch } from './NetworkSwitch';
+import { NetworkBanner } from './NetworkBanner';
 
 export function Navbar() {
   const { isConnected, chainId } = useAccount();
@@ -38,28 +40,7 @@ export function Navbar() {
             </span>
           </Link>
 
-          {chainId === 84532 && (
-            <span className="hidden rounded border border-amber-500/30 bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300 md:inline 2xl:hidden">
-              TEST
-            </span>
-          )}
-          <div
-            className={`hidden items-center gap-1.5 rounded-full border border-border/80 bg-surface px-3 py-1 text-xs text-slate-300 ${
-              chainId === 84532 ? '2xl:flex' : 'xl:flex'
-            }`}
-          >
-            <ShieldCheck className="h-3.5 w-3.5 text-accent" />
-            <span>
-              {chainId === 84532
-                ? 'Base Sepolia (Testnet)'
-                : 'Base Mainnet'}
-            </span>
-            {chainId === 84532 && (
-              <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-bold text-amber-300 border border-amber-500/30">
-                TEST
-              </span>
-            )}
-          </div>
+          <NetworkSwitch />
         </div>
 
         {/* Action Links & Connect Wallet */}
@@ -168,6 +149,8 @@ export function Navbar() {
           </div>
         </div>
       </div>
+      {/* Sticky with the header: always visible while the wallet is on a test or unsupported network */}
+      <NetworkBanner />
     </header>
   );
 }

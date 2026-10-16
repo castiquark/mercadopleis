@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import { Service, MARKETPLACE_CATEGORIES } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
 import { useAccount, useWriteContract, useReadContract, usePublicClient } from 'wagmi';
+import { useChainModal } from '@rainbow-me/rainbowkit';
 import { parseUnits, formatUnits, parseEventLogs } from 'viem';
 import { Erc20Abi, MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
-import { Shield, Clock, CheckCircle2, AlertCircle, X, Droplet, MapPin } from 'lucide-react';
+import { Shield, Clock, CheckCircle2, AlertCircle, X, Droplet, MapPin, FlaskConical } from 'lucide-react';
 import { FaucetButton } from './FaucetButton';
 import { isUserRejection } from '../lib/web3Errors';
 import { BUILDER_DATA_SUFFIX } from '@/lib/builderCode';
@@ -26,6 +27,7 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
 
 
   const network = resolveNetwork(chainId);
+  const { openChainModal } = useChainModal();
   const activeChainId = network.chainId;
   const escrowAddress = network.escrow;
   const usdcAddress = network.usdc;
@@ -234,6 +236,55 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
             </p>
           </div>
         </div>
+
+        {/* Network the payment will use. The catalog is shared by both networks, so say it before any signature
+            and point to the network selector. */}
+        {isConnected && (
+          <div
+            className={`mt-5 flex flex-wrap items-center justify-between gap-2 rounded-xl border p-3 text-xs ${
+              !network.supported
+                ? 'border-red-500/40 bg-red-500/10 text-red-200'
+                : network.isTestnet
+                  ? 'border-amber-500/40 bg-amber-500/10 text-amber-200'
+                  : 'border-primary/30 bg-primary/10 text-slate-200'
+            }`}
+          >
+            <span className="flex min-w-0 items-start gap-2">
+              {network.isTestnet ? (
+                <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+              ) : (
+                <Shield className={`mt-0.5 h-4 w-4 shrink-0 ${network.supported ? 'text-primary-light' : 'text-red-400'}`} />
+              )}
+              <span>
+                {!network.supported
+                  ? language === 'en'
+                    ? 'Your wallet is on an unsupported network. Switch to Base Mainnet to pay.'
+                    : 'Tu wallet está en una red no soportada. Cambia a Base Mainnet para pagar.'
+                  : network.isTestnet
+                    ? language === 'en'
+                      ? 'Test mode: you will pay on Base Sepolia with test USDC (no real value). This is not a real hire.'
+                      : 'Modo prueba: pagarás en Base Sepolia con USDC de prueba (sin valor real). No es una contratación real.'
+                    : language === 'en'
+                      ? 'You will pay on Base Mainnet with real USDC.'
+                      : 'Pagarás en Base Mainnet con USDC real.'}{' '}
+                <span className="opacity-80">
+                  {language === 'en'
+                    ? 'Check the network selector next to your wallet before confirming.'
+                    : 'Revisa el selector de red junto a tu wallet antes de confirmar.'}
+                </span>
+              </span>
+            </span>
+            {openChainModal && step === 'quote' && (
+              <button
+                type="button"
+                onClick={openChainModal}
+                className="shrink-0 rounded-lg border border-white/20 bg-black/20 px-2.5 py-1 font-semibold transition hover:bg-black/40"
+              >
+                {language === 'en' ? 'Change network' : 'Cambiar red'}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Service Summary */}
         <div className="mt-5 rounded-xl border border-border/80 bg-background/50 p-4">
