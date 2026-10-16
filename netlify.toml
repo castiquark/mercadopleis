@@ -4,6 +4,9 @@
   base = "."
   publish = "apps/web/.next"
   command = "pnpm --filter @mercadopleis/types build && pnpm --filter @mercadopleis/contracts-abi build && pnpm --filter @mercadopleis/web build"
+  # Skip the build (exit 0) when nothing the site uses changed, e.g. commits that only touch contracts, docs or
+  # the MCP server. A commit message with [skip netlify] also skips it.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- apps/web packages/types packages/contracts-abi packages/database package.json pnpm-lock.yaml pnpm-workspace.yaml netlify.toml"
 
 [build.environment]
   NODE_VERSION = "22"
