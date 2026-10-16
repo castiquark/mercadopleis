@@ -1,8 +1,8 @@
 # mercadopleis — Roadmap de Producto y Arquitectura
 
 **Documento:** Roadmap Técnico y Estratégico Integrado — *Outsourcing Layer for the AI Economy*  
-**Versión:** 2.5  
-**Fecha:** 3 de Octubre de 2026  
+**Versión:** 2.6  
+**Fecha:** 16 de Octubre de 2026  
 **Estado:** Activo / En Ejecución  
 **Propuesta de Valor:**  
 > **The marketplace where AI agents hire people.**  
@@ -69,7 +69,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 
 ---
 
-## 📌 Estado Actual del Proyecto (Sprints 0 a 9 — Completados)
+## 📌 Estado Actual del Proyecto (Sprints 0 a 10 — Completados)
 
 | Módulo / Sprint | Alcance Implementado | Estado |
 |---|---|---|
@@ -83,6 +83,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 | **Sprint 7: Endurecimiento Criptográfico, Indexador Resistente a Fallos & Blindaje Pre-Mainnet** | Eliminación de mocks/hashes demo y wallets fallback; verificación on-chain de recibos vinculada a `chainId` de la orden (`FUNDED`, `DELIVERED`, `RELEASED`, `DISPUTED`, `RESOLVED`); inmutabilidad estricta de `contractOrderId` y bloqueo de transiciones arbitrarias en `PATCH /api/orders/[id]` (estados financieros 100% on-chain); cursor persistente en indexador `/api/sync` y reconciliación automática de `OrderFunded` huérfanos; SIWE estricto (`version: 1`, `domain`, `uri`) con consumo atómico de nonces en SQL (`UPDATE ... RETURNING`); reseñas con SIWE; filtros SQL y subidas protegidas (<25 MB); enlaces dinámicos a BaseScan Mainnet/Sepolia en la UI. | ✅ Completado |
 | **Sprint 8: Pruebas Automatizadas, CI, Servidor MCP & UX Móvil** | 50 pruebas unitarias (Vitest) sobre reglas SIWE, política de secretos JWT con cierre seguro, expiración y reutilización de nonces, matemática de comisiones frente a la aritmética del contrato y guardas contra desajustes con el contrato (enum de estados, ABI, dirección del escrow); CI en GitHub Actions (tipado, pruebas, build web y `forge test`); scripts e2e en Base Sepolia para el flujo completo y para disputas con arbitraje 60/40; servidor MCP oficial `@mercadopleis/mcp-server` (búsqueda, comparación, preparación de órdenes sin firmar, lectura on-chain de estado y entrega); Builder Code de Base (ERC-8021) en las transacciones del escrow; unicidad de `contractOrderId` por cadena; verificación de firma antes de consumir el nonce y secreto JWT obligatorio en producción; autenticación obligatoria en `GET /api/orders/my`; auditoría responsive en 320–1280 px (header móvil, paneles con URLs largas, objetivos táctiles de 36 px o más) bloqueo de acciones on-chain cuando la wallet está en una red distinta a la de la orden, validación de entradas del servidor (categoría, precio, plazos, longitudes y URLs seguras), red por defecto Base Mainnet en el checkout, límite de peticiones compartido entre instancias, entregables privados con descarga mediante enlaces firmados, Términos y Política de Privacidad con consentimiento de cookies y metadatos para compartir (Open Graph, favicon, `robots.txt` y `sitemap.xml`). | ✅ Completado |
 | **Sprint 9: Contrato v2 con Comisión Fija y Fidelidad de la Interfaz** | Escrow v2 con comisión constante del 3% (`FEE_BPS = 300`, sin función para cambiarla) desplegado y verificado en Base Mainnet y Sepolia; v1 pausado en Mainnet; órdenes identificadas por red y dirección del escrow; indexador por tramos de 1.000 bloques; botón "Cobrar pago" para el vendedor tras la ventana de revisión (`claimAutoRelease`) y reembolso por plazo con fecha visible; textos de la web y Términos alineados con lo que el contrato realmente hace; Mis Órdenes, Perfil y Faucet bilingües; ESLint en CI sin advertencias; diseño publicado para descentralizar las disputas ([docs/DISPUTE_RESOLUTION.md](./docs/DISPUTE_RESOLUTION.md)). | ✅ Completado |
+| **Sprint 10: Solicitudes, Hitos, Agentes con Sesión y Despliegue** | Solicitudes (bounties) con propuestas en web, API y MCP; propuestas por hitos, donde cada fase es su propia orden de escrow; el servidor MCP inicia sesión con la wallet del agente (SIWE), registra órdenes, envía y lee mensajes y descarga entregables verificando su hash on-chain; entregables en un bucket privado; nonces de inicio de sesión en una tabla propia (pedir un nonce ya no crea cuentas); indexador con tramos por red y cursor que no puede adelantarse desde fuera; contratos de gobernanza D1 (`EscrowAdmin` + timelock) probados y sin desplegar; todo publicado en producción el 16 de octubre de 2026. | ✅ Completado |
 
 ---
 
@@ -90,8 +91,20 @@ Autonomous Hiring & Settlement en Base Mainnet
 
 **Posicionamiento:** Mercadopleis se enfoca en la intersección **agente → humano (A2H)**: agentes de IA que necesitan contratar a personas para tareas que no pueden resolver solos (curación y validación de datos, red-teaming de prompts, scraping difícil, automatizaciones, transcripción), con pago garantizado en USDC y sin custodio. No compite en micropagos máquina a máquina (por ejemplo x402) ni en contratación tradicional entre personas, sino en el punto donde ambos se encuentran.
 
+Pasos en orden. Los primeros cuatro son el camino al lanzamiento público; los siguientes se activan con el uso real.
+
 | # | Prioridad | Por qué | Estado |
 |---|---|---|---|
+| 1 | **Red real y red de prueba sin confusión**: selector de red visible en la cabecera, Base Mainnet por defecto, aviso claro de "modo prueba" en Base Sepolia y la red indicada en cada paso del pago | Hoy la web usa la red en la que esté la wallet, sin forma de cambiarla desde el sitio; el catálogo es el mismo en ambas redes, así que alguien en Sepolia ve los servicios reales y paga con USDC de prueba | 📋 Siguiente versión de la web |
+| 2 | **Publicar el servidor MCP** (`@mercadopleis/mcp-server`) en npm y en los directorios de MCP (registro oficial de Model Context Protocol, Smithery, PulseMCP) | Es el canal directo hacia quienes construyen agentes en Claude, Cursor y otros clientes MCP | 🔄 Paquete probado contra producción; falta publicarlo |
+| 3 | **Validación final antes de difundir**: una primera orden real en Base Mainnet con un monto pequeño, revisión completa en celular (conectar, iniciar sesión, pagar, entregar, cobrar) y RPC dedicado para el indexador de Mainnet | Confirma con dinero real y en los dispositivos que más se usan lo que ya se probó en Sepolia | 📋 Pendiente |
+| 4 | **Lanzamiento y difusión**: video de demostración, presentación en el ecosistema de Base y en comunidades de agentes, primeras solicitudes publicadas como ejemplo | Llevar a los primeros compradores (agentes y personas) y prestadores | 📋 Tras los pasos 1–3 |
+| 5 | **Gobernanza D1**: claves separadas, propietario en multisig con timelock de 72 h y guardián que solo puede pausar ([diseño](./docs/DISPUTE_RESOLUTION.md#5-gobernanza-del-contrato-owner-con-timelock)) | Hoy el operador es propietario, árbitro y receptor de la comisión; el timelock hace visible cualquier cambio antes de que ocurra | 🔄 Contratos listos y probados (`EscrowAdmin` + `TimelockController`); se activa cuando haya volumen real o la primera disputa entre terceros |
+| 6 | **Auditoría externa** de `MarketplaceEscrow.sol` | Complementa las pruebas de Foundry (fuzz e invariantes) y las revisiones independientes antes de que haya volumen relevante | 📋 Planificado |
+| 7 | **Entregas por enlace más verificables** | Para archivos subidos, el hash on-chain cubre el contenido; para enlaces externos solo cubre el texto del enlace. Se recomendará y luego se exigirá un enlace a una versión fija (commit o release de Git, CID de IPFS) | 🔄 Documentado; validación pendiente |
+| 8 | **Fondeo por adelantado de todos los hitos** (Fase 6) | Los hitos ya funcionan pagando fase por fase; fondear todo el proyecto de una vez requiere un contrato dedicado | 📋 Según demanda |
+
+---|---|---|---|
 | 1 | **Publicar el servidor MCP** (`@mercadopleis/mcp-server`) en npm y en los directorios de MCP (registro oficial de Model Context Protocol, Smithery, PulseMCP) | Es el canal directo hacia quienes construyen agentes en Claude, Cursor y otros clientes MCP | 🔄 Listo; se publica con el despliegue |
 | 2 | **Gobernanza D1**: claves separadas, propietario en multisig con timelock de 72 h y guardián que solo puede pausar ([diseño](./docs/DISPUTE_RESOLUTION.md#5-gobernanza-del-contrato-owner-con-timelock)) | Hoy el operador es propietario, árbitro y receptor de la comisión; el timelock hace visible cualquier cambio antes de que ocurra | 🔄 Contratos listos y probados (`EscrowAdmin` + `TimelockController`); falta crear la multisig y desplegar |
 | 3 | **Fase 3 adelantada: solicitudes y presupuestos (bounties)** | Resuelve el arranque del mercado: los compradores, humanos o agentes, publican lo que necesitan y eso orienta qué prestadores sumar | ✅ Implementado (web, API y MCP); sale con el despliegue |
@@ -109,7 +122,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 [ FASE 2: Tracción Semilla & Agent Economy Wedge ]           🔄 EN EJECUCIÓN (Semanas 1 a 4)
                         │
                         ▼
-[ FASE 3: Request Marketplace & Presupuestos Inversos (Bounties) ] 🎯 SIGUIENTE PRIORIDAD
+[ FASE 3: Request Marketplace & Presupuestos Inversos (Bounties) ] ✅ EN PRODUCCIÓN
                         │
                         ▼
 [ FASE 4: Base Mini Apps & Integración con Farcaster Actions ]     📋 PLANIFICADO
@@ -118,7 +131,7 @@ Autonomous Hiring & Settlement en Base Mainnet
 [ FASE 5: Expansión EVM Multichain (Polygon PoS + Arbitrum One) ]  📋 PLANIFICADO
                         │
                         ▼
-[ FASE 6: Milestones & Pagos Programables por Hitos ]              📋 PLANIFICADO
+[ FASE 6: Milestones & Pagos Programables por Hitos ]              🔄 PAGO POR FASES EN PRODUCCIÓN
                         │
                         ▼
 [ FASE 7: Integración del Ecosistema Solana (Anchor + Phantom) ]   📋 PLANIFICADO
@@ -196,13 +209,13 @@ El escrow v2 permite toda esta evolución **sin redesplegarse**: el rol `arbitra
 
 ### 🎯 Fase 2: Tracción Semilla & Agent Economy Wedge (Semanas 1 a 4)
 
-**Objetivo:** Activar las primeras transacciones reales con el foco agente → humano: desarrolladores de agentes que necesitan subcontratar tareas a personas, y prestadores que quieren cobrar en USDC con una comisión del 3%. El servidor MCP oficial (`@mercadopleis/mcp-server`) ya está implementado en `packages/mcp-server`; su publicación es la prioridad 1.
+**Objetivo:** Activar las primeras transacciones reales con el foco agente → humano: desarrolladores de agentes que necesitan subcontratar tareas a personas, y prestadores que quieren cobrar en USDC con una comisión del 3%. El servidor MCP oficial (`@mercadopleis/mcp-server`) ya está implementado en `packages/mcp-server`; su publicación es la prioridad 2, después de separar con claridad la red real de la de prueba en la web.
 
 _El detalle operativo de esta fase se mantiene fuera del repositorio público._
 
 ---
 
-### 🎯 Fase 3: Request Marketplace & Presupuestos Inversos (Bounties) — siguiente prioridad
+### 🎯 Fase 3: Request Marketplace & Presupuestos Inversos (Bounties) — en producción
 
 **Objetivo:** Permitir que clientes y agentes de IA publiquen solicitudes de tareas específicas que no se encuentran en el catálogo fijo, recibiendo propuestas competitivas. Se adelanta porque un catálogo fijo depende de que existan prestadores antes que la demanda; las solicitudes invierten ese orden y son la forma natural en que un agente pide ayuda humana.
 
