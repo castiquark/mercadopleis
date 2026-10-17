@@ -98,7 +98,7 @@ Pasos en orden. Los primeros cuatro son el camino al lanzamiento público; los s
 | 1 | **Red real y red de prueba sin confusión**: selector de red visible en la cabecera, Base Mainnet por defecto, aviso claro de "modo prueba" en Base Sepolia y la red indicada en cada paso del pago | Hoy la web usa la red en la que esté la wallet, sin forma de cambiarla desde el sitio; el catálogo es el mismo en ambas redes, así que alguien en Sepolia ve los servicios reales y paga con USDC de prueba | ✅ En producción (17 de octubre de 2026) |
 | 2 | **Publicar el servidor MCP** (`@mercadopleis/mcp-server`) en npm y en los directorios de MCP (registro oficial de Model Context Protocol, Smithery, PulseMCP) | Es el canal directo hacia quienes construyen agentes en Claude, Cursor y otros clientes MCP | ✅ Publicado en npm (`npx @mercadopleis/mcp-server`) y en el registro oficial de MCP (`io.github.castiquark/mercadopleis`); faltan Smithery y PulseMCP |
 | 3 | **Validación final antes de difundir**: una primera orden real en Base Mainnet con un monto pequeño, revisión completa en celular (conectar, iniciar sesión, pagar, entregar, cobrar) y RPC dedicado para el indexador de Mainnet | Confirma con dinero real y en los dispositivos que más se usan lo que ya se probó en Sepolia | 🔄 RPC dedicado configurado; faltan la orden real y la revisión en celular |
-| 4 | **Lanzamiento y difusión**: video de demostración, presentación en el ecosistema de Base y en comunidades de agentes, primeras solicitudes publicadas como ejemplo | Llevar a los primeros compradores (agentes y personas) y prestadores | 📋 Tras los pasos 1–3 |
+| 4 | **Lanzamiento y difusión**: video de demostración, presentación en el ecosistema de Base y en comunidades de agentes, primeras solicitudes publicadas como ejemplo | Llevar a los primeros compradores (agentes y personas) y vendedores | 📋 Tras los pasos 1–3 |
 | 5 | **Gobernanza D1**: claves separadas, propietario en multisig con timelock de 72 h y guardián que solo puede pausar ([diseño](./docs/DISPUTE_RESOLUTION.md#5-gobernanza-del-contrato-owner-con-timelock)) | Hoy el operador es propietario, árbitro y receptor de la comisión; el timelock hace visible cualquier cambio antes de que ocurra | 🔄 Contratos listos y probados (`EscrowAdmin` + `TimelockController`); se activa cuando haya volumen real o la primera disputa entre terceros |
 | 6 | **Auditoría externa** de `MarketplaceEscrow.sol` | Complementa las pruebas de Foundry (fuzz e invariantes) y las revisiones independientes antes de que haya volumen relevante | 📋 Planificado |
 | 7 | **Entregas por enlace más verificables** | Para archivos subidos, el hash on-chain cubre el contenido; para enlaces externos solo cubre el texto del enlace. Se recomendará y luego se exigirá un enlace a una versión fija (commit o release de Git, CID de IPFS) | 🔄 Documentado; validación pendiente |
@@ -111,7 +111,7 @@ Surgen del análisis de la competencia en contratación agente → humano. El or
 
 | # | Mejora | Por qué | Cambia el contrato | Estado |
 |---|---|---|---|---|
-| A1 | **Mercadopleis como "respaldo humano" en enrutadores y catálogos de agentes**: listar el servidor MCP como proveedor en catálogos A2A y MCP de Base, para que, cuando una herramienta automática falle (scraping bloqueado, baja confianza), el enrutador derive la tarea a una persona | Lleva demanda donde ya está, en lugar de esperar que los agentes lleguen al sitio | No | 📋 Siguiente |
+| A1 | **Mercadopleis como "respaldo humano" en enrutadores y catálogos de agentes**: listar el servidor MCP como proveedor en catálogos A2A y MCP de Base, para que, cuando una herramienta automática falle (scraping bloqueado, baja confianza), el enrutador derive la tarea a una persona | Lleva demanda donde ya está, en lugar de esperar que los agentes lleguen al sitio. Se documentan disparadores típicos de escalado: baja confianza del modelo, frustración del usuario, temas legales sensibles o herramientas bloqueadas | No | 📋 Siguiente |
 | A2 | **Entrega validada por esquema y aprobación inmediata**: el comprador define un JSON Schema al publicar; si la entrega lo cumple, su agente aprueba al instante desde el MCP y el pago se libera en segundos. Para trabajos que un esquema no puede juzgar (red-teaming, curación profunda), sigue la revisión de 5 días | Agilidad para tareas estructuradas sin perder protección en las complejas | No: el contrato ya permite aprobar en cualquier momento; la validación vive en el MCP y la API | 📋 Siguiente |
 | A3 | **Avisos al agente (webhooks) y SDK ligero** (TypeScript y Python) con plantillas para datasets, red-teaming, scraping, automatizaciones y transcripción | Evita que el agente consulte la API en bucle; le avisa al instante cuando hay entrega o mensaje | No | 📋 Planificado |
 | A4 | **Límites de gasto para agentes**: topes por orden, por hora y por mes, y aprobación humana con un clic por encima de un umbral configurado por el dueño del agente | Los equipos no le dan una wallet libre a un agente; los límites los habilitan a probar | No (límites en el MCP y la API) | 📋 Planificado |
@@ -121,6 +121,7 @@ Surgen del análisis de la competencia en contratación agente → humano. El or
 | A8 | **Pagos x402** para compras empaquetadas (datasets curados, plantillas) y para fondear órdenes respondiendo a un HTTP 402; operación sin gas con wallets de agente en Base | Es el estándar de pago que más usan los agentes en Base | No para fondear; sin gas requiere un paymaster (costo de gas a cubrir) | 📋 A evaluar |
 | A9 | **Fianza para abrir disputas** (monto fijo o porcentaje de la orden) que se devuelve a quien gana y remunera el arbitraje | Evita disputas abusivas y financia el arbitraje | Sí: parte del módulo de disputas D2 | 📋 Con D2 |
 | A10 | **Descuentos por volumen** para clientes de alto volumen | Retención de laboratorios de IA | Sí: hoy el 3% es fijo en el contrato por diseño | 📋 A evaluar, sin romper la promesa del 3% fijo |
+| A11 | **Guía para cobrar en moneda local**: cómo convertir USDC a pesos, reales u otras monedas con servicios de terceros, sin integrar pasarelas | Baja la barrera de entrada para especialistas de Latinoamérica y otras regiones | No | 📋 Planificado |
 
 ---
 
@@ -220,7 +221,7 @@ El escrow v2 permite toda esta evolución **sin redesplegarse**: el rol `arbitra
 
 ### 🎯 Fase 2: Tracción Semilla & Agent Economy Wedge (Semanas 1 a 4)
 
-**Objetivo:** Activar las primeras transacciones reales con el foco agente → humano: desarrolladores de agentes que necesitan subcontratar tareas a personas, y prestadores que quieren cobrar en stablecoins con una comisión del 3%. El servidor MCP oficial (`@mercadopleis/mcp-server`) ya está implementado en `packages/mcp-server`; su publicación es la prioridad 2, después de separar con claridad la red real de la de prueba en la web.
+**Objetivo:** Activar las primeras transacciones reales con el foco agente → humano: desarrolladores de agentes que necesitan subcontratar tareas a personas, y vendedores que quieren cobrar en stablecoins con una comisión del 3%. El servidor MCP oficial (`@mercadopleis/mcp-server`) ya está implementado en `packages/mcp-server`; su publicación es la prioridad 2, después de separar con claridad la red real de la de prueba en la web.
 
 _El detalle operativo de esta fase se mantiene fuera del repositorio público._
 
@@ -228,12 +229,12 @@ _El detalle operativo de esta fase se mantiene fuera del repositorio público._
 
 ### 🎯 Fase 3: Request Marketplace & Presupuestos Inversos (Bounties) — en producción
 
-**Objetivo:** Permitir que clientes y agentes de IA publiquen solicitudes de tareas específicas que no se encuentran en el catálogo fijo, recibiendo propuestas competitivas. Se adelanta porque un catálogo fijo depende de que existan prestadores antes que la demanda; las solicitudes invierten ese orden y son la forma natural en que un agente pide ayuda humana.
+**Objetivo:** Permitir que clientes y agentes de IA publiquen solicitudes de tareas específicas que no se encuentran en el catálogo fijo, recibiendo propuestas competitivas. Se adelanta porque un catálogo fijo depende de que existan vendedores antes que la demanda; las solicitudes invierten ese orden y son la forma natural en que un agente pide ayuda humana.
 
 * **3.1. Publicación de Solicitudes (`/requests/new`):**
   * Formulario detallando requerimientos, entregables esperados, fecha límite y presupuesto máximo en USDC.
   * Clasificación por capacidades técnicas (`ai_data`, `development`, `writing_translation`, etc.).
-* **3.2. Postulación de Prestadores:**
+* **3.2. Postulación de Vendedores:**
   * Sistema de propuestas técnicas con cotización personalizada y plazo propuesto.
 * **3.3. Adjudicación y Depósito Directo en Escrow:**
   * Con un clic o llamada de API, el cliente acepta la cotización y deposita los fondos en el smart contract bajo los términos acordados.
@@ -273,7 +274,7 @@ _El detalle operativo de esta fase se mantiene fuera del repositorio público._
 
 ### 🎯 Fase 6: Milestones y Pagos Programables por Hitos
 
-> **Primera versión implementada sin contrato nuevo (octubre de 2026):** en los pedidos, un prestador puede dividir su propuesta en 2 a 10 fases. Al aceptarla, cada fase es un servicio no listado que se paga como **una orden de escrow independiente** del contrato v2: el comprador fondea una fase, la revisa y la aprueba antes de fondear la siguiente (pago por fases), y cada fase tiene su propia entrega, revisión de 5 días y disputa. Disponible en la web y en el servidor MCP. El contrato dedicado de abajo sigue siendo una opción si hace falta fondear todo el proyecto por adelantado.
+> **Primera versión implementada sin contrato nuevo (octubre de 2026):** en las solicitudes, un vendedor puede dividir su propuesta en 2 a 10 fases. Al aceptarla, cada fase es un servicio no listado que se paga como **una orden de escrow independiente** del contrato v2: el comprador fondea una fase, la revisa y la aprueba antes de fondear la siguiente (pago por fases), y cada fase tiene su propia entrega, revisión de 5 días y disputa. Disponible en la web y en el servidor MCP. El contrato dedicado de abajo sigue siendo una opción si hace falta fondear todo el proyecto por adelantado.
 
 **Objetivo:** Habilitar proyectos técnicos de mediana y gran escala ($500 a $10,000+ USDC) con custodia fraccionada y liberaciones por entregables intermedios.
 
@@ -305,5 +306,5 @@ _El detalle operativo de esta fase se mantiene fuera del repositorio público._
 * **Comisión de Protocolo:** 3.0% fijo (300 basis points), constante del contrato e inmodificable, deducido del cobro del vendedor al finalizar el escrow.
 * **Recargo al Comprador:** 0.0% (el comprador paga exactamente el precio listado en USDC).
 * **Costos de Red (Gas):** ~<$0.01 USD por transacción en Base L2.
-* **Ventana de Inspección:** 5 días garantizados tras la entrega antes de auto-release.
-* **Liquidación:** 100% Non-Custodial, directamente a la wallet del prestador.
+* **Ventana de Inspección:** 5 días para validar entregas antes de que el vendedor pueda reclamar el cobro.
+* **Liquidación:** 100% sin custodia, directamente a la wallet del vendedor.
