@@ -17,8 +17,7 @@ interface DeliverableLinkProps {
  * on click (it is valid for a few minutes only).
  */
 export function DeliverableLink({ orderId, reference, className = '' }: DeliverableLinkProps) {
-  const { language } = useLanguage();
-  const en = language === 'en';
+  const { L } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,15 +35,13 @@ export function DeliverableLink({ orderId, reference, className = '' }: Delivera
         </a>
         {/* The on-chain hash covers the link text only, so the content behind it can change. */}
         <span className="text-[11px] text-slate-500">
-          {en
-            ? 'External link: the on-chain hash records the link, not its content. Review it before approving.'
-            : 'Enlace externo: el hash on-chain registra el enlace, no su contenido. Revísalo antes de aprobar.'}
+          {L('Enlace externo: el hash on-chain registra el enlace, no su contenido. Revísalo antes de aprobar.', 'External link: the on-chain hash records the link, not its content. Review it before approving.', 'Link externo: o hash on-chain registra o link, não o conteúdo. Confira antes de aprovar.')}
         </span>
       </span>
     );
   }
 
-  const filename = reference.split('/').pop()?.replace(/^\d+-/, '') || (en ? 'deliverable' : 'entregable');
+  const filename = reference.split('/').pop()?.replace(/^\d+-/, '') || (L('entregable', 'deliverable', 'entregavel'));
 
   const download = async () => {
     try {
@@ -53,7 +50,7 @@ export function DeliverableLink({ orderId, reference, className = '' }: Delivera
       const access = await getDeliverableAccess(orderId);
       window.open(access.url, '_blank', 'noopener,noreferrer');
     } catch (e: any) {
-      setError(e?.message || (en ? 'The file could not be downloaded' : 'No se pudo descargar el archivo'));
+      setError(e?.message || (L('No se pudo descargar el archivo', 'The file could not be downloaded', 'Não foi possível baixar o arquivo')));
     } finally {
       setLoading(false);
     }
@@ -68,7 +65,7 @@ export function DeliverableLink({ orderId, reference, className = '' }: Delivera
         className={`inline-flex min-h-10 items-center gap-1.5 text-left sm:min-h-0 ${className}`}
       >
         {loading ? <Loader2 className="h-3 w-3 shrink-0 animate-spin" /> : <Download className="h-3 w-3 shrink-0" />}
-        <span className="break-all">{en ? 'Download' : 'Descargar'} {filename}</span>
+        <span className="break-all">{L('Descargar', 'Download', 'Baixar')} {filename}</span>
       </button>
       {error && <span className="text-[11px] text-red-400">{error}</span>}
     </span>

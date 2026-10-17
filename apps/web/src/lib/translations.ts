@@ -1,6 +1,6 @@
-// Interface texts in Spanish and English. Plain data so it can be tested without a DOM.
+// Interface texts in Spanish, English and Portuguese (Brazil). Plain data so it can be tested without a DOM.
 
-export type Language = 'es' | 'en';
+export type Language = 'es' | 'en' | 'pt';
 
 export const translations = {
   es: {
@@ -238,6 +238,124 @@ export const translations = {
     notFoundTitle: 'Page Not Found',
     notFoundDesc: 'The page you are looking for does not exist, has been moved, or the URL is invalid.',
     backToHome: 'Back to Home',
+  },
+  pt: {
+    // Nav
+    postService: 'Publicar Serviço',
+    myOrders: 'Meus Pedidos',
+    requests: 'Solicitações',
+    adminPanel: 'Painel Admin',
+    faucet: 'Faucet',
+    signSession: 'Assinar Sessão (SIWE)',
+    signing: 'Assinando...',
+    exploreServices: 'Explorar Serviços',
+
+    // Home / Hero
+    allCategories: 'Todos',
+    noServicesFound: 'Nenhum serviço encontrado',
+    noServicesDesc: 'Tente outro termo de busca ou selecione outra categoria.',
+    clearFilters: 'Limpar Filtros',
+
+    // Delivery mode & Location
+    modeAll: 'Todas as modalidades',
+    modeDigital: 'Digital / Remoto',
+    modeInPerson: 'Físico / Presencial',
+    modeBoth: 'Híbrido (Digital ou Presencial)',
+    deliveryModeLabel: 'Modalidade de Prestação',
+    deliveryModeHelp: 'Escolha se o trabalho é feito de forma 100% remota/digital ou presencial/física.',
+    locationSectionTitle: 'Localização do Serviço Presencial',
+    locationSectionSubtitle: 'Indique onde o serviço é realizado ou a área de cobertura, para que clientes próximos encontrem você.',
+    countryLabel: 'País',
+    cityLabel: 'Cidade / Estado',
+    localityLabel: 'Localidade / Bairro',
+    localityPlaceholder: 'ex. Copacabana, Pinheiros, Savassi...',
+    addressOrRefLabel: 'Ponto de encontro, Endereço ou Área de Cobertura (Opcional)',
+    addressOrRefPlaceholder: 'ex. A combinar com o cliente / Zona Sul / Em loja física...',
+    filterLocationPlaceholder: 'Filtrar por cidade, bairro ou localidade...',
+
+    // Orders
+    ordersTitle: 'Painel de Pedidos',
+    ordersSubtitle: 'Acompanhe seus contratos de escrow ativos na Base, aprove entregas ou gerencie recebimentos.',
+    refresh: 'Atualizar',
+    clearCache: 'Limpar Cache',
+    asBuyer: 'Como Comprador',
+    asSeller: 'Como Vendedor',
+    statusFunded: 'Depositado (Em andamento)',
+    statusDelivered: 'Entregue (Em revisão)',
+    statusReleased: 'Concluído e Pago',
+    statusRefunded: 'Reembolsado 100%',
+    statusDisputed: 'Em Disputa',
+    approveAndRelease: 'Aprovar Entrega e Liberar Pagamento',
+    openDispute: 'Abrir Disputa',
+    submitDelivery: 'Registrar Entrega do Trabalho',
+    autoReleaseNotice: 'Se você não aprovar nem abrir uma disputa, o vendedor poderá receber a partir de {date}.',
+    autoReleaseNoticeNoDate: 'Se você não aprovar nem abrir uma disputa em 5 dias após a entrega, o vendedor poderá receber.',
+    sellerWorkingNotice: 'O vendedor está trabalhando. Se não entregar até {date}, você poderá solicitar o reembolso total.',
+    claimRefund: 'Solicitar reembolso',
+    refundNotYet: 'Disponível quando o prazo de entrega vencer',
+    sellerDeliveredNotice: 'Entrega registrada. Se o comprador não aprovar nem abrir uma disputa, você poderá receber a partir de {date}.',
+    sellerDeliveredNoticeNoDate: 'Entrega registrada. Se o comprador não aprovar nem abrir uma disputa, você poderá receber 5 dias após a entrega.',
+    sellerCanClaimNow: 'O período de revisão terminou: você já pode receber o pagamento.',
+    buyerReviewOver: 'O período de revisão terminou: o vendedor já pode receber. Você ainda pode aprovar ou abrir uma disputa enquanto ele não receber.',
+    claimPayment: 'Receber pagamento',
+    paymentNotYet: 'Disponível quando o período de revisão terminar',
+    contractFinalized: 'Contrato finalizado e fundos liberados.',
+    viewTimelineAndChat: 'Ver Linha do Tempo e Mensagens',
+    hideTimelineAndChat: 'Ocultar Atividade e Mensagens',
+    noOrdersBuyer: 'Você ainda não contratou serviços',
+    noOrdersSeller: 'Você ainda não recebeu pedidos',
+    noOrdersBuyerDesc: 'Explore o catálogo de serviços e contrate com a segurança de smart contracts na Base, pagando em stablecoins.',
+    noOrdersSellerDesc: 'Publique suas habilidades no catálogo internacional e comece a receber pagamentos garantidos em escrow.',
+
+    // Disputes in Order
+    disputeTitleOpen: 'Disputa em Andamento — Fundos Congelados no Escrow',
+    disputeTitleResolved: 'Disputa Resolvida pelo Árbitro',
+    disputeBadgeOpen: 'EM REVISÃO',
+    disputeBadgeResolved: 'RESOLVIDA',
+    disputeReasonLabel: 'Motivo da reclamação',
+    disputeEvidenceLabel: 'Prova enviada',
+    disputeUnderReviewNotice: 'O árbitro está revisando as informações das duas partes. Os USDC continuam bloqueados no contrato de escrow na {network} até a resolução.',
+    disputeResolvedNotice: 'Resolução executada',
+    disputeArbitratorNotes: 'Fundamentação da resolução',
+
+    // Dispute Modal
+    modalDisputeTitle: 'Abrir Disputa do Pedido',
+    modalDisputeDesc: 'Ao abrir uma disputa, a liberação automática no contrato é congelada. O árbitro vai revisar as informações das duas partes e decidir como dividir os fundos entre comprador e vendedor.',
+    modalDisputeReasonLabel: 'Motivo detalhado da reclamação',
+    modalDisputeReasonPlaceholder: 'Explique em detalhe por que o trabalho não cumpre o combinado (ex. falhas de compilação, requisitos não incluídos, entregável errado)...',
+    modalDisputeEvidenceLabel: 'Link para provas / evidências (URL pública, GitHub, Google Drive etc.)',
+    modalDisputeNotice: '⚠️ As provas enviadas e as mensagens trocadas no pedido serão avaliadas para a resolução final.',
+    cancel: 'Cancelar',
+    confirmAndFreeze: 'Confirmar e Congelar Fundos',
+    freezingEscrow: 'Congelando Fundos no Escrow...',
+
+    // Reviews
+    rateService: 'Avaliar Serviço',
+    serviceRated: 'Avaliado',
+    receivedReview: 'Avaliação recebida',
+    modalReviewTitle: 'Avaliar Serviço',
+    modalReviewDesc: 'Sua avaliação será registrada no perfil público do vendedor e ajudará outros compradores da comunidade.',
+    modalReviewServiceLabel: 'Serviço',
+    modalReviewRatingLabel: 'Avaliação (1 a 5 estrelas)',
+    modalReviewCommentLabel: 'Comentário / Experiência com a Entrega',
+    modalReviewCommentPlaceholder: 'Descreva a qualidade do trabalho, pontualidade, comunicação e atendimento dos requisitos...',
+    publishReview: 'Publicar Avaliação',
+    savingReview: 'Salvando...',
+    reviewSubmittedNotice: 'Obrigado por avaliar o serviço! Sua avaliação foi registrada.',
+    ratingExcellent: 'Excelente!',
+    ratingVeryGood: 'Muito Bom',
+    ratingAcceptable: 'Aceitável',
+    ratingFair: 'Regular',
+    ratingPoor: 'Ruim',
+
+    // Footer
+    footerCopyright: 'mercadopleis. Escrow em stablecoins na Base.',
+    footerTagline: 'Sem custódia por design. Tudo verificável on-chain.',
+
+    // 404
+    notFoundTitle: 'Página não encontrada',
+    notFoundDesc: 'A página que você procura não existe, foi movida ou o endereço não é válido.',
+    backToHome: 'Voltar ao Início',
   },
 } as const;
 

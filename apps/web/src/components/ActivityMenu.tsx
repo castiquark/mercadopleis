@@ -12,21 +12,20 @@ const POLL_MS = 60_000;
 
 type Kind = ActivitySummary['items'][number]['kind'];
 
-const LABELS: Record<Kind, { es: (n: number) => string; en: (n: number) => string }> = {
-  deliver: { es: () => 'Orden pagada: entrega el trabajo', en: () => 'Paid order: deliver the work' },
-  review: { es: () => 'Entrega recibida: revísala y aprueba', en: () => 'Delivery received: review and approve' },
-  claim: { es: () => 'Pago disponible para cobrar', en: () => 'Payment ready to claim' },
-  dispute: { es: () => 'Orden en disputa', en: () => 'Order in dispute' },
-  message: { es: (n) => (n === 1 ? '1 mensaje nuevo' : `${n} mensajes nuevos`), en: (n) => (n === 1 ? '1 new message' : `${n} new messages`) },
-  proposals: { es: (n) => (n === 1 ? '1 propuesta por revisar' : `${n} propuestas por revisar`), en: (n) => (n === 1 ? '1 proposal to review' : `${n} proposals to review`) },
-  admin_disputes: { es: (n) => (n === 1 ? '1 disputa abierta por resolver' : `${n} disputas abiertas por resolver`), en: (n) => (n === 1 ? '1 open dispute to resolve' : `${n} open disputes to resolve`) },
+const LABELS: Record<Kind, { es: (n: number) => string; en: (n: number) => string; pt: (n: number) => string }> = {
+  deliver: { es: () => 'Orden pagada: entrega el trabajo', en: () => 'Paid order: deliver the work', pt: () => 'Pedido pago: entregue o trabalho' },
+  review: { es: () => 'Entrega recibida: revísala y aprueba', en: () => 'Delivery received: review and approve', pt: () => 'Entrega recebida: revise e aprove' },
+  claim: { es: () => 'Pago disponible para cobrar', en: () => 'Payment ready to claim', pt: () => 'Pagamento disponível para receber' },
+  dispute: { es: () => 'Orden en disputa', en: () => 'Order in dispute', pt: () => 'Pedido em disputa' },
+  message: { es: (n) => (n === 1 ? '1 mensaje nuevo' : `${n} mensajes nuevos`), en: (n) => (n === 1 ? '1 new message' : `${n} new messages`), pt: (n) => (n === 1 ? '1 nova mensagem' : `${n} novas mensagens`) },
+  proposals: { es: (n) => (n === 1 ? '1 propuesta por revisar' : `${n} propuestas por revisar`), en: (n) => (n === 1 ? '1 proposal to review' : `${n} proposals to review`), pt: (n) => (n === 1 ? '1 proposta para revisar' : `${n} propostas para revisar`) },
+  admin_disputes: { es: (n) => (n === 1 ? '1 disputa abierta por resolver' : `${n} disputas abiertas por resolver`), en: (n) => (n === 1 ? '1 open dispute to resolve' : `${n} open disputes to resolve`), pt: (n) => (n === 1 ? '1 disputa aberta para resolver' : `${n} disputas abertas para resolver`) },
 };
 
 /** Bell in the header with what needs the signed-in user's attention. Polls while the tab is visible. */
 export function ActivityMenu() {
   const { token, isAuthenticated } = useAuth();
-  const { language } = useLanguage();
-  const en = language === 'en';
+  const { language, L } = useLanguage();
   const pathname = usePathname();
   const [activity, setActivity] = useState<ActivitySummary | null>(null);
   const [open, setOpen] = useState(false);
@@ -68,7 +67,7 @@ export function ActivityMenu() {
 
   if (!isAuthenticated) return null;
   const total = activity?.total ?? 0;
-  const label = en ? 'Activity' : 'Actividad';
+  const label = L('Actividad', 'Activity', 'Atividade');
 
   return (
     <div ref={ref} className="relative">
@@ -94,7 +93,7 @@ export function ActivityMenu() {
       {open && (
         <div className="absolute right-0 z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-surface shadow-2xl">
           <div className="border-b border-border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
-            {en ? 'Needs your attention' : 'Requiere tu atención'}
+            {L('Requiere tu atención', 'Needs your attention', 'Precisa da sua atenção')}
           </div>
           {activity && activity.items.length > 0 ? (
             <ul className="max-h-[60vh] overflow-y-auto">
@@ -105,11 +104,11 @@ export function ActivityMenu() {
                     onClick={() => setOpen(false)}
                     className="block border-b border-border/60 px-4 py-3 text-sm transition last:border-0 hover:bg-surface-elevated"
                   >
-                    <span className="block font-medium text-white">{(en ? LABELS[item.kind].en : LABELS[item.kind].es)(item.count)}</span>
+                    <span className="block font-medium text-white">{LABELS[item.kind][language](item.count)}</span>
                     {item.title && <span className="mt-0.5 block truncate text-xs text-slate-400">{item.title}</span>}
                     {item.contractOrderId != null && (
                       <span className="mt-0.5 block text-[11px] text-slate-500">
-                        {en ? 'Order' : 'Orden'} #{item.contractOrderId} · {item.chainId === 84532 ? 'Base Sepolia' : 'Base Mainnet'}
+                        {L('Orden', 'Order', 'Pedido')} #{item.contractOrderId} · {item.chainId === 84532 ? 'Base Sepolia' : 'Base Mainnet'}
                       </span>
                     )}
                   </Link>
@@ -117,7 +116,7 @@ export function ActivityMenu() {
               ))}
             </ul>
           ) : (
-            <p className="px-4 py-6 text-center text-sm text-slate-400">{en ? "You're all caught up." : 'No tienes nada pendiente.'}</p>
+            <p className="px-4 py-6 text-center text-sm text-slate-400">{L('No tienes nada pendiente.', "You're all caught up.", 'Você não tem nada pendente.')}</p>
           )}
         </div>
       )}

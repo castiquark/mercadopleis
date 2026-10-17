@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
-import { MARKETPLACE_CATEGORIES, ServiceCategory, ServiceDeliveryType } from '@mercadopleis/types';
+import { MARKETPLACE_CATEGORIES, ServiceCategory, ServiceDeliveryType, categoryLabel as categoryLabel_ } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
 import { ArrowLeft, Clock, DollarSign, Sparkles, CheckCircle2, AlertCircle, MapPin, Globe, Compass } from 'lucide-react';
 import Link from 'next/link';
@@ -11,7 +11,7 @@ import Link from 'next/link';
 export default function NewServicePage() {
   const router = useRouter();
   const { isConnected, address } = useAccount();
-  const { language, t } = useLanguage();
+  const { language, t, L } = useLanguage();
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<ServiceCategory>('ai_data');
@@ -38,7 +38,7 @@ export default function NewServicePage() {
     setSubmitError(null);
 
     if (!address) {
-      setSubmitError(language === 'en' ? 'Connect your wallet to publish a service.' : 'Conecta tu wallet para publicar un servicio.');
+      setSubmitError(L('Conecta tu wallet para publicar un servicio.', 'Connect your wallet to publish a service.', 'Conecte sua carteira para publicar um serviço.'));
       return;
     }
 
@@ -65,18 +65,14 @@ export default function NewServicePage() {
       const slug = created?.service?.slug;
       setTimeout(() => router.push(slug ? `/services/${slug}` : '/'), 1500);
     } catch (err: any) {
-      setSubmitError(err?.message || (language === 'en' ? 'The service could not be published.' : 'No se pudo publicar el servicio.'));
+      setSubmitError(err?.message || (L('No se pudo publicar el servicio.', 'The service could not be published.', 'Não foi possível publicar o serviço.')));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const selectedCatObj = MARKETPLACE_CATEGORIES.find((c) => c.id === category);
-  const selectedCatLabel = selectedCatObj
-    ? language === 'en'
-      ? selectedCatObj.nameEn || selectedCatObj.name
-      : selectedCatObj.name
-    : category;
+  const selectedCatLabel = selectedCatObj ? categoryLabel_(selectedCatObj, language) : category;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
@@ -86,7 +82,7 @@ export default function NewServicePage() {
         className="inline-flex min-h-10 items-center gap-2 text-sm text-slate-400 transition hover:text-white sm:min-h-0"
       >
         <ArrowLeft className="h-4 w-4" />
-        <span>{language === 'en' ? 'Back to Catalog' : 'Volver al Catálogo'}</span>
+        <span>{L('Volver al Catálogo', 'Back to Catalog', 'Voltar ao Catálogo')}</span>
       </Link>
 
       <div className="mt-6 flex flex-col gap-8 lg:flex-row">
@@ -95,25 +91,21 @@ export default function NewServicePage() {
           <div className="flex items-center gap-2 text-primary-light">
             <Sparkles className="h-5 w-5" />
             <span className="text-xs font-semibold uppercase tracking-wider">
-              {language === 'en' ? 'Create Listing' : 'Crear Oferta'}
+              {L('Crear Oferta', 'Create Listing', 'Criar Oferta')}
             </span>
           </div>
           <h1 className="mt-2 text-2xl font-bold text-white">
-            {language === 'en' ? 'Publish New Service' : 'Publicar Nuevo Servicio'}
+            {L('Publicar Nuevo Servicio', 'Publish New Service', 'Publicar Novo Serviço')}
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            {language === 'en'
-              ? 'Set your USDC price and delivery timeframe. Get paid via automated smart contract escrow.'
-              : 'Define tu tarifa en USDC y plazo de entrega. Cobra mediante liquidación automática por smart contract.'}
+            {L('Define tu tarifa en USDC y plazo de entrega. Cobra mediante liquidación automática por smart contract.', 'Set your USDC price and delivery timeframe. Get paid via automated smart contract escrow.', 'Defina seu preço em USDC e o prazo de entrega. Receba com liquidação automática por smart contract.')}
           </p>
 
           {!isConnected && (
             <div className="mt-6 flex items-center gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-300">
               <AlertCircle className="h-4 w-4 shrink-0 text-amber-400" />
               <span>
-                {language === 'en'
-                  ? 'Connect your wallet to link this service to your payout address.'
-                  : 'Conecta tu wallet para vincular este servicio a tu dirección de cobro.'}
+                {L('Conecta tu wallet para vincular este servicio a tu dirección de cobro.', 'Connect your wallet to link this service to your payout address.', 'Conecte sua carteira para vincular este serviço ao seu endereço de recebimento.')}
               </span>
             </div>
           )}
@@ -129,9 +121,7 @@ export default function NewServicePage() {
             <div className="mt-6 flex items-center gap-2.5 rounded-xl border border-accent/30 bg-accent/10 p-3.5 text-xs font-semibold text-accent">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-accent" />
               <span>
-                {language === 'en'
-                  ? 'Service published. Opening it...'
-                  : 'Servicio publicado. Abriéndolo...'}
+                {L('Servicio publicado. Abriéndolo...', 'Service published. Opening it...', 'Serviço publicado. Abrindo...')}
               </span>
             </div>
           )}
@@ -140,15 +130,13 @@ export default function NewServicePage() {
             {/* Title */}
             <div>
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                {language === 'en' ? 'Service Title' : 'Título del Servicio'}
+                {L('Título del Servicio', 'Service Title', 'Título do Serviço')}
               </label>
               <input
                 type="text"
                 required
                 placeholder={
-                  language === 'en'
-                    ? 'e.g. Escrow Smart Contract Development in Solidity'
-                    : 'ej. Desarrollo de Smart Contract Escrow en Solidity'
+                  L('ej. Desarrollo de Smart Contract Escrow en Solidity', 'e.g. Escrow Smart Contract Development in Solidity', 'ex. Desenvolvimento de Smart Contract de Escrow em Solidity')
                 }
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -159,7 +147,7 @@ export default function NewServicePage() {
             {/* Category */}
             <div>
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                {language === 'en' ? 'Category' : 'Categoría'}
+                {L('Categoría', 'Category', 'Categoria')}
               </label>
               <select
                 value={category}
@@ -168,7 +156,7 @@ export default function NewServicePage() {
               >
                 {MARKETPLACE_CATEGORIES.map((cat) => (
                   <option key={cat.id} value={cat.id} className="bg-surface text-white">
-                    {language === 'en' ? (cat.nameEn || cat.name) : cat.name}
+                    {categoryLabel_(cat, language)}
                   </option>
                 ))}
               </select>
@@ -197,7 +185,7 @@ export default function NewServicePage() {
                   <Globe className={`h-5 w-5 ${deliveryType === 'digital' ? 'text-primary-light' : 'text-slate-400'}`} />
                   <span className="text-xs font-bold">{t('modeDigital')}</span>
                   <span className="text-[10px] text-slate-400 leading-tight">
-                    {language === 'en' ? '100% Online / Remote' : '100% Online / Remoto'}
+                    {L('100% Online / Remoto', '100% Online / Remote', '100% Online / Remoto')}
                   </span>
                 </button>
 
@@ -213,7 +201,7 @@ export default function NewServicePage() {
                   <MapPin className={`h-5 w-5 ${deliveryType === 'in_person' ? 'text-cyan-400' : 'text-slate-400'}`} />
                   <span className="text-xs font-bold">{t('modeInPerson')}</span>
                   <span className="text-[10px] text-slate-400 leading-tight">
-                    {language === 'en' ? 'Physical / In-Person' : 'Físico / Presencial'}
+                    {L('Físico / Presencial', 'Physical / In-Person', 'Físico / Presencial')}
                   </span>
                 </button>
 
@@ -229,7 +217,7 @@ export default function NewServicePage() {
                   <Compass className={`h-5 w-5 ${deliveryType === 'both' ? 'text-indigo-400' : 'text-slate-400'}`} />
                   <span className="text-xs font-bold">{t('modeBoth')}</span>
                   <span className="text-[10px] text-slate-400 leading-tight">
-                    {language === 'en' ? 'Hybrid / Flexible' : 'Híbrido / Flexible'}
+                    {L('Híbrido / Flexible', 'Hybrid / Flexible', 'Híbrido / Flexível')}
                   </span>
                 </button>
               </div>
@@ -259,7 +247,7 @@ export default function NewServicePage() {
                       required={true}
                       value={country}
                       onChange={(e) => setCountry(e.target.value)}
-                      placeholder={language === 'en' ? 'e.g. Uruguay, Argentina, United States...' : 'ej. Uruguay, Argentina, España...'}
+                      placeholder={L('ej. Uruguay, Argentina, España...', 'e.g. Uruguay, Argentina, United States...', 'ex. Brasil, Portugal, Uruguai...')}
                       className="mt-1.5 w-full rounded-xl border border-cyan-500/30 bg-background/80 px-3.5 py-2 text-sm text-white placeholder-slate-500 transition focus:border-cyan-400 focus:outline-none"
                     />
                   </div>
@@ -274,7 +262,7 @@ export default function NewServicePage() {
                       required={true}
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      placeholder={language === 'en' ? 'e.g. Maldonado, Montevideo, Buenos Aires...' : 'ej. Maldonado, Montevideo, Buenos Aires...'}
+                      placeholder={L('ej. Maldonado, Montevideo, Buenos Aires...', 'e.g. Maldonado, Montevideo, Buenos Aires...', 'ex. São Paulo, Rio de Janeiro, Florianópolis...')}
                       className="mt-1.5 w-full rounded-xl border border-cyan-500/30 bg-background/80 px-3.5 py-2 text-sm text-white placeholder-slate-500 transition focus:border-cyan-400 focus:outline-none"
                     />
                   </div>
@@ -314,15 +302,13 @@ export default function NewServicePage() {
             {/* Description */}
             <div>
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                {language === 'en' ? 'Description & Deliverables' : 'Descripción y Entregables'}
+                {L('Descripción y Entregables', 'Description & Deliverables', 'Descrição e Entregáveis')}
               </label>
               <textarea
                 required
                 rows={4}
                 placeholder={
-                  language === 'en'
-                    ? 'Detail what your deliverables include, tools used, requirements from client...'
-                    : 'Detalla qué incluye tu entrega, herramientas que usas, entregables y requisitos del cliente...'
+                  L('Detalla qué incluye tu entrega, herramientas que usas, entregables y requisitos del cliente...', 'Detail what your deliverables include, tools used, requirements from client...', 'Detalhe o que sua entrega inclui, ferramentas que usa, entregáveis e requisitos do cliente...')
                 }
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -334,7 +320,7 @@ export default function NewServicePage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                  {language === 'en' ? 'Price (USDC)' : 'Precio (USDC)'}
+                  {L('Precio (USDC)', 'Price (USDC)', 'Preço (USDC)')}
                 </label>
                 <div className="relative mt-2">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
@@ -357,7 +343,7 @@ export default function NewServicePage() {
 
               <div>
                 <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                  {language === 'en' ? 'Delivery Time (Days)' : 'Tiempo de Entrega (Días)'}
+                  {L('Tiempo de Entrega (Días)', 'Delivery Time (Days)', 'Prazo de Entrega (Dias)')}
                 </label>
                 <div className="relative mt-2">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
@@ -373,7 +359,7 @@ export default function NewServicePage() {
                     className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-14 text-sm text-white transition focus:border-primary focus:outline-none"
                   />
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-xs text-slate-400">
-                    {language === 'en' ? 'days' : 'días'}
+                    {L('días', 'days', 'dias')}
                   </div>
                 </div>
               </div>
@@ -383,23 +369,19 @@ export default function NewServicePage() {
             <div className="rounded-xl border border-border/80 bg-background/50 p-4 text-xs">
               <div className="flex justify-between text-slate-400">
                 <span>
-                  {language === 'en' ? 'Published price to buyer:' : 'Precio publicado al comprador:'}
+                  {L('Precio publicado al comprador:', 'Published price to buyer:', 'Preço publicado para o comprador:')}
                 </span>
                 <span className="font-semibold text-white">{priceNum} USDC</span>
               </div>
               <div className="mt-1.5 flex justify-between text-slate-400">
                 <span>
-                  {language === 'en'
-                    ? 'Platform fee (3% deducted upon escrow release):'
-                    : 'Comisión de plataforma (3% deducido en liquidación):'}
+                  {L('Comisión de plataforma (3% deducido en liquidación):', 'Platform fee (3% deducted upon escrow release):', 'Taxa da plataforma (3% descontado na liquidação):')}
                 </span>
                 <span className="text-slate-300">-{fee} USDC</span>
               </div>
               <div className="mt-2 flex justify-between border-t border-border/60 pt-2 font-bold text-accent">
                 <span>
-                  {language === 'en'
-                    ? 'Net received in your wallet when delivery approved:'
-                    : 'Recibes neto en tu wallet al aprobar entrega:'}
+                  {L('Recibes neto en tu wallet al aprobar entrega:', 'Net received in your wallet when delivery approved:', 'Você recebe líquido na carteira ao aprovar a entrega:')}
                 </span>
                 <span>{netEarnings} USDC</span>
               </div>
@@ -411,18 +393,18 @@ export default function NewServicePage() {
               className="w-full rounded-xl bg-primary py-3 font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-hover active:scale-[0.99] disabled:opacity-50"
             >
               {isSubmitting
-                ? (language === 'en' ? 'Publishing...' : 'Publicando...')
-                : (language === 'en' ? 'Publish Service to Marketplace' : 'Publicar Servicio en el Marketplace')}
+                ? (L('Publicando...', 'Publishing...', 'Publicando...'))
+                : (L('Publicar Servicio en el Marketplace', 'Publish Service to Marketplace', 'Publicar Serviço no Marketplace'))}
             </button>
 
             <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500">
-              {language === 'en' ? 'By continuing you accept the ' : 'Al continuar aceptas los '}
+              {L('Al continuar aceptas los ', 'By continuing you accept the ', 'Ao continuar você aceita os ')}
               <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-300">
-                {language === 'en' ? 'Terms' : 'Términos'}
+                {L('Términos', 'Terms', 'Termos')}
               </a>
-              {language === 'en' ? ' and the ' : ' y la '}
+              {L(' y la ', ' and the ', ' e a ')}
               <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-300">
-                {language === 'en' ? 'Privacy Policy' : 'Política de Privacidad'}
+                {L('Política de Privacidad', 'Privacy Policy', 'Política de Privacidade')}
               </a>
               .
             </p>
@@ -433,7 +415,7 @@ export default function NewServicePage() {
         <div className="w-full lg:w-80">
           <div className="sticky top-24">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              {language === 'en' ? 'Card Live Preview' : 'Vista Previa de Tarjeta'}
+              {L('Vista Previa de Tarjeta', 'Card Live Preview', 'Prévia do Cartão')}
             </span>
 
             <div className="mt-3 overflow-hidden rounded-xl border border-border bg-surface p-5 shadow-xl">
@@ -444,17 +426,17 @@ export default function NewServicePage() {
                   </span>
                   {deliveryType === 'in_person' && (
                     <span className="rounded-md bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-300 border border-cyan-500/30">
-                      {language === 'en' ? 'In-Person' : 'Presencial'}
+                      {L('Presencial', 'In-Person', 'Presencial')}
                     </span>
                   )}
                   {deliveryType === 'both' && (
                     <span className="rounded-md bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-300 border border-indigo-500/30">
-                      {language === 'en' ? 'Hybrid' : 'Híbrido'}
+                      {L('Híbrido', 'Hybrid', 'Híbrido')}
                     </span>
                   )}
                 </div>
                 <span className="text-xs font-semibold text-accent">
-                  {language === 'en' ? 'New' : 'Nuevo'}
+                  {L('Nuevo', 'New', 'Novo')}
                 </span>
               </div>
 
@@ -468,30 +450,26 @@ export default function NewServicePage() {
               )}
 
               <h4 className="mt-3 font-semibold text-white">
-                {title || (language === 'en' ? 'Your service title here' : 'Título de tu servicio aquí')}
+                {title || (L('Título de tu servicio aquí', 'Your service title here', 'Título do seu serviço aqui'))}
               </h4>
 
               <p className="mt-2 line-clamp-3 text-xs text-slate-400">
                 {description ||
-                  (language === 'en'
-                    ? 'Detailed description of your deliverables will appear here...'
-                    : 'Aquí aparecerá la descripción detallada de lo que entregas al comprador...')}
+                  (L('Aquí aparecerá la descripción detallada de lo que entregas al comprador...', 'Detailed description of your deliverables will appear here...', 'Aqui aparecerá a descrição detalhada do que você entrega ao comprador...'))}
               </p>
 
               <div className="mt-4 border-t border-border/80 pt-3">
                 <div className="flex items-center justify-between text-xs text-slate-400">
                   <span>
-                    {language === 'en'
-                      ? `Delivery: ${deliveryDays || 3} days`
-                      : `Entrega: ${deliveryDays || 3} días`}
+                    {L(`Entrega: ${deliveryDays || 3} días`, `Delivery: ${deliveryDays || 3} days`, `Entrega: ${deliveryDays || 3} dias`)}
                   </span>
                   <span className="text-accent">
-                    {language === 'en' ? 'Protected Escrow' : 'Escrow protegido'}
+                    {L('Escrow protegido', 'Protected Escrow', 'Escrow protegido')}
                   </span>
                 </div>
                 <div className="mt-2 flex items-baseline justify-between">
                   <span className="text-xs text-slate-400">
-                    {language === 'en' ? 'Total price' : 'Precio total'}
+                    {L('Precio total', 'Total price', 'Preço total')}
                   </span>
                   <span className="text-lg font-bold text-white">
                     {priceNum} <span className="text-xs text-usdc">USDC</span>

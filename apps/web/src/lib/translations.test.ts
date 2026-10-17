@@ -2,27 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { translations } from './translations';
 import { TERMS } from './legalContent';
 
-const values = (lang: 'es' | 'en') => Object.values(translations[lang]).join('\n');
+const values = (lang: 'es' | 'en' | 'pt') => Object.values(translations[lang]).join('\n');
 
 describe('interface texts', () => {
-  it('Spanish and English define the same keys', () => {
-    expect(Object.keys(translations.en).sort()).toEqual(Object.keys(translations.es).sort());
+  it.each(['en', 'pt'] as const)('%s defines the same keys as Spanish', (lang) => {
+    expect(Object.keys(translations[lang]).sort()).toEqual(Object.keys(translations.es).sort());
   });
 
-  it.each(['es', 'en'] as const)('%s placeholders match between languages', (lang) => {
-    const other = lang === 'es' ? 'en' : 'es';
-    for (const [key, text] of Object.entries(translations[lang])) {
+  it.each(['en', 'pt'] as const)('%s placeholders match the Spanish ones', (lang) => {
+    for (const [key, text] of Object.entries(translations.es)) {
       const placeholders = (s: string) => (s.match(/\{\w+\}/g) || []).sort();
-      expect(placeholders(text), key).toEqual(placeholders((translations[other] as Record<string, string>)[key]));
+      expect(placeholders((translations[lang] as Record<string, string>)[key]), key).toEqual(placeholders(text));
     }
   });
 
-  it.each(['es', 'en'] as const)('%s makes no claims the contract does not back', (lang) => {
+  it.each(['es', 'en', 'pt'] as const)('%s makes no claims the contract does not back', (lang) => {
     const text = values(lang);
-    expect(text).not.toMatch(/4 (días|days)/i); // the review window is 5 days
-    expect(text).not.toMatch(/neutral/i); // the arbiter is the operator during this stage
+    expect(text).not.toMatch(/4 (días|days|dias)/i); // the review window is 5 days
+    expect(text).not.toMatch(/neutral|neutro/i); // the arbiter is the operator during this stage
     expect(text).not.toMatch(/instant/i); // escrow settlement is not instant
-    expect(text).not.toMatch(/se liberarán automáticamente|auto-release to your wallet/i); // the seller must claim it
+    expect(text).not.toMatch(/se liberarán automáticamente|auto-release to your wallet|liberados automaticamente/i); // the seller must claim it
   });
 });
 

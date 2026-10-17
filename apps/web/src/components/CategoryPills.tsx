@@ -1,5 +1,5 @@
 import React from 'react';
-import { MARKETPLACE_CATEGORIES } from '@mercadopleis/types';
+import { MARKETPLACE_CATEGORIES, categoryLabel as categoryLabel_ } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
 import {
   Code,
@@ -54,7 +54,7 @@ export function CategoryPills({ selectedCategory, onSelectCategory }: CategoryPi
       {MARKETPLACE_CATEGORIES.map((cat) => {
         const IconComponent = ICON_MAP[cat.icon as keyof typeof ICON_MAP] || MoreHorizontal;
         const isSelected = selectedCategory === cat.id;
-        const displayName = language === 'en' ? (cat.nameEn || cat.name) : cat.name;
+        const displayName = categoryLabel_(cat, language);
 
         return (
           <button

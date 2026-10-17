@@ -14,21 +14,16 @@ import { CONTRACT_CONFIG } from '@mercadopleis/types';
 export function NetworkSwitch() {
   const { isConnected, chainId } = useAccount();
   const { openChainModal } = useChainModal();
-  const { language } = useLanguage();
-  const en = language === 'en';
+  const { L } = useLanguage();
 
   const isSepolia = chainId === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
   const isMainnet = !isConnected || chainId === CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID;
   const unsupported = isConnected && !isSepolia && !isMainnet;
 
-  const label = unsupported ? (en ? 'Wrong network' : 'Red no soportada') : isSepolia ? 'Base Sepolia' : 'Base Mainnet';
+  const label = unsupported ? (L('Red no soportada', 'Wrong network', 'Rede não suportada')) : isSepolia ? 'Base Sepolia' : 'Base Mainnet';
   const title = isConnected
-    ? en
-      ? 'Change network'
-      : 'Cambiar de red'
-    : en
-      ? 'Payments run on Base Mainnet'
-      : 'Los pagos se hacen en Base Mainnet';
+    ? L('Cambiar de red', 'Change network', 'Trocar de rede')
+    : L('Los pagos se hacen en Base Mainnet', 'Payments run on Base Mainnet', 'Os pagamentos são feitos na Base Mainnet');
 
   const tone = unsupported
     ? 'border-red-500/40 bg-red-500/10 text-red-300'

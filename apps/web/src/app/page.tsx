@@ -14,7 +14,7 @@ const INITIAL_SERVICES: Service[] = [];
 
 export default function HomePage() {
   const router = useRouter();
-  const { language, t } = useLanguage();
+  const { language, t, L } = useLanguage();
   const [servicesList, setServicesList] = useState<Service[]>(INITIAL_SERVICES);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedDeliveryType, setSelectedDeliveryType] = useState<'all' | 'digital' | 'in_person'>('all');
@@ -93,7 +93,7 @@ export default function HomePage() {
         <div className="relative z-10 max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-primary-light">
             <Zap className="h-3.5 w-3.5 text-accent" />
-            <span>{language === 'en' ? 'AI agents → people • Stablecoin escrow on Base' : 'Agentes de IA → personas • Escrow en stablecoins sobre Base'}</span>
+            <span>{L('Agentes de IA → personas • Escrow en stablecoins sobre Base', 'AI agents → people • Stablecoin escrow on Base', 'Agentes de IA → pessoas • Escrow em stablecoins na Base')}</span>
           </div>
 
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
@@ -102,6 +102,13 @@ export default function HomePage() {
                 The marketplace where AI agents{' '}
                 <span className="bg-gradient-to-r from-primary-light via-blue-400 to-accent bg-clip-text text-transparent">
                   hire people
+                </span>
+              </>
+            ) : language === 'pt' ? (
+              <>
+                O marketplace onde agentes de IA{' '}
+                <span className="bg-gradient-to-r from-primary-light via-blue-400 to-accent bg-clip-text text-transparent">
+                  contratam pessoas
                 </span>
               </>
             ) : (
@@ -115,9 +122,7 @@ export default function HomePage() {
           </h1>
 
           <p className="mt-4 text-base text-slate-300 sm:text-lg">
-            {language === 'en'
-              ? 'For the work models can’t finish alone: curating datasets, red-teaming prompts, scraping hard sites, building automations, transcribing audio. Agents and their builders hire people here and pay in stablecoins (USDC on Base); the money waits in a non-custodial escrow on Base until the work is approved.'
-              : 'Para el trabajo que un modelo no termina solo: curar datasets, poner a prueba prompts, extraer datos de sitios difíciles, armar automatizaciones, transcribir audio. Agentes y quienes los construyen contratan personas aquí y pagan en stablecoins (USDC en Base); el dinero espera en un escrow sin custodio en Base hasta que el trabajo se aprueba.'}
+            {L('Para el trabajo que un modelo no termina solo: curar datasets, poner a prueba prompts, extraer datos de sitios difíciles, armar automatizaciones, transcribir audio. Agentes y quienes los construyen contratan personas aquí y pagan en stablecoins (USDC en Base); el dinero espera en un escrow sin custodio en Base hasta que el trabajo se aprueba.', 'For the work models can’t finish alone: curating datasets, red-teaming prompts, scraping hard sites, building automations, transcribing audio. Agents and their builders hire people here and pay in stablecoins (USDC on Base); the money waits in a non-custodial escrow on Base until the work is approved.', 'Para o trabalho que um modelo não termina sozinho: curar datasets, testar prompts, extrair dados de sites difíceis, montar automações, transcrever áudio. Agentes e quem os constrói contratam pessoas aqui e pagam em stablecoins (USDC na Base); o dinheiro espera em um escrow sem custódia na Base até o trabalho ser aprovado.')}
           </p>
 
           {/* Search Input */}
@@ -125,7 +130,7 @@ export default function HomePage() {
             <Search className="ml-3 h-5 w-5 text-slate-400" />
             <input
               type="text"
-              placeholder={language === 'en' ? 'Search transcription, datasets, agents, n8n, scraping, solidity...' : 'Buscar transcripción, datasets, agentes, n8n, scraping, solidity...'}
+              placeholder={L('Buscar transcripción, datasets, agentes, n8n, scraping, solidity...', 'Search transcription, datasets, agents, n8n, scraping, solidity...', 'Buscar transcrição, datasets, agentes, n8n, scraping, solidity...')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-transparent px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none"
@@ -134,23 +139,23 @@ export default function HomePage() {
 
           {/* Entry point for agent builders */}
           <p className="mt-4 text-sm text-slate-400">
-            {language === 'en' ? 'Building an agent? Connect it with the ' : '¿Construyes un agente? Conéctalo con el '}
+            {L('¿Construyes un agente? Conéctalo con el ', 'Building an agent? Connect it with the ', 'Está criando um agente? Conecte-o com o ')}
             <a
               href="https://github.com/castiquark/mercadopleis/tree/main/packages/mcp-server"
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold text-primary-light hover:underline"
             >
-              {language === 'en' ? 'MCP server' : 'servidor MCP'}
+              {L('servidor MCP', 'MCP server', 'servidor MCP')}
             </a>
-            {language === 'en' ? ' or read ' : ' o lee '}
+            {L(' o lee ', ' or read ', ' ou leia ')}
             <a href="/llms.txt" className="font-mono text-primary-light hover:underline">
               /llms.txt
             </a>
             .{' '}
-            {language === 'en' ? 'Need something that is not listed? ' : '¿No encuentras lo que necesitas? '}
+            {L('¿No encuentras lo que necesitas? ', 'Need something that is not listed? ', 'Não encontrou o que precisa? ')}
             <Link href="/requests/new" className="font-semibold text-primary-light hover:underline">
-              {language === 'en' ? 'Post a request' : 'Publica un pedido'}
+              {L('Publica un pedido', 'Post a request', 'Publique uma solicitação')}
             </Link>
             .
           </p>
@@ -165,33 +170,27 @@ export default function HomePage() {
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface/50 p-4">
           <Zap className="h-6 w-6 text-amber-400 shrink-0" />
           <div className="text-xs">
-            <p className="font-semibold text-white">{language === 'en' ? 'Built for agents' : 'Hecho para agentes'}</p>
+            <p className="font-semibold text-white">{L('Hecho para agentes', 'Built for agents', 'Feito para agentes')}</p>
             <p className="text-slate-400">
-              {language === 'en'
-                ? 'MCP server, API and llms.txt: an agent finds the service and prepares the payment for its own wallet.'
-                : 'Servidor MCP, API y llms.txt: un agente encuentra el servicio y prepara el pago para su propia wallet.'}
+              {L('Servidor MCP, API y llms.txt: un agente encuentra el servicio y prepara el pago para su propia wallet.', 'MCP server, API and llms.txt: an agent finds the service and prepares the payment for its own wallet.', 'Servidor MCP, API e llms.txt: um agente encontra o serviço e prepara o pagamento para a própria carteira.')}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface/50 p-4">
           <CheckCircle className="h-6 w-6 text-primary-light shrink-0" />
           <div className="text-xs">
-            <p className="font-semibold text-white">{language === 'en' ? 'Done by people' : 'Lo hacen personas'}</p>
+            <p className="font-semibold text-white">{L('Lo hacen personas', 'Done by people', 'Feito por pessoas')}</p>
             <p className="text-slate-400">
-              {language === 'en'
-                ? 'Real people do what models can’t, and record each delivery on-chain with a SHA-256 hash.'
-                : 'Personas reales hacen lo que un modelo no puede, y registran cada entrega on-chain con un hash SHA-256.'}
+              {L('Personas reales hacen lo que un modelo no puede, y registran cada entrega on-chain con un hash SHA-256.', 'Real people do what models can’t, and record each delivery on-chain with a SHA-256 hash.', 'Pessoas reais fazem o que um modelo não consegue e registram cada entrega on-chain com um hash SHA-256.')}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface/50 p-4">
           <ShieldCheck className="h-6 w-6 text-accent shrink-0" />
           <div className="text-xs">
-            <p className="font-semibold text-white">{language === 'en' ? 'Fixed 3% • no custodian' : '3% fijo • sin custodio'}</p>
+            <p className="font-semibold text-white">{L('3% fijo • sin custodio', 'Fixed 3% • no custodian', '3% fixo • sem custódia')}</p>
             <p className="text-slate-400">
-              {language === 'en'
-                ? '0% for the buyer, vs up to 20% on Web2 platforms. Stablecoin escrow on Base with a 5-day review.'
-                : '0% para el comprador, frente a hasta 20% en plataformas Web2. Escrow en stablecoins sobre Base con 5 días de revisión.'}
+              {L('0% para el comprador, frente a hasta 20% en plataformas Web2. Escrow en stablecoins sobre Base con 5 días de revisión.', '0% for the buyer, vs up to 20% on Web2 platforms. Stablecoin escrow on Base with a 5-day review.', '0% para quem compra, contra até 20% em plataformas Web2. Escrow em stablecoins na Base com 5 dias de revisão.')}
             </p>
           </div>
         </div>
@@ -201,12 +200,12 @@ export default function HomePage() {
       <section className="mt-12">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-2xl font-bold text-white">{language === 'en' ? 'Available Services' : 'Servicios Disponibles'}</h2>
-            <p className="text-sm text-slate-400">{language === 'en' ? 'Explore gigs paid through stablecoin escrow' : 'Explora ofertas con pago protegido por escrow en stablecoins'}</p>
+            <h2 className="text-2xl font-bold text-white">{L('Servicios Disponibles', 'Available Services', 'Serviços Disponíveis')}</h2>
+            <p className="text-sm text-slate-400">{L('Explora ofertas con pago protegido por escrow en stablecoins', 'Explore gigs paid through stablecoin escrow', 'Explore ofertas com pagamento protegido por escrow em stablecoins')}</p>
           </div>
 
           <span className="text-xs font-medium text-slate-400">
-            {language === 'en' ? `Showing ${filteredServices.length} services` : `Mostrando ${filteredServices.length} servicios`}
+            {L(`Mostrando ${filteredServices.length} servicios`, `Showing ${filteredServices.length} services`, `Mostrando ${filteredServices.length} serviços`)}
           </span>
         </div>
 
@@ -284,7 +283,7 @@ export default function HomePage() {
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1 mr-1">
                   <MapPin className="h-3 w-3 text-cyan-400" />
-                  {language === 'en' ? 'Locations:' : 'Zonas:'}
+                  {L('Zonas:', 'Locations:', 'Locais:')}
                 </span>
                 {availableLocations.map((loc) => (
                   <button
@@ -354,7 +353,7 @@ export default function HomePage() {
                 href="/services/new"
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/25 transition hover:bg-primary-hover active:scale-95"
               >
-                <span>{language === 'en' ? 'Publish the First Service' : 'Publicar el Primer Servicio'}</span>
+                <span>{L('Publicar el Primer Servicio', 'Publish the First Service', 'Publicar o Primeiro Serviço')}</span>
               </Link>
             </div>
           </div>

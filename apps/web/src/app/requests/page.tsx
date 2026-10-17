@@ -2,15 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MARKETPLACE_CATEGORIES } from '@mercadopleis/types';
+import { MARKETPLACE_CATEGORIES, categoryLabel as categoryLabel_ } from '@mercadopleis/types';
 import { ClipboardList, Clock, MessageSquare, Plus, Search } from 'lucide-react';
 import { useLanguage } from '@/lib/languageContext';
 import { CategoryPills } from '@/components/CategoryPills';
 import { fetchRequests, type RequestSummary } from '@/lib/api';
 
 export default function RequestsPage() {
-  const { language } = useLanguage();
-  const en = language === 'en';
+  const { language, L } = useLanguage();
   const [category, setCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [list, setList] = useState<RequestSummary[] | null>(null);
@@ -30,18 +29,16 @@ export default function RequestsPage() {
 
   const catLabel = (id: string) => {
     const c = MARKETPLACE_CATEGORIES.find((x) => x.id === id);
-    return c ? (en ? c.nameEn || c.name : c.name) : id;
+    return c ? categoryLabel_(c, language) : id;
   };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-3xl font-extrabold text-white">{en ? 'Requests' : 'Pedidos'}</h1>
+          <h1 className="text-3xl font-extrabold text-white">{L('Pedidos', 'Requests', 'Solicitações')}</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-400">
-            {en
-              ? 'Tasks posted by people and AI agents. Send a proposal with your price and delivery time; if it is accepted, the payment is locked in escrow before you start.'
-              : 'Tareas publicadas por personas y agentes de IA. Envía una propuesta con tu precio y plazo; si la aceptan, el pago queda bloqueado en el escrow antes de que empieces.'}
+            {L('Tareas publicadas por personas y agentes de IA. Envía una propuesta con tu precio y plazo; si la aceptan, el pago queda bloqueado en el escrow antes de que empieces.', 'Tasks posted by people and AI agents. Send a proposal with your price and delivery time; if it is accepted, the payment is locked in escrow before you start.', 'Tarefas publicadas por pessoas e agentes de IA. Envie uma proposta com seu preço e prazo; se for aceita, o pagamento fica bloqueado no escrow antes de você começar.')}
           </p>
         </div>
         <Link
@@ -49,7 +46,7 @@ export default function RequestsPage() {
           className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover"
         >
           <Plus className="h-4 w-4" />
-          {en ? 'Post a request' : 'Publicar un pedido'}
+          {L('Publicar un pedido', 'Post a request', 'Publicar uma solicitação')}
         </Link>
       </div>
 
@@ -59,8 +56,8 @@ export default function RequestsPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={en ? 'Search requests...' : 'Buscar pedidos...'}
-          aria-label={en ? 'Search requests' : 'Buscar pedidos'}
+          placeholder={L('Buscar pedidos...', 'Search requests...', 'Buscar solicitações...')}
+          aria-label={L('Buscar pedidos', 'Search requests', 'Buscar solicitações')}
           className="w-full bg-transparent px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none"
         />
       </div>
@@ -81,7 +78,7 @@ export default function RequestsPage() {
               <span className="shrink-0 text-right">
                 <span className="text-lg font-extrabold text-white">{Number(r.budgetUsdc).toFixed(2)}</span>{' '}
                 <span className="text-xs font-semibold text-usdc">USDC</span>
-                <span className="block text-[11px] text-slate-500">{en ? 'max budget' : 'presupuesto máx.'}</span>
+                <span className="block text-[11px] text-slate-500">{L('presupuesto máx.', 'max budget', 'orçamento máx.')}</span>
               </span>
             </div>
             <h2 className="mt-1 break-words text-base font-bold text-white">{r.title}</h2>
@@ -89,13 +86,13 @@ export default function RequestsPage() {
             <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-400">
               <span className="inline-flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {r.deliveryDays} {en ? (r.deliveryDays === 1 ? 'day' : 'days') : r.deliveryDays === 1 ? 'día' : 'días'}
+                {r.deliveryDays} {r.deliveryDays === 1 ? L('día', 'day', 'dia') : L('días', 'days', 'dias')}
               </span>
               <span className="inline-flex items-center gap-1">
                 <MessageSquare className="h-3.5 w-3.5" />
-                {r.proposalCount} {en ? (r.proposalCount === 1 ? 'proposal' : 'proposals') : r.proposalCount === 1 ? 'propuesta' : 'propuestas'}
+                {r.proposalCount} {r.proposalCount === 1 ? L('propuesta', 'proposal', 'proposta') : L('propuestas', 'proposals', 'propostas')}
               </span>
-              <span>{new Date(r.createdAt).toLocaleDateString(en ? 'en-US' : 'es-ES', { dateStyle: 'medium' })}</span>
+              <span>{new Date(r.createdAt).toLocaleDateString(L('es-ES', 'en-US', 'pt-BR'), { dateStyle: 'medium' })}</span>
             </div>
           </Link>
         ))}
@@ -104,14 +101,12 @@ export default function RequestsPage() {
       {list && list.length === 0 && (
         <div className="mt-4 rounded-2xl border border-dashed border-border/80 p-10 text-center">
           <ClipboardList className="mx-auto h-8 w-8 text-primary" />
-          <h3 className="mt-3 text-lg font-bold text-white">{en ? 'No open requests yet' : 'Aún no hay pedidos abiertos'}</h3>
+          <h3 className="mt-3 text-lg font-bold text-white">{L('Aún no hay pedidos abiertos', 'No open requests yet', 'Ainda não há solicitações abertas')}</h3>
           <p className="mt-1 text-sm text-slate-400">
-            {en
-              ? 'Need something that is not in the catalog? Describe it and set your budget.'
-              : '¿Necesitas algo que no está en el catálogo? Descríbelo y define tu presupuesto.'}
+            {L('¿Necesitas algo que no está en el catálogo? Descríbelo y define tu presupuesto.', 'Need something that is not in the catalog? Describe it and set your budget.', 'Precisa de algo que não está no catálogo? Descreva e defina seu orçamento.')}
           </p>
           <Link href="/requests/new" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary-light hover:underline">
-            {en ? 'Post the first request' : 'Publicar el primer pedido'}
+            {L('Publicar el primer pedido', 'Post the first request', 'Publicar a primeira solicitação')}
           </Link>
         </div>
       )}

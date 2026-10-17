@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Service, MARKETPLACE_CATEGORIES } from '@mercadopleis/types';
+import { Service, MARKETPLACE_CATEGORIES, categoryLabel as categoryLabel_ } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
 import { useAccount, useWriteContract, useReadContract, usePublicClient } from 'wagmi';
 import { useChainModal } from '@rainbow-me/rainbowkit';
@@ -21,7 +21,7 @@ interface CheckoutModalProps {
 }
 
 export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProps) {
-  const { language } = useLanguage();
+  const { language, L } = useLanguage();
   const { address, isConnected, chainId } = useAccount();
   const [step, setStep] = useState<'quote' | 'approving' | 'funding' | 'success'>('quote');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -59,11 +59,7 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
   if (!service) return null;
 
   const categoryObj = MARKETPLACE_CATEGORIES.find((c) => c.id === service.category);
-  const categoryLabel = categoryObj
-    ? language === 'en'
-      ? categoryObj.nameEn || categoryObj.name
-      : categoryObj.name
-    : service.category;
+  const categoryLabel = categoryObj ? categoryLabel_(categoryObj, language) : service.category;
 
   const needsApproval = currentAllowance !== undefined && currentAllowance < rawAmount;
   const hasInsufficientBalance = currentBalance !== undefined && currentBalance < rawAmount;
@@ -75,26 +71,20 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
 
       if (!address || !isConnected) {
         throw new Error(
-          language === 'en'
-            ? 'Please connect your Web3 wallet to proceed.'
-            : 'Por favor conecta tu wallet Web3 para continuar.'
+          L('Por favor conecta tu wallet Web3 para continuar.', 'Please connect your Web3 wallet to proceed.', 'Conecte sua carteira Web3 para continuar.')
         );
       }
 
       if (!network.supported || !escrowAddress || escrowAddress === '0x0000000000000000000000000000000000000000') {
         throw new Error(
-          language === 'en'
-            ? 'No escrow contract configured for this network. Please switch to Base Mainnet or Base Sepolia.'
-            : 'No hay contrato de escrow configurado para esta red. Por favor cambia a Base Mainnet o Base Sepolia.'
+          L('No hay contrato de escrow configurado para esta red. Por favor cambia a Base Mainnet o Base Sepolia.', 'No escrow contract configured for this network. Please switch to Base Mainnet or Base Sepolia.', 'Não há contrato de escrow configurado para esta rede. Mude para a Base Mainnet ou a Base Sepolia.')
         );
       }
 
       const sellerWallet = service.seller?.walletAddress as `0x${string}` | undefined;
       if (!sellerWallet || !sellerWallet.startsWith('0x') || sellerWallet.length !== 42) {
         throw new Error(
-          language === 'en'
-            ? 'Seller wallet is unavailable or invalid for this service.'
-            : 'La wallet del vendedor no está configurada o es inválida para este servicio.'
+          L('La wallet del vendedor no está configurada o es inválida para este servicio.', 'Seller wallet is unavailable or invalid for this service.', 'A carteira do vendedor não está configurada ou é inválida para este serviço.')
         );
       }
 
@@ -133,9 +123,7 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
       // Step 3: Wait for transaction confirmation & parse authoritative OrderFunded event
       if (!publicClient) {
         throw new Error(
-          language === 'en'
-            ? 'Network client unavailable to verify transaction receipt.'
-            : 'Cliente de red no disponible para verificar el recibo de la transacción.'
+          L('Cliente de red no disponible para verificar el recibo de la transacción.', 'Network client unavailable to verify transaction receipt.', 'Cliente de rede indisponível para verificar o recibo da transação.')
         );
       }
 
@@ -148,9 +136,7 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
 
       if (!logs.length || logs[0].args?.orderId === undefined) {
         throw new Error(
-          language === 'en'
-            ? 'Transaction confirmed on Base, but could not decode OrderFunded event. Please check BaseScan.'
-            : 'Transacción confirmada en Base, pero no se pudo decodificar el evento OrderFunded. Por favor revisa en BaseScan.'
+          L('Transacción confirmada en Base, pero no se pudo decodificar el evento OrderFunded. Por favor revisa en BaseScan.', 'Transaction confirmed on Base, but could not decode OrderFunded event. Please check BaseScan.', 'Transação confirmada na Base, mas não foi possível decodificar o evento OrderFunded. Verifique no BaseScan.')
         );
       }
 
@@ -190,16 +176,14 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
     } catch (err: any) {
       if (isUserRejection(err)) {
         setErrorMessage(
-          language === 'en'
-            ? 'Signature or transaction cancelled in your wallet. No funds were debited.'
-            : 'Firma o transacción cancelada en tu wallet. No se debitó ningún fondo.'
+          L('Firma o transacción cancelada en tu wallet. No se debitó ningún fondo.', 'Signature or transaction cancelled in your wallet. No funds were debited.', 'Assinatura ou transação cancelada na sua carteira. Nenhum valor foi debitado.')
         );
       } else {
         console.error('Order error:', err);
         setErrorMessage(
           err?.shortMessage ||
             err?.message ||
-            (language === 'en' ? 'The transaction could not be processed in your wallet.' : 'Error al procesar la transacción en la wallet.')
+            (L('Error al procesar la transacción en la wallet.', 'The transaction could not be processed in your wallet.', 'Não foi possível processar a transação na carteira.'))
         );
       }
       setStep('quote');
@@ -225,12 +209,10 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
           </div>
           <div>
             <h2 className="text-lg font-bold text-white">
-              {language === 'en' ? 'Hire with Secure Escrow' : 'Contratar con Escrow Seguro'}
+              {L('Contratar con Escrow Seguro', 'Hire with Secure Escrow', 'Contratar com Escrow Seguro')}
             </h2>
             <p className="text-xs text-slate-400">
-              {language === 'en'
-                ? 'Funds stay locked in the smart contract until the delivery is approved or the review period ends'
-                : 'Los fondos quedan bloqueados hasta que apruebes la entrega o termine el período de revisión'}
+              {L('Los fondos quedan bloqueados hasta que apruebes la entrega o termine el período de revisión', 'Funds stay locked in the smart contract until the delivery is approved or the review period ends', 'Os fundos ficam bloqueados até você aprovar a entrega ou terminar o período de revisão')}
             </p>
           </div>
         </div>
@@ -255,20 +237,12 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
               )}
               <span>
                 {!network.supported
-                  ? language === 'en'
-                    ? 'Your wallet is on an unsupported network. Switch to Base Mainnet to pay.'
-                    : 'Tu wallet está en una red no soportada. Cambia a Base Mainnet para pagar.'
+                  ? L('Tu wallet está en una red no soportada. Cambia a Base Mainnet para pagar.', 'Your wallet is on an unsupported network. Switch to Base Mainnet to pay.', 'Sua carteira está em uma rede não suportada. Mude para a Base Mainnet para pagar.')
                   : network.isTestnet
-                    ? language === 'en'
-                      ? `Test mode: you will pay on ${network.name} with test ${sym} (no real value). This is not a real hire.`
-                      : `Modo prueba: pagarás en ${network.name} con ${sym} de prueba (sin valor real). No es una contratación real.`
-                    : language === 'en'
-                      ? `You will pay on ${network.name} with real ${sym}.`
-                      : `Pagarás en ${network.name} con ${sym} real.`}{' '}
+                    ? L(`Modo prueba: pagarás en ${network.name} con ${sym} de prueba (sin valor real). No es una contratación real.`, `Test mode: you will pay on ${network.name} with test ${sym} (no real value). This is not a real hire.`, `Modo de teste: você vai pagar na ${network.name} com ${sym} de teste (sem valor real). Não é uma contratação real.`)
+                    : L(`Pagarás en ${network.name} con ${sym} real.`, `You will pay on ${network.name} with real ${sym}.`, `Você vai pagar na ${network.name} com ${sym} real.`)}{' '}
                 <span className="opacity-80">
-                  {language === 'en'
-                    ? 'Check the network selector next to your wallet before confirming.'
-                    : 'Revisa el selector de red junto a tu wallet antes de confirmar.'}
+                  {L('Revisa el selector de red junto a tu wallet antes de confirmar.', 'Check the network selector next to your wallet before confirming.', 'Confira o seletor de rede ao lado da sua carteira antes de confirmar.')}
                 </span>
               </span>
             </span>
@@ -278,7 +252,7 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
                 onClick={openChainModal}
                 className="shrink-0 rounded-lg border border-white/20 bg-black/20 px-2.5 py-1 font-semibold transition hover:bg-black/40"
               >
-                {language === 'en' ? 'Change network' : 'Cambiar red'}
+                {L('Cambiar red', 'Change network', 'Trocar rede')}
               </button>
             )}
           </div>
@@ -292,12 +266,12 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
             </span>
             {service.deliveryType === 'in_person' && (
               <span className="rounded-md bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-300 border border-cyan-500/30">
-                {language === 'en' ? 'In-Person' : 'Presencial'}
+                {L('Presencial', 'In-Person', 'Presencial')}
               </span>
             )}
             {service.deliveryType === 'both' && (
               <span className="rounded-md bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-300 border border-indigo-500/30">
-                {language === 'en' ? 'Hybrid' : 'Híbrido'}
+                {L('Híbrido', 'Hybrid', 'Híbrido')}
               </span>
             )}
           </div>
@@ -311,18 +285,18 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
 
           <div className="mt-4 space-y-2 border-t border-border/60 pt-3 text-sm">
             <div className="flex justify-between text-slate-300">
-              <span>{language === 'en' ? 'Service price' : 'Precio del servicio'}</span>
+              <span>{L('Precio del servicio', 'Service price', 'Preço do serviço')}</span>
               <span className="font-medium text-white">{service.priceUsdc} {sym}</span>
             </div>
             <div className="flex justify-between text-slate-400">
               <span className="flex items-center gap-1">
-                {language === 'en' ? 'Buyer fee' : 'Comisión para comprador'}
+                {L('Comisión para comprador', 'Buyer fee', 'Taxa para quem compra')}
                 <span className="rounded bg-accent/10 px-1 text-[10px] font-semibold text-accent">0%</span>
               </span>
               <span className="text-accent font-medium">0.00 {sym}</span>
             </div>
             <div className="flex justify-between border-t border-border/60 pt-2 text-base font-bold text-white">
-              <span>{language === 'en' ? 'Total to fund' : 'Total a fondear'}</span>
+              <span>{L('Total a fondear', 'Total to fund', 'Total a depositar')}</span>
               <span className="text-primary-light">{service.priceUsdc} {sym}</span>
             </div>
           </div>
@@ -333,25 +307,19 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-accent" />
             <span>
-              {language === 'en'
-                ? 'Funds remain in the smart contract, never held by third parties.'
-                : 'Los fondos permanecen en el smart contract, nunca en manos de terceros.'}
+              {L('Los fondos permanecen en el smart contract, nunca en manos de terceros.', 'Funds remain in the smart contract, never held by third parties.', 'Os fundos ficam no smart contract, nunca nas mãos de terceiros.')}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 shrink-0 text-primary-light" />
             <span>
-              {language === 'en'
-                ? 'You have 5 days after delivery to approve it or open a dispute. After that, the seller can claim the payment.'
-                : 'Tienes 5 días desde la entrega para aprobarla o abrir una disputa. Después, el vendedor puede cobrar.'}
+              {L('Tienes 5 días desde la entrega para aprobarla o abrir una disputa. Después, el vendedor puede cobrar.', 'You have 5 days after delivery to approve it or open a dispute. After that, the seller can claim the payment.', 'Você tem 5 dias após a entrega para aprovar ou abrir uma disputa. Depois disso, o vendedor pode receber.')}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 shrink-0 text-amber-400" />
             <span>
-              {language === 'en'
-                ? 'Full refund if the seller does not deliver on time: claim it from My Orders once the deadline passes.'
-                : 'Reembolso íntegro si el vendedor no entrega a tiempo: lo reclamas desde Mis Órdenes al vencer el plazo.'}
+              {L('Reembolso íntegro si el vendedor no entrega a tiempo: lo reclamas desde Mis Órdenes al vencer el plazo.', 'Full refund if the seller does not deliver on time: claim it from My Orders once the deadline passes.', 'Reembolso total se o vendedor não entregar a tempo: solicite em Meus Pedidos quando o prazo vencer.')}
             </span>
           </div>
         </div>
@@ -360,11 +328,11 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
         {isConnected && (
           <div className="mt-4 flex items-center justify-between rounded-xl border border-border/70 bg-surface-elevated/40 px-3.5 py-2.5 text-xs">
             <span className="text-slate-400">
-              {language === 'en' ? `Your ${sym} balance:` : `Tu saldo de ${sym}:`}{' '}
+              {L(`Tu saldo de ${sym}:`, `Your ${sym} balance:`, `Seu saldo de ${sym}:`)}{' '}
               <strong className="text-white">
                 {currentBalance !== undefined
                   ? `${Number(formatUnits(currentBalance, network.tokenDecimals)).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${sym}`
-                  : (language === 'en' ? 'Loading...' : 'Cargando...')}
+                  : (L('Cargando...', 'Loading...', 'Carregando...'))}
               </strong>
             </span>
 
@@ -384,12 +352,8 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
             <Droplet className="h-4 w-4 shrink-0 text-amber-400" />
             <span>
               {activeChainId === 84532
-                ? (language === 'en'
-                    ? 'Insufficient balance for this order. Claim testnet funds above with 1 click.'
-                    : 'Saldo insuficiente para esta orden. Reclama fondos de prueba arriba con 1 clic.')
-                : (language === 'en'
-                    ? `Insufficient ${sym} balance on ${network.name}. Please fund your wallet with ${sym}.`
-                    : `Saldo insuficiente de ${sym} en ${network.name}. Por favor fondea tu wallet con ${sym}.`)}
+                ? (L('Saldo insuficiente para esta orden. Reclama fondos de prueba arriba con 1 clic.', 'Insufficient balance for this order. Claim testnet funds above with 1 click.', 'Saldo insuficiente para este pedido. Obtenha fundos de teste acima com 1 clique.'))
+                : (L(`Saldo insuficiente de ${sym} en ${network.name}. Por favor fondea tu wallet con ${sym}.`, `Insufficient ${sym} balance on ${network.name}. Please fund your wallet with ${sym}.`, `Saldo insuficiente de ${sym} na ${network.name}. Adicione ${sym} à sua carteira.`))}
             </span>
           </div>
         )}
@@ -407,18 +371,14 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
           {!isConnected ? (
             <div className="text-center">
               <p className="mb-2 text-xs text-slate-400">
-                {language === 'en'
-                  ? 'Connect your wallet to proceed with escrow'
-                  : 'Conecta tu wallet para proceder con el escrow'}
+                {L('Conecta tu wallet para proceder con el escrow', 'Connect your wallet to proceed with escrow', 'Conecte sua carteira para continuar com o escrow')}
               </p>
             </div>
           ) : step === 'success' ? (
             <div className="flex items-center justify-center gap-2 rounded-xl bg-accent/20 py-3 text-sm font-bold text-accent">
               <CheckCircle2 className="h-5 w-5" />
               <span>
-                {language === 'en'
-                  ? 'Order successfully funded in Escrow!'
-                  : '¡Orden fondeada en Escrow exitosamente!'}
+                {L('¡Orden fondeada en Escrow exitosamente!', 'Order successfully funded in Escrow!', 'Pedido depositado no escrow com sucesso!')}
               </span>
             </div>
           ) : (
@@ -427,24 +387,24 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
               disabled={step !== 'quote'}
               className="w-full rounded-xl bg-primary py-3 font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-hover active:scale-[0.99] disabled:opacity-50"
             >
-              {step === 'approving' && (language === 'en' ? `1/2 Approving ${sym} in your wallet...` : `1/2 Aprobando ${sym} en tu wallet...`)}
-              {step === 'funding' && (language === 'en' ? '2/2 Confirming deposit in the Smart Contract...' : '2/2 Confirmando depósito en el Smart Contract...')}
+              {step === 'approving' && (L(`1/2 Aprobando ${sym} en tu wallet...`, `1/2 Approving ${sym} in your wallet...`, `1/2 Aprovando ${sym} na sua carteira...`))}
+              {step === 'funding' && (L('2/2 Confirmando depósito en el Smart Contract...', '2/2 Confirming deposit in the Smart Contract...', '2/2 Confirmando depósito no Smart Contract...'))}
               {step === 'quote' && (
                 needsApproval
-                  ? (language === 'en' ? `Approve ${sym} & Fund Escrow` : `Aprobar ${sym} y Fondear Escrow`)
-                  : (language === 'en' ? 'Confirm & Fund in Escrow' : 'Confirmar y Fondear en Escrow')
+                  ? (L(`Aprobar ${sym} y Fondear Escrow`, `Approve ${sym} & Fund Escrow`, `Aprovar ${sym} e Depositar no Escrow`))
+                  : (L('Confirmar y Fondear en Escrow', 'Confirm & Fund in Escrow', 'Confirmar e Depositar no Escrow'))
               )}
             </button>
           )}
 
           <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500">
-            {language === 'en' ? 'By continuing you accept the ' : 'Al continuar aceptas los '}
+            {L('Al continuar aceptas los ', 'By continuing you accept the ', 'Ao continuar você aceita os ')}
             <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-300">
-              {language === 'en' ? 'Terms' : 'Términos'}
+              {L('Términos', 'Terms', 'Termos')}
             </a>
-            {language === 'en' ? ' and the ' : ' y la '}
+            {L(' y la ', ' and the ', ' e a ')}
             <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-300">
-              {language === 'en' ? 'Privacy Policy' : 'Política de Privacidad'}
+              {L('Política de Privacidad', 'Privacy Policy', 'Política de Privacidade')}
             </a>
             .
           </p>

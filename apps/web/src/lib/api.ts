@@ -95,18 +95,23 @@ export async function verifySignature(address: string, signature: string, messag
 }
 
 /** Picks the message in the language chosen on the site (falls back to the browser language). */
-const msg = (en: string, es: string) => {
+const msg = (en: string, es: string, pt: string) => {
+  let lang: string | null = null;
   try {
-    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('mercadopleis_lang') : null;
-    if (saved) return saved === 'en' ? en : es;
+    lang = typeof localStorage !== 'undefined' ? localStorage.getItem('mercadopleis_lang') : null;
   } catch {
     // storage unavailable
   }
-  return typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('en') ? en : es;
+  if (!lang && typeof navigator !== 'undefined') lang = navigator.language?.toLowerCase().slice(0, 2) ?? null;
+  return lang === 'en' ? en : lang === 'pt' ? pt : es;
 };
 
 const signInRequired = () =>
-  msg('Sign the session with your wallet (button in the top bar) and try again.', 'Firma la sesión con tu wallet (botón en la barra superior) e inténtalo de nuevo.');
+  msg(
+    'Sign the session with your wallet (button in the top bar) and try again.',
+    'Firma la sesión con tu wallet (botón en la barra superior) e inténtalo de nuevo.',
+    'Assine a sessão com sua carteira (botão na barra superior) e tente novamente.'
+  );
 
 /**
  * Create a new service in PostgreSQL
@@ -382,7 +387,7 @@ export async function uploadDeliverable(file: File): Promise<{ url: string; hash
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) {
-    throw new Error(data.error || msg('The file could not be uploaded.', 'No se pudo subir el archivo.'));
+    throw new Error(data.error || msg('The file could not be uploaded.', 'No se pudo subir el archivo.', 'Não foi possível enviar o arquivo.'));
   }
   return { url: data.url, hash: data.hash, filename: data.filename, size: data.size };
 }
@@ -397,7 +402,7 @@ export async function getDeliverableAccess(orderId: string): Promise<{ type: 'st
     cache: 'no-store',
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || msg('The deliverable could not be retrieved.', 'No se pudo obtener el entregable.'));
+  if (!res.ok) throw new Error(data.error || msg('The deliverable could not be retrieved.', 'No se pudo obtener el entregable.', 'Não foi possível obter o entregável.'));
   return { type: data.type, url: data.url };
 }
 

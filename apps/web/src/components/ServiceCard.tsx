@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Service, MARKETPLACE_CATEGORIES } from '@mercadopleis/types';
+import { Service, MARKETPLACE_CATEGORIES, categoryLabel as categoryLabel_ } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
 import { Clock, Shield, Star, MapPin } from 'lucide-react';
 
@@ -12,14 +12,10 @@ interface ServiceCardProps {
 }
 
 export function ServiceCard({ service, onBook }: ServiceCardProps) {
-  const { language } = useLanguage();
+  const { language, L } = useLanguage();
 
   const categoryObj = MARKETPLACE_CATEGORIES.find((c) => c.id === service.category);
-  const categoryLabel = categoryObj
-    ? language === 'en'
-      ? categoryObj.nameEn || categoryObj.name
-      : categoryObj.name
-    : service.category;
+  const categoryLabel = categoryObj ? categoryLabel_(categoryObj, language) : service.category;
 
   const isInPerson = service.deliveryType === 'in_person';
   const isHybrid = service.deliveryType === 'both';
@@ -40,12 +36,12 @@ export function ServiceCard({ service, onBook }: ServiceCardProps) {
             </span>
             {isInPerson && (
               <span className="rounded-md bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-300 border border-cyan-500/30">
-                {language === 'en' ? 'In-Person' : 'Presencial'}
+                {L('Presencial', 'In-Person', 'Presencial')}
               </span>
             )}
             {isHybrid && (
               <span className="rounded-md bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-300 border border-indigo-500/30">
-                {language === 'en' ? 'Hybrid' : 'Híbrido'}
+                {L('Híbrido', 'Hybrid', 'Híbrido')}
               </span>
             )}
           </div>
@@ -54,7 +50,7 @@ export function ServiceCard({ service, onBook }: ServiceCardProps) {
             <span className="font-semibold">
               {(service as any).avgRating 
                 ? Number((service as any).avgRating).toFixed(1) 
-                : (language === 'en' ? 'New' : 'Nuevo')}
+                : (L('Nuevo', 'New', 'Novo'))}
             </span>
           </div>
         </div>
@@ -85,13 +81,11 @@ export function ServiceCard({ service, onBook }: ServiceCardProps) {
         <div className="flex items-center justify-between text-xs text-slate-400">
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5 text-slate-500" />
-            {language === 'en'
-              ? `Delivery: ${service.deliveryDays} ${service.deliveryDays === 1 ? 'day' : 'days'}`
-              : `Entrega: ${service.deliveryDays} ${service.deliveryDays === 1 ? 'día' : 'días'}`}
+            {L(`Entrega: ${service.deliveryDays} ${service.deliveryDays === 1 ? 'día' : 'días'}`, `Delivery: ${service.deliveryDays} ${service.deliveryDays === 1 ? 'day' : 'days'}`, `Entrega: ${service.deliveryDays} ${service.deliveryDays === 1 ? 'dia' : 'dias'}`)}
           </span>
           <span className="flex items-center gap-1 text-accent">
             <Shield className="h-3.5 w-3.5" />
-            {language === 'en' ? 'Protected Escrow' : 'Escrow protegido'}
+            {L('Escrow protegido', 'Protected Escrow', 'Escrow protegido')}
           </span>
         </div>
 
@@ -99,7 +93,7 @@ export function ServiceCard({ service, onBook }: ServiceCardProps) {
         <div className="mt-4 flex items-center justify-between">
           <div>
             <span className="text-xs text-slate-400">
-              {language === 'en' ? 'Total price' : 'Precio total'}
+              {L('Precio total', 'Total price', 'Preço total')}
             </span>
             <div className="flex items-baseline gap-1">
               <span className="text-xl font-bold text-white">
@@ -113,7 +107,7 @@ export function ServiceCard({ service, onBook }: ServiceCardProps) {
             onClick={() => onBook(service)}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-hover shadow-md shadow-primary/20 active:scale-95"
           >
-            {language === 'en' ? 'Hire' : 'Contratar'}
+            {L('Contratar', 'Hire', 'Contratar')}
           </button>
         </div>
       </div>

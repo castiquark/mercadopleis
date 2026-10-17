@@ -31,8 +31,16 @@ export interface CategoryInfo {
   id: ServiceCategory;
   name: string;
   nameEn?: string;
+  namePt?: string;
   description: string;
   icon: string;
+}
+
+/** Category label in the site language (falls back to the Spanish name). */
+export function categoryLabel(cat: Pick<CategoryInfo, 'name' | 'nameEn' | 'namePt'>, language: 'es' | 'en' | 'pt'): string {
+  if (language === 'en') return cat.nameEn || cat.name;
+  if (language === 'pt') return cat.namePt || cat.name;
+  return cat.name;
 }
 
 export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
@@ -40,6 +48,7 @@ export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
     id: 'ai_data',
     name: 'IA, Prompting & Datos',
     nameEn: 'AI, Prompting & Data',
+    namePt: 'IA, Prompting e Dados',
     description: 'Agentes de IA, prompt engineering, automatizaciones y análisis de datos',
     icon: 'Bot',
   },
@@ -47,6 +56,7 @@ export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
     id: 'development',
     name: 'Desarrollo & Automatizaciones',
     nameEn: 'Development & Automation',
+    namePt: 'Desenvolvimento e Automação',
     description: 'Bots, n8n, Python, APIs, smart contracts, backend y web scraping',
     icon: 'Code',
   },
@@ -54,6 +64,7 @@ export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
     id: 'writing_translation',
     name: 'Anotación, Redacción & Idiomas',
     nameEn: 'Annotation, Writing & Languages',
+    namePt: 'Anotação, Redação e Idiomas',
     description: 'Transcripción, datasets conversacionales, documentación técnica y traducciones',
     icon: 'FileText',
   },
@@ -61,6 +72,7 @@ export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
     id: 'consulting',
     name: 'Investigación & Estrategia',
     nameEn: 'Research & Strategy',
+    namePt: 'Pesquisa e Estratégia',
     description: 'Crypto research, benchmarking de IA, arquitectura y asesoría técnica',
     icon: 'Briefcase',
   },
@@ -68,6 +80,7 @@ export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
     id: 'design',
     name: 'Diseño UI/UX & Creativo',
     nameEn: 'UI/UX Design & Creative',
+    namePt: 'Design UI/UX e Criativo',
     description: 'Prototipos Figma, landing pages, logos y assets Web3',
     icon: 'Palette',
   },
@@ -75,6 +88,7 @@ export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
     id: 'marketing',
     name: 'Marketing & Crecimiento',
     nameEn: 'Marketing & Growth',
+    namePt: 'Marketing e Crescimento',
     description: 'Community management, distribución, campañas y SEO',
     icon: 'Megaphone',
   },
@@ -82,6 +96,7 @@ export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
     id: 'security_audit',
     name: 'Seguridad & Auditorías',
     nameEn: 'Security & Auditing',
+    namePt: 'Segurança e Auditoria',
     description: 'Auditorías de contratos, pentesting y análisis de vulnerabilidades',
     icon: 'ShieldCheck',
   },
@@ -89,6 +104,7 @@ export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
     id: 'video_audio',
     name: 'Video, Audio & Animación',
     nameEn: 'Video, Audio & Animation',
+    namePt: 'Vídeo, Áudio e Animação',
     description: 'Edición de video, motion graphics, intros 3D y producción de audio',
     icon: 'Film',
   },
@@ -96,6 +112,7 @@ export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
     id: 'legal_finance',
     name: 'Legal, Finanzas & Compliance',
     nameEn: 'Legal, Finance & Compliance',
+    namePt: 'Jurídico, Finanças e Compliance',
     description: 'Estructuración fiscal, cumplimiento normativo y asesoramiento legal cripto',
     icon: 'Scale',
   },
@@ -103,6 +120,7 @@ export const MARKETPLACE_CATEGORIES: CategoryInfo[] = [
     id: 'others',
     name: 'Otros Servicios',
     nameEn: 'Other Services',
+    namePt: 'Outros Serviços',
     description: 'Tareas generales, asistencia virtual y servicios misceláneos',
     icon: 'MoreHorizontal',
   },

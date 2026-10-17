@@ -80,7 +80,7 @@ interface MockOrder {
 export default function OrdersDashboardPage() {
   const { isConnected, chainId, address } = useAccount();
   const { user, isAuthenticated } = useAuth();
-  const { t, language } = useLanguage();
+  const { t, L } = useLanguage();
   const [activeTab, setActiveTab] = useState<'buyer' | 'seller'>('buyer');
   const [orders, setOrders] = useState<MockOrder[]>([]);
   const [activeDeliveryModalOrder, setActiveDeliveryModalOrder] = useState<MockOrder | null>(null);
@@ -116,10 +116,9 @@ export default function OrdersDashboardPage() {
   const networkName = (id?: number) => (id === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID ? 'Base Sepolia' : 'Base Mainnet');
   const formatDate = (unixSeconds?: number | null) =>
     unixSeconds
-      ? new Date(unixSeconds * 1000).toLocaleString(language === 'en' ? 'en-US' : 'es-ES', { dateStyle: 'medium', timeStyle: 'short' })
+      ? new Date(unixSeconds * 1000).toLocaleString(L('es-ES', 'en-US', 'pt-BR'), { dateStyle: 'medium', timeStyle: 'short' })
       : null;
   const nowSeconds = Math.floor(Date.now() / 1000);
-  const en = language === 'en';
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,7 +154,7 @@ export default function OrdersDashboardPage() {
       setReviewComment('');
     } catch (err: any) {
       console.error(err);
-      setActionNotice(`Error: ${err?.message || (en ? 'Could not save the review' : 'Error al guardar la reseña')}`);
+      setActionNotice(`Error: ${err?.message || (L('Error al guardar la reseña', 'Could not save the review', 'Não foi possível salvar a avaliação'))}`);
     } finally {
       setIsProcessing(false);
     }
@@ -218,7 +217,7 @@ export default function OrdersDashboardPage() {
           return {
             id: bo.id,
             contractOrderId: bo.contractOrderId || null,
-            serviceTitle: bo.service?.title || (en ? 'Hired service' : 'Servicio contratado'),
+            serviceTitle: bo.service?.title || (L('Servicio contratado', 'Hired service', 'Serviço contratado')),
             role: (bo.buyer?.walletAddress?.toLowerCase() === address?.toLowerCase() || (user?.id && bo.buyerId === user.id)) ? 'buyer' : 'seller',
             amountUsdc: parseFloat(bo.grossAmountUsdc),
             sellerAmountUsdc: parseFloat(bo.sellerAmountUsdc),
@@ -258,7 +257,7 @@ export default function OrdersDashboardPage() {
     } catch (e) {
       console.warn('Orders load note:', e);
     }
-  }, [user?.id, address, activeChainId, en, isAuthenticated]);
+  }, [user?.id, address, activeChainId, L, isAuthenticated]);
 
   useEffect(() => {
     loadOrders();
@@ -287,9 +286,7 @@ export default function OrdersDashboardPage() {
     if (order.chainId && order.chainId !== activeChainId) {
       const name = order.chainId === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID ? 'Base Sepolia' : 'Base Mainnet';
       throw new Error(
-        language === 'en'
-          ? `This order lives on ${name}. Switch your wallet to ${name} and try again.`
-          : `Esta orden está en ${name}. Cambia tu wallet a ${name} e inténtalo de nuevo.`
+        L(`Esta orden está en ${name}. Cambia tu wallet a ${name} e inténtalo de nuevo.`, `This order lives on ${name}. Switch your wallet to ${name} and try again.`, `Este pedido está na ${name}. Mude sua carteira para a ${name} e tente novamente.`)
       );
     }
   };
@@ -299,7 +296,7 @@ export default function OrdersDashboardPage() {
     try {
       assertOrderChain(order);
       setIsProcessing(true);
-      setActionNotice(en ? `Approving delivery of order #${order.contractOrderId}...` : `Aprobando la entrega de la orden #${order.contractOrderId}...`);
+      setActionNotice(L(`Aprobando la entrega de la orden #${order.contractOrderId}...`, `Approving delivery of order #${order.contractOrderId}...`, `Aprovando a entrega do pedido #${order.contractOrderId}...`));
 
       let txHash: `0x${string}`;
 
@@ -312,7 +309,7 @@ export default function OrdersDashboardPage() {
           args: [BigInt(order.contractOrderId)],
         });
       } else {
-        throw new Error(language === 'en' ? 'Connect your wallet to send this on-chain transaction.' : 'Conecta tu wallet para enviar esta transacción on-chain.');
+        throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
       }
 
       // Sync with PostgreSQL API
@@ -325,13 +322,13 @@ export default function OrdersDashboardPage() {
       setOrders((prev) =>
         prev.map((o) => (o.id === order.id ? { ...o, status: 'RELEASED' } : o))
       );
-      setActionNotice(en ? `Order #${order.contractOrderId} approved. Funds released to the seller.` : `¡Orden #${order.contractOrderId} aprobada! Fondos liberados al prestador.`);
+      setActionNotice(L(`¡Orden #${order.contractOrderId} aprobada! Fondos liberados al prestador.`, `Order #${order.contractOrderId} approved. Funds released to the seller.`, `Pedido #${order.contractOrderId} aprovado! Fundos liberados para o vendedor.`));
     } catch (err: any) {
       if (isUserRejection(err)) {
-        setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
+        setActionNotice(L('Operación cancelada en tu wallet.', 'Operation cancelled in your wallet.', 'Operação cancelada na sua carteira.'));
       } else {
         console.error(err);
-        setActionNotice(`Error: ${err?.shortMessage || err?.message || (en ? 'Transaction error' : 'Error en la transacción')}`);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || (L('Error en la transacción', 'Transaction error', 'Erro na transação'))}`);
       }
     } finally {
       setIsProcessing(false);
@@ -354,7 +351,7 @@ export default function OrdersDashboardPage() {
     try {
       assertOrderChain(activeDisputeModalOrder);
       setIsProcessing(true);
-      setActionNotice(en ? `Opening a dispute for order #${activeDisputeModalOrder.contractOrderId}...` : `Abriendo una disputa para la orden #${activeDisputeModalOrder.contractOrderId}...`);
+      setActionNotice(L(`Abriendo una disputa para la orden #${activeDisputeModalOrder.contractOrderId}...`, `Opening a dispute for order #${activeDisputeModalOrder.contractOrderId}...`, `Abrindo uma disputa para o pedido #${activeDisputeModalOrder.contractOrderId}...`));
 
       let disputeTxHash: `0x${string}`;
 
@@ -367,7 +364,7 @@ export default function OrdersDashboardPage() {
           args: [BigInt(activeDisputeModalOrder.contractOrderId)],
         });
       } else {
-        throw new Error(language === 'en' ? 'Connect your wallet to send this on-chain transaction.' : 'Conecta tu wallet para enviar esta transacción on-chain.');
+        throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
       }
 
       try {
@@ -398,14 +395,14 @@ export default function OrdersDashboardPage() {
         )
       );
 
-      setActionNotice(en ? `Dispute opened for order #${activeDisputeModalOrder.contractOrderId}. The funds stay frozen in escrow until the arbiter decides.` : `Disputa abierta para la orden #${activeDisputeModalOrder.contractOrderId}. Los fondos quedan congelados en el escrow hasta que decida el árbitro.`);
+      setActionNotice(L(`Disputa abierta para la orden #${activeDisputeModalOrder.contractOrderId}. Los fondos quedan congelados en el escrow hasta que decida el árbitro.`, `Dispute opened for order #${activeDisputeModalOrder.contractOrderId}. The funds stay frozen in escrow until the arbiter decides.`, `Disputa aberta para o pedido #${activeDisputeModalOrder.contractOrderId}. Os fundos ficam congelados no escrow até a decisão do árbitro.`));
       setActiveDisputeModalOrder(null);
     } catch (err: any) {
       if (isUserRejection(err)) {
-        setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
+        setActionNotice(L('Operación cancelada en tu wallet.', 'Operation cancelled in your wallet.', 'Operação cancelada na sua carteira.'));
       } else {
         console.error(err);
-        setActionNotice(`Error: ${err?.shortMessage || err?.message || (en ? 'Could not open the dispute' : 'Error al abrir la disputa')}`);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || (L('Error al abrir la disputa', 'Could not open the dispute', 'Não foi possível abrir a disputa'))}`);
       }
     } finally {
       setIsProcessing(false);
@@ -417,7 +414,7 @@ export default function OrdersDashboardPage() {
     try {
       assertOrderChain(order);
       setIsProcessing(true);
-      setActionNotice(en ? `Claiming the refund for order #${order.contractOrderId}...` : `Reclamando el reembolso de la orden #${order.contractOrderId}...`);
+      setActionNotice(L(`Reclamando el reembolso de la orden #${order.contractOrderId}...`, `Claiming the refund for order #${order.contractOrderId}...`, `Solicitando o reembolso do pedido #${order.contractOrderId}...`));
 
       let refundTx: `0x${string}`;
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
@@ -429,7 +426,7 @@ export default function OrdersDashboardPage() {
           args: [BigInt(order.contractOrderId)],
         });
       } else {
-        throw new Error(language === 'en' ? 'Connect your wallet to send this on-chain transaction.' : 'Conecta tu wallet para enviar esta transacción on-chain.');
+        throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
       }
 
       // Refunds are recorded from the OrderRefunded event by the indexer.
@@ -439,13 +436,13 @@ export default function OrdersDashboardPage() {
       setOrders((prev) =>
         prev.map((o) => (o.id === order.id ? { ...o, status: 'REFUNDED' } : o))
       );
-      setActionNotice(language === 'en' ? 'The full amount was refunded to your wallet.' : 'El monto íntegro se reembolsó a tu wallet.');
+      setActionNotice(L('El monto íntegro se reembolsó a tu wallet.', 'The full amount was refunded to your wallet.', 'O valor total foi reembolsado para sua carteira.'));
     } catch (err: any) {
       if (isUserRejection(err)) {
-        setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
+        setActionNotice(L('Operación cancelada en tu wallet.', 'Operation cancelled in your wallet.', 'Operação cancelada na sua carteira.'));
       } else {
         console.error(err);
-        setActionNotice(`Error: ${err?.shortMessage || err?.message || (en ? 'Transaction error' : 'Error en la transacción')}`);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || (L('Error en la transacción', 'Transaction error', 'Erro na transação'))}`);
       }
     } finally {
       setIsProcessing(false);
@@ -458,10 +455,10 @@ export default function OrdersDashboardPage() {
     try {
       assertOrderChain(order);
       setIsProcessing(true);
-      setActionNotice(language === 'en' ? `Claiming payment for order #${order.contractOrderId}...` : `Cobrando el pago de la orden #${order.contractOrderId}...`);
+      setActionNotice(L(`Cobrando el pago de la orden #${order.contractOrderId}...`, `Claiming payment for order #${order.contractOrderId}...`, `Recebendo o pagamento do pedido #${order.contractOrderId}...`));
 
       if (!isConnected || !escrowAddress || escrowAddress === '0x0000000000000000000000000000000000000000') {
-        throw new Error(language === 'en' ? 'Connect your wallet to send this on-chain transaction.' : 'Conecta tu wallet para enviar esta transacción on-chain.');
+        throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
       }
       const txHash = await writeContractAsync({
         address: escrowAddress,
@@ -481,16 +478,14 @@ export default function OrdersDashboardPage() {
 
       setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: 'RELEASED' } : o)));
       setActionNotice(
-        language === 'en'
-          ? `Payment received: ${order.sellerAmountUsdc} USDC sent to your wallet.`
-          : `Pago cobrado: ${order.sellerAmountUsdc} USDC enviados a tu wallet.`
+        L(`Pago cobrado: ${order.sellerAmountUsdc} USDC enviados a tu wallet.`, `Payment received: ${order.sellerAmountUsdc} USDC sent to your wallet.`, `Pagamento recebido: ${order.sellerAmountUsdc} USDC enviados para sua carteira.`)
       );
     } catch (err: any) {
       if (isUserRejection(err)) {
-        setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
+        setActionNotice(L('Operación cancelada en tu wallet.', 'Operation cancelled in your wallet.', 'Operação cancelada na sua carteira.'));
       } else {
         console.error(err);
-        setActionNotice(`Error: ${err?.shortMessage || err?.message || (language === 'en' ? 'Transaction error' : 'Error en la transacción')}`);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || (L('Error en la transacción', 'Transaction error', 'Erro na transação'))}`);
       }
     } finally {
       setIsProcessing(false);
@@ -527,7 +522,7 @@ export default function OrdersDashboardPage() {
       setDeliveryHash(data.hash);
     } catch (err: any) {
       console.error('Error uploading file to Neon Object Storage:', err);
-      setUploadError(err.message || (en ? 'The file could not be uploaded' : 'No se pudo subir el archivo'));
+      setUploadError(err.message || (L('No se pudo subir el archivo', 'The file could not be uploaded', 'Não foi possível enviar o arquivo')));
     } finally {
       setIsUploading(false);
     }
@@ -568,7 +563,7 @@ export default function OrdersDashboardPage() {
           args: [BigInt(activeDeliveryModalOrder.contractOrderId), finalHash as `0x${string}`],
         });
       } else {
-        throw new Error(language === 'en' ? 'Connect your wallet to send this on-chain transaction.' : 'Conecta tu wallet para enviar esta transacción on-chain.');
+        throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
       }
 
       try {
@@ -596,17 +591,17 @@ export default function OrdersDashboardPage() {
         )
       );
 
-      setActionNotice(en ? `Delivery recorded. Hash ${finalHash.slice(0, 10)}...${finalHash.slice(-6)} is stored in the contract.` : `¡Entrega registrada! El hash ${finalHash.slice(0, 10)}...${finalHash.slice(-6)} quedó guardado en el contrato.`);
+      setActionNotice(L(`¡Entrega registrada! El hash ${finalHash.slice(0, 10)}...${finalHash.slice(-6)} quedó guardado en el contrato.`, `Delivery recorded. Hash ${finalHash.slice(0, 10)}...${finalHash.slice(-6)} is stored in the contract.`, `Entrega registrada! O hash ${finalHash.slice(0, 10)}...${finalHash.slice(-6)} ficou salvo no contrato.`));
       setActiveDeliveryModalOrder(null);
       setDeliveryInputUrl('');
       setDeliveryHash('');
       setUploadedFileMeta(null);
     } catch (err: any) {
       if (isUserRejection(err)) {
-        setActionNotice(language === 'en' ? 'Operation cancelled in your wallet.' : 'Operación cancelada en tu wallet.');
+        setActionNotice(L('Operación cancelada en tu wallet.', 'Operation cancelled in your wallet.', 'Operação cancelada na sua carteira.'));
       } else {
         console.error(err);
-        setActionNotice(`Error: ${err?.shortMessage || err?.message || (en ? 'Transaction error' : 'Error en la transacción')}`);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || (L('Error en la transacción', 'Transaction error', 'Erro na transação'))}`);
       }
     } finally {
       setIsProcessing(false);
@@ -629,7 +624,7 @@ export default function OrdersDashboardPage() {
           <button
             onClick={() => loadOrders()}
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-surface-elevated hover:text-white"
-            title={en ? 'Refresh orders' : 'Actualizar órdenes'}
+            title={L('Actualizar órdenes', 'Refresh orders', 'Atualizar pedidos')}
           >
             <RefreshCw className="h-4 w-4 text-primary-light" />
             <span className="hidden sm:inline">{t('refresh')}</span>
@@ -640,11 +635,11 @@ export default function OrdersDashboardPage() {
               if (typeof window !== 'undefined') {
                 clearPendingOrders();
                 loadOrders();
-                setActionNotice(language === 'en' ? 'Local orders cache cleared.' : 'Caché local de órdenes eliminada.');
+                setActionNotice(L('Caché local de órdenes eliminada.', 'Local orders cache cleared.', 'Cache local de pedidos apagado.'));
               }
             }}
             className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2.5 text-xs font-semibold text-slate-400 transition hover:bg-surface-elevated hover:text-white sm:py-2"
-            title={en ? "Clear this browser's local order cache" : 'Limpiar la caché local de órdenes de este navegador'}
+            title={L('Limpiar la caché local de órdenes de este navegador', "Clear this browser's local order cache", 'Limpar o cache local de pedidos deste navegador')}
           >
             <Trash2 className="h-3.5 w-3.5 text-slate-400" />
             <span className="hidden sm:inline">{t('clearCache')}</span>
@@ -668,7 +663,7 @@ export default function OrdersDashboardPage() {
             onClick={() => setActionNotice(null)}
             className="text-xs font-semibold text-slate-400 hover:text-white"
           >
-            {en ? 'Close' : 'Cerrar'}
+            {L('Cerrar', 'Close', 'Fechar')}
           </button>
         </div>
       )}
@@ -711,7 +706,7 @@ export default function OrdersDashboardPage() {
                 <div className="max-w-xl">
                   <div className="flex items-center gap-3">
                     <span className="rounded bg-surface-elevated px-2 py-0.5 text-xs font-mono text-slate-300">
-                      {en ? 'Order' : 'Orden'} #{order.contractOrderId} · {networkName(order.chainId)}
+                      {L('Orden', 'Order', 'Pedido')} #{order.contractOrderId} · {networkName(order.chainId)}
                     </span>
 
                     {/* Status Badge */}
@@ -746,7 +741,7 @@ export default function OrdersDashboardPage() {
 
                   {order.deliveryUrl && (
                     <div className="mt-2 text-xs text-slate-400">
-                      <span>{en ? 'Deliverable:' : 'Entregable:'} </span>
+                      <span>{L('Entregable:', 'Deliverable:', 'Entregável:')} </span>
                       <DeliverableLink
                         orderId={order.id}
                         reference={order.deliveryUrl}
@@ -757,7 +752,7 @@ export default function OrdersDashboardPage() {
 
                   {order.deliveryHash && (
                     <p className="mt-1 text-xs font-mono text-slate-500 truncate max-w-md">
-                      {en ? 'On-chain hash:' : 'Hash on-chain:'} {order.deliveryHash}
+                      {L('Hash on-chain:', 'On-chain hash:', 'Hash on-chain:')} {order.deliveryHash}
                     </p>
                   )}
                 </div>
@@ -770,8 +765,8 @@ export default function OrdersDashboardPage() {
                   </div>
                   <span className="text-xs text-slate-400">
                     {order.role === 'seller'
-                      ? (en ? `Net to receive: ${order.sellerAmountUsdc} USDC (3% fee deducted)` : `Neto a recibir: ${order.sellerAmountUsdc} USDC (3% de comisión descontado)`)
-                      : (en ? '0% fee for the buyer' : '0% de comisión para el comprador')}
+                      ? (L(`Neto a recibir: ${order.sellerAmountUsdc} USDC (3% de comisión descontado)`, `Net to receive: ${order.sellerAmountUsdc} USDC (3% fee deducted)`, `Líquido a receber: ${order.sellerAmountUsdc} USDC (taxa de 3% descontada)`))
+                      : (L('0% de comisión para el comprador', '0% fee for the buyer', '0% de taxa para quem compra'))}
                   </span>
                 </div>
               </div>
@@ -823,9 +818,7 @@ export default function OrdersDashboardPage() {
                     <div className="mt-3 rounded-lg border border-accent/30 bg-accent/10 p-3 text-accent">
                       <p className="font-bold">
                         {t('disputeResolvedNotice')}:{' '}
-                        {language === 'en'
-                          ? `${order.dispute.sellerAwardUsdc} USDC awarded to the seller / ${order.dispute.buyerRefundUsdc} USDC refunded to the buyer.`
-                          : `${order.dispute.sellerAwardUsdc} USDC asignados al prestador / ${order.dispute.buyerRefundUsdc} USDC reembolsados al comprador.`}
+                        {L(`${order.dispute.sellerAwardUsdc} USDC asignados al prestador / ${order.dispute.buyerRefundUsdc} USDC reembolsados al comprador.`, `${order.dispute.sellerAwardUsdc} USDC awarded to the seller / ${order.dispute.buyerRefundUsdc} USDC refunded to the buyer.`, `${order.dispute.sellerAwardUsdc} USDC para o vendedor / ${order.dispute.buyerRefundUsdc} USDC reembolsados ao comprador.`)}
                       </p>
                       {order.dispute.resolutionNotes && (
                         <p className="mt-1.5 text-xs text-slate-300">
@@ -995,9 +988,9 @@ export default function OrdersDashboardPage() {
 
                 <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
                   {order.status === 'DELIVERED' && !(order.autoReleaseDeadline && nowSeconds >= order.autoReleaseDeadline) ? (
-                    <span className="text-amber-300">⏱️ {en ? 'Review period running' : 'Período de revisión en curso'}</span>
+                    <span className="text-amber-300">⏱️ {L('Período de revisión en curso', 'Review period running', 'Período de revisão em andamento')}</span>
                   ) : (
-                    <span className="text-slate-400">🛡️ {en ? 'Protected by escrow' : 'Protegido por escrow'}</span>
+                    <span className="text-slate-400">🛡️ {L('Protegido por escrow', 'Protected by escrow', 'Protegido por escrow')}</span>
                   )}
                 </span>
               </div>
@@ -1005,9 +998,7 @@ export default function OrdersDashboardPage() {
               {/* Collapsible Timeline and Chat */}
               {order.pendingRegistration && (
                 <p className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
-                  {en
-                    ? 'Payment confirmed on-chain. We are still linking this order to its listing; it retries automatically each time you open My Orders while signed in. Messages appear once it is linked. Your funds are safe in the escrow.'
-                    : 'Pago confirmado on-chain. Todavía estamos vinculando esta orden con su publicación; se reintenta sola cada vez que abres Mis Órdenes con la sesión iniciada. Los mensajes aparecen cuando quede vinculada. Tus fondos están seguros en el escrow.'}
+                  {L('Pago confirmado on-chain. Todavía estamos vinculando esta orden con su publicación; se reintenta sola cada vez que abres Mis Órdenes con la sesión iniciada. Los mensajes aparecen cuando quede vinculada. Tus fondos están seguros en el escrow.', 'Payment confirmed on-chain. We are still linking this order to its listing; it retries automatically each time you open My Orders while signed in. Messages appear once it is linked. Your funds are safe in the escrow.', 'Pagamento confirmado on-chain. Ainda estamos vinculando este pedido ao anúncio; isso é tentado de novo a cada vez que você abre Meus Pedidos com a sessão iniciada. As mensagens aparecem quando estiver vinculado. Seus fundos estão seguros no escrow.')}
                 </p>
               )}
               {expandedOrderId === order.id && !order.pendingRegistration && <OrderTimelineAndChat order={order} />}
@@ -1061,7 +1052,7 @@ export default function OrdersDashboardPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white">{t('submitDelivery')}</h3>
-                  <p className="text-xs text-slate-400">{en ? 'Order' : 'Orden'} #{activeDeliveryModalOrder.contractOrderId} • {activeDeliveryModalOrder.serviceTitle}</p>
+                  <p className="text-xs text-slate-400">{L('Orden', 'Order', 'Pedido')} #{activeDeliveryModalOrder.contractOrderId} • {activeDeliveryModalOrder.serviceTitle}</p>
                 </div>
               </div>
               <button
@@ -1085,7 +1076,7 @@ export default function OrdersDashboardPage() {
                 }`}
               >
                 <UploadCloud className="h-4 w-4" />
-                {en ? 'Upload file' : 'Subir archivo'}
+                {L('Subir archivo', 'Upload file', 'Enviar arquivo')}
               </button>
               <button
                 type="button"
@@ -1097,7 +1088,7 @@ export default function OrdersDashboardPage() {
                 }`}
               >
                 <LinkIcon className="h-4 w-4" />
-                {en ? 'External link' : 'Enlace externo'}
+                {L('Enlace externo', 'External link', 'Link externo')}
               </button>
             </div>
 
@@ -1116,8 +1107,8 @@ export default function OrdersDashboardPage() {
                         {isUploading ? (
                           <div className="flex flex-col items-center gap-2 text-purple-400">
                             <Loader2 className="h-8 w-8 animate-spin" />
-                            <p className="text-xs font-semibold text-white">{en ? 'Uploading...' : 'Subiendo...'}</p>
-                            <p className="text-[11px] text-slate-400">{en ? 'Computing the SHA-256 hash' : 'Calculando el hash SHA-256'}</p>
+                            <p className="text-xs font-semibold text-white">{L('Subiendo...', 'Uploading...', 'Enviando...')}</p>
+                            <p className="text-[11px] text-slate-400">{L('Calculando el hash SHA-256', 'Computing the SHA-256 hash', 'Calculando o hash SHA-256')}</p>
                           </div>
                         ) : (
                           <div className="flex flex-col items-center gap-2">
@@ -1125,13 +1116,13 @@ export default function OrdersDashboardPage() {
                               <Upload className="h-6 w-6" />
                             </div>
                             <p className="text-sm font-semibold text-white">
-                              {en ? 'Click to choose your delivery file' : 'Haz clic para elegir tu archivo de entrega'}
+                              {L('Haz clic para elegir tu archivo de entrega', 'Click to choose your delivery file', 'Clique para escolher o arquivo da entrega')}
                             </p>
                             <p className="text-xs text-slate-400">
-                              {en ? '.zip, .pdf, .sol, images, videos or documents (up to 25 MB)' : '.zip, .pdf, .sol, imágenes, videos o documentos (hasta 25 MB)'}
+                              {L('.zip, .pdf, .sol, imágenes, videos o documentos (hasta 25 MB)', '.zip, .pdf, .sol, images, videos or documents (up to 25 MB)', '.zip, .pdf, .sol, imagens, vídeos ou documentos (até 25 MB)')}
                             </p>
                             <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-purple-300">
-                              🔒 {en ? 'Private storage' : 'Almacenamiento privado'}
+                              🔒 {L('Almacenamiento privado', 'Private storage', 'Armazenamento privado')}
                             </span>
                           </div>
                         )}
@@ -1154,7 +1145,7 @@ export default function OrdersDashboardPage() {
                               {uploadedFileMeta.filename}
                             </p>
                             <p className="text-xs text-slate-400">
-                              {(uploadedFileMeta.size / 1024).toFixed(1)} KB • {en ? 'Private storage' : 'Almacenamiento privado'}
+                              {(uploadedFileMeta.size / 1024).toFixed(1)} KB • {L('Almacenamiento privado', 'Private storage', 'Armazenamento privado')}
                             </p>
                           </div>
                         </div>
@@ -1167,7 +1158,7 @@ export default function OrdersDashboardPage() {
                           }}
                           className="text-xs text-slate-400 hover:text-red-400"
                         >
-                          {en ? 'Change' : 'Cambiar'}
+                          {L('Cambiar', 'Change', 'Trocar')}
                         </button>
                       </div>
 
@@ -1175,7 +1166,7 @@ export default function OrdersDashboardPage() {
                       <div className="rounded-lg bg-black/40 p-2.5 font-mono text-[11px] border border-border/40">
                         <div className="flex items-center justify-between text-slate-400 text-[10px] uppercase font-bold mb-1">
                           <span className="flex items-center gap-1 text-purple-400">
-                            <Hash className="h-3 w-3" /> {en ? 'SHA-256 proof' : 'Prueba criptográfica SHA-256'}
+                            <Hash className="h-3 w-3" /> {L('Prueba criptográfica SHA-256', 'SHA-256 proof', 'Prova criptográfica SHA-256')}
                           </span>
                           <button
                             type="button"
@@ -1183,14 +1174,14 @@ export default function OrdersDashboardPage() {
                             className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300"
                           >
                             {copiedHash ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                            {copiedHash ? (en ? 'Copied' : 'Copiado') : (en ? 'Copy' : 'Copiar')}
+                            {copiedHash ? (L('Copiado', 'Copied', 'Copiado')) : (L('Copiar', 'Copy', 'Copiar'))}
                           </button>
                         </div>
                         <p className="text-white font-mono break-all select-all">{uploadedFileMeta.hash}</p>
                       </div>
 
                       <p className="text-[11px] text-slate-400">
-                        {en ? 'Private file: only the buyer, you and the arbiter can download it.' : 'Archivo privado: solo el comprador, tú y el árbitro podrán descargarlo.'}
+                        {L('Archivo privado: solo el comprador, tú y el árbitro podrán descargarlo.', 'Private file: only the buyer, you and the arbiter can download it.', 'Arquivo privado: só o comprador, você e o árbitro podem baixá-lo.')}
                       </p>
                     </div>
                   )}
@@ -1198,7 +1189,7 @@ export default function OrdersDashboardPage() {
               ) : (
                 <div>
                   <label className="block text-xs font-semibold text-slate-300">
-                    {en ? 'Link to the deliverable (GitHub, Drive, Figma, IPFS, etc.)' : 'Enlace al entregable (GitHub, Drive, Figma, IPFS, etc.)'}
+                    {L('Enlace al entregable (GitHub, Drive, Figma, IPFS, etc.)', 'Link to the deliverable (GitHub, Drive, Figma, IPFS, etc.)', 'Link para o entregável (GitHub, Drive, Figma, IPFS etc.)')}
                   </label>
                   <input
                     type="url"
@@ -1209,21 +1200,17 @@ export default function OrdersDashboardPage() {
                     className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-primary focus:outline-none"
                   />
                   <p className="mt-1 text-[11px] text-slate-400">
-                    {en
-                      ? 'A SHA-256 hash of this link (not of its content) will be recorded in the smart contract. Link to a fixed version, such as a Git commit or release or an IPFS CID, so the buyer can trust it will not change.'
-                      : 'Se registrará en el smart contract un hash SHA-256 de este enlace (no de su contenido). Enlaza una versión fija, como un commit o release de Git o un CID de IPFS, para que el comprador sepa que no cambiará.'}
+                    {L('Se registrará en el smart contract un hash SHA-256 de este enlace (no de su contenido). Enlaza una versión fija, como un commit o release de Git o un CID de IPFS, para que el comprador sepa que no cambiará.', 'A SHA-256 hash of this link (not of its content) will be recorded in the smart contract. Link to a fixed version, such as a Git commit or release or an IPFS CID, so the buyer can trust it will not change.', 'Será registrado no smart contract um hash SHA-256 deste link (não do conteúdo). Use um link para uma versão fixa, como um commit ou release do Git ou um CID do IPFS, para que o comprador saiba que não vai mudar.')}
                   </p>
                 </div>
               )}
 
               <div className="rounded-xl bg-surface-elevated/70 border border-border/50 p-3 text-xs text-slate-300 space-y-1">
                 <p className="font-semibold text-white flex items-center gap-1.5">
-                  <ShieldCheck className="h-4 w-4 text-accent" /> {en ? 'What happens next' : 'Qué pasa después'}
+                  <ShieldCheck className="h-4 w-4 text-accent" /> {L('Qué pasa después', 'What happens next', 'O que acontece depois')}
                 </p>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  {en
-                    ? `The order becomes DELIVERED with the hash recorded on ${networkName(activeDeliveryModalOrder.chainId ?? activeChainId)}. The buyer has 5 days to approve it or open a dispute; after that you can claim the payment.`
-                    : `La orden pasará a ENTREGADA con el hash registrado en ${networkName(activeDeliveryModalOrder.chainId ?? activeChainId)}. El comprador tendrá 5 días para aprobarla o abrir una disputa; después podrás cobrar.`}
+                  {L(`La orden pasará a ENTREGADA con el hash registrado en ${networkName(activeDeliveryModalOrder.chainId ?? activeChainId)}. El comprador tendrá 5 días para aprobarla o abrir una disputa; después podrás cobrar.`, `The order becomes DELIVERED with the hash recorded on ${networkName(activeDeliveryModalOrder.chainId ?? activeChainId)}. The buyer has 5 days to approve it or open a dispute; after that you can claim the payment.`, `O pedido passa para ENTREGUE com o hash registrado na ${networkName(activeDeliveryModalOrder.chainId ?? activeChainId)}. O comprador terá 5 dias para aprovar ou abrir uma disputa; depois disso você pode receber.`)}
                 </p>
               </div>
 
@@ -1243,10 +1230,10 @@ export default function OrdersDashboardPage() {
                   {isProcessing ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>{en ? 'Recording on-chain...' : 'Registrando on-chain...'}</span>
+                      <span>{L('Registrando on-chain...', 'Recording on-chain...', 'Registrando on-chain...')}</span>
                     </>
                   ) : (
-                    <span>{en ? 'Confirm delivery' : 'Confirmar entrega'}</span>
+                    <span>{L('Confirmar entrega', 'Confirm delivery', 'Confirmar entrega')}</span>
                   )}
                 </button>
               </div>
@@ -1387,7 +1374,7 @@ export default function OrdersDashboardPage() {
                 </label>
                 <input
                   type="url"
-                  placeholder={en ? 'https://github.com/... or https://drive.google.com/...' : 'https://github.com/... o https://drive.google.com/...'}
+                  placeholder={L('https://github.com/... o https://drive.google.com/...', 'https://github.com/... or https://drive.google.com/...', 'https://github.com/... ou https://drive.google.com/...')}
                   value={disputeEvidenceUrl}
                   onChange={(e) => setDisputeEvidenceUrl(e.target.value)}
                   className="mt-1.5 w-full rounded-xl border border-border bg-background p-2.5 text-xs text-white placeholder-slate-500 focus:border-red-400 focus:outline-none"

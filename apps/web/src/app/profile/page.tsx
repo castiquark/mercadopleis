@@ -20,8 +20,7 @@ import {
 } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { language, t } = useLanguage();
-  const en = language === 'en';
+  const { t, L } = useLanguage();
   const { address, isConnected } = useAccount();
   const { user, token, isAuthenticated, isLoading, signIn, signOut } = useAuth();
 
@@ -89,11 +88,11 @@ export default function ProfilePage() {
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
         const data = await res.json().catch(() => ({}));
-        setSaveError(data.error || (en ? 'The profile could not be saved.' : 'No se pudo guardar el perfil.'));
+        setSaveError(data.error || (L('No se pudo guardar el perfil.', 'The profile could not be saved.', 'Não foi possível salvar o perfil.')));
       }
     } catch (err) {
       console.error('Error saving profile:', err);
-      setSaveError(en ? 'The profile could not be saved.' : 'No se pudo guardar el perfil.');
+      setSaveError(L('No se pudo guardar el perfil.', 'The profile could not be saved.', 'Não foi possível salvar o perfil.'));
     } finally {
       setIsSaving(false);
     }
@@ -107,7 +106,7 @@ export default function ProfilePage() {
         className="inline-flex min-h-10 items-center gap-2 text-sm text-slate-400 transition hover:text-white sm:min-h-0"
       >
         <ArrowLeft className="h-4 w-4" />
-        <span>{en ? 'Back to catalog' : 'Volver al catálogo'}</span>
+        <span>{L('Volver al catálogo', 'Back to catalog', 'Voltar ao catálogo')}</span>
       </Link>
 
       {/* Profile Header Card */}
@@ -120,11 +119,11 @@ export default function ProfilePage() {
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="text-2xl font-bold text-white">
-                  {displayName || user?.username || (en ? 'Web3 user' : 'Usuario Web3')}
+                  {displayName || user?.username || (L('Usuario Web3', 'Web3 user', 'Usuário Web3'))}
                 </h1>
                 {isAuthenticated && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 border border-accent/20 px-2.5 py-0.5 text-xs font-semibold text-accent">
-                    <UserCheck className="h-3.5 w-3.5" /> {en ? 'Signed in' : 'Sesión verificada'}
+                    <UserCheck className="h-3.5 w-3.5" /> {L('Sesión verificada', 'Signed in', 'Sessão verificada')}
                   </span>
                 )}
               </div>
@@ -137,12 +136,12 @@ export default function ProfilePage() {
                 <button
                   onClick={copyAddress}
                   className="-m-2 rounded-lg p-3 text-slate-400 hover:bg-surface-elevated hover:text-white"
-                  title={en ? 'Copy address' : 'Copiar dirección'}
-                  aria-label={en ? 'Copy address' : 'Copiar dirección'}
+                  title={L('Copiar dirección', 'Copy address', 'Copiar endereço')}
+                  aria-label={L('Copiar dirección', 'Copy address', 'Copiar endereço')}
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </button>
-                {copied && <span className="text-[10px] text-accent font-sans">{en ? 'Copied!' : '¡Copiado!'}</span>}
+                {copied && <span className="text-[10px] text-accent font-sans">{L('¡Copiado!', 'Copied!', 'Copiado!')}</span>}
               </div>
             </div>
           </div>
@@ -155,7 +154,7 @@ export default function ProfilePage() {
                 className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface-elevated px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:border-slate-500 transition"
               >
                 <LogOut className="h-3.5 w-3.5 text-red-400" />
-                <span>{en ? 'Sign out' : 'Cerrar sesión'}</span>
+                <span>{L('Cerrar sesión', 'Sign out', 'Encerrar sessão')}</span>
               </button>
             ) : isConnected ? (
               <button
@@ -167,7 +166,7 @@ export default function ProfilePage() {
                 <span>{isLoading ? t('signing') : t('signSession')}</span>
               </button>
             ) : (
-              <span className="text-xs text-slate-500">{en ? 'Connect your wallet to sign in' : 'Conecta tu wallet para identificarte'}</span>
+              <span className="text-xs text-slate-500">{L('Conecta tu wallet para identificarte', 'Connect your wallet to sign in', 'Conecte sua carteira para se identificar')}</span>
             )}
           </div>
         </div>
@@ -175,15 +174,15 @@ export default function ProfilePage() {
         {/* Reputation stats: real Base Mainnet activity of the signed-in user only */}
         <div className="mt-8 grid grid-cols-2 gap-4 border-t border-border/80 pt-6 sm:grid-cols-4">
           <div className="rounded-xl border border-border/60 bg-background/50 p-4">
-            <span className="text-xs text-slate-400">{en ? 'Completed services' : 'Servicios completados'}</span>
+            <span className="text-xs text-slate-400">{L('Servicios completados', 'Completed services', 'Serviços concluídos')}</span>
             <p className="mt-1 text-2xl font-extrabold text-white">{statsLoaded ? stats.completed : '—'}</p>
             <span className="text-[11px] text-accent">
-              {statsLoaded && stats.successRate !== null ? (en ? `${stats.successRate}% success rate` : `${stats.successRate}% tasa de éxito`) : (en ? 'No released orders yet' : 'Sin entregas liberadas aún')}
+              {statsLoaded && stats.successRate !== null ? (L(`${stats.successRate}% tasa de éxito`, `${stats.successRate}% success rate`, `${stats.successRate}% de taxa de sucesso`)) : (L('Sin entregas liberadas aún', 'No released orders yet', 'Nenhuma entrega liberada ainda'))}
             </span>
           </div>
 
           <div className="rounded-xl border border-border/60 bg-background/50 p-4">
-            <span className="text-xs text-slate-400">{en ? 'Average rating' : 'Calificación promedio'}</span>
+            <span className="text-xs text-slate-400">{L('Calificación promedio', 'Average rating', 'Avaliação média')}</span>
             <div className="mt-1 flex items-baseline gap-1.5">
               <span className="text-2xl font-extrabold text-white">
                 {statsLoaded && stats.avgRating !== null ? stats.avgRating.toFixed(2) : '—'}
@@ -192,49 +191,47 @@ export default function ProfilePage() {
             </div>
             <span className="text-[11px] text-slate-400">
               {statsLoaded && stats.reviewCount > 0
-                ? (en ? `From ${stats.reviewCount} ${stats.reviewCount === 1 ? 'review' : 'reviews'}` : `Sobre ${stats.reviewCount} ${stats.reviewCount === 1 ? 'reseña' : 'reseñas'}`)
-                : (en ? 'No reviews yet' : 'Sin reseñas todavía')}
+                ? (L(`Sobre ${stats.reviewCount} ${stats.reviewCount === 1 ? 'reseña' : 'reseñas'}`, `From ${stats.reviewCount} ${stats.reviewCount === 1 ? 'review' : 'reviews'}`, `De ${stats.reviewCount} ${stats.reviewCount === 1 ? 'avaliação' : 'avaliações'}`))
+                : (L('Sin reseñas todavía', 'No reviews yet', 'Ainda sem avaliações'))}
             </span>
           </div>
 
           <div className="rounded-xl border border-border/60 bg-background/50 p-4">
-            <span className="text-xs text-slate-400">{en ? 'Open disputes' : 'Disputas abiertas'}</span>
+            <span className="text-xs text-slate-400">{L('Disputas abiertas', 'Open disputes', 'Disputas abertas')}</span>
             <p className={`mt-1 text-2xl font-extrabold ${stats.openDisputes > 0 ? 'text-amber-400' : 'text-white'}`}>
               {statsLoaded ? stats.openDisputes : '—'}
             </p>
             <span className="text-[11px] text-slate-400">
               {statsLoaded
-                ? (stats.openDisputes > 0 ? (en ? 'Under review' : 'En revisión') : (en ? 'None open' : 'Ninguna abierta'))
-                : (en ? 'Sign in to see it' : 'Inicia sesión para verlo')}
+                ? (stats.openDisputes > 0 ? (L('En revisión', 'Under review', 'Em revisão')) : (L('Ninguna abierta', 'None open', 'Nenhuma aberta')))
+                : (L('Inicia sesión para verlo', 'Sign in to see it', 'Entre para ver'))}
             </span>
           </div>
 
           <div className="rounded-xl border border-border/60 bg-background/50 p-4">
-            <span className="text-xs text-slate-400">{en ? 'Volume' : 'Volumen transaccionado'}</span>
+            <span className="text-xs text-slate-400">{L('Volumen transaccionado', 'Volume', 'Volume transacionado')}</span>
             <div className="mt-1 flex items-baseline gap-1">
               <span className="text-2xl font-extrabold text-white">
                 {statsLoaded ? stats.volumeUsdc.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—'}
               </span>
               <span className="text-xs font-bold text-usdc">USDC</span>
             </div>
-            <span className="text-[11px] text-slate-400">{en ? 'Settled on Base Mainnet' : 'Liquidado en Base Mainnet'}</span>
+            <span className="text-[11px] text-slate-400">{L('Liquidado en Base Mainnet', 'Settled on Base Mainnet', 'Liquidado na Base Mainnet')}</span>
           </div>
         </div>
       </div>
 
       {/* Edit Profile Form */}
       <div className="mt-8 rounded-2xl border border-border bg-surface p-6 sm:p-8">
-        <h2 className="text-lg font-bold text-white">{en ? 'Edit public profile' : 'Editar perfil público'}</h2>
+        <h2 className="text-lg font-bold text-white">{L('Editar perfil público', 'Edit public profile', 'Editar perfil público')}</h2>
         <p className="mt-1 text-xs text-slate-400">
-          {en
-            ? 'Buyers and sellers will see this information on the services you publish.'
-            : 'Esta información será visible para compradores y prestadores en tus servicios publicados.'}
+          {L('Esta información será visible para compradores y prestadores en tus servicios publicados.', 'Buyers and sellers will see this information on the services you publish.', 'Compradores e vendedores verão estas informações nos serviços que você publicar.')}
         </p>
 
         {saveSuccess && (
           <div className="mt-4 flex items-center gap-2 rounded-xl border border-accent/30 bg-accent/10 p-3 text-xs font-semibold text-accent">
             <CheckCircle className="h-4 w-4 shrink-0 text-accent" />
-            <span>{en ? 'Profile updated.' : 'Perfil actualizado.'}</span>
+            <span>{L('Perfil actualizado.', 'Profile updated.', 'Perfil atualizado.')}</span>
           </div>
         )}
 
@@ -249,27 +246,27 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                {en ? 'Display name' : 'Nombre a mostrar'}
+                {L('Nombre a mostrar', 'Display name', 'Nome de exibição')}
               </label>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder={language === 'en' ? 'e.g. Alex Rivera' : 'ej. Carlos M.'}
+                placeholder={L('ej. Carlos M.', 'e.g. Alex Rivera', 'ex. Ana S.')}
                 className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-primary focus:outline-none"
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-                {en ? 'Country (2-letter ISO code)' : 'País (código ISO de 2 letras)'}
+                {L('País (código ISO de 2 letras)', 'Country (2-letter ISO code)', 'País (código ISO de 2 letras)')}
               </label>
               <input
                 type="text"
                 maxLength={2}
                 value={country}
                 onChange={(e) => setCountry(e.target.value.toUpperCase())}
-                placeholder={en ? 'e.g. US, UY, AR' : 'ej. UY, AR, US'}
+                placeholder={L('ej. UY, AR, US', 'e.g. US, UY, AR', 'ex. BR, PT, UY')}
                 className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-primary focus:outline-none uppercase"
               />
             </div>
@@ -277,16 +274,14 @@ export default function ProfilePage() {
 
           <div>
             <label className="block text-xs font-medium uppercase tracking-wider text-slate-300">
-              {en ? 'Bio' : 'Biografía / presentación profesional'}
+              {L('Biografía / presentación profesional', 'Bio', 'Bio / apresentação profissional')}
             </label>
             <textarea
               rows={3}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder={
-                en
-                  ? 'Full-stack developer with 5 years of experience in Solidity and Next.js...'
-                  : 'Desarrollador fullstack con 5 años de experiencia en Solidity y Next.js...'
+                L('Desarrollador fullstack con 5 años de experiencia en Solidity y Next.js...', 'Full-stack developer with 5 years of experience in Solidity and Next.js...', 'Desenvolvedor full-stack com 5 anos de experiência em Solidity e Next.js...')
               }
               className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-primary focus:outline-none"
             />
@@ -298,12 +293,12 @@ export default function ProfilePage() {
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover active:scale-95 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
-            <span>{isSaving ? (en ? 'Saving...' : 'Guardando...') : (en ? 'Save changes' : 'Guardar cambios')}</span>
+            <span>{isSaving ? (L('Guardando...', 'Saving...', 'Salvando...')) : (L('Guardar cambios', 'Save changes', 'Salvar alterações'))}</span>
           </button>
 
           {!isAuthenticated && isConnected && (
             <p className="text-xs text-amber-400">
-              {en ? 'Sign in with your wallet to save changes to your profile.' : 'Debes firmar sesión con tu wallet para guardar cambios en tu perfil.'}
+              {L('Debes firmar sesión con tu wallet para guardar cambios en tu perfil.', 'Sign in with your wallet to save changes to your profile.', 'Entre com sua carteira para salvar as alterações do perfil.')}
             </p>
           )}
         </form>

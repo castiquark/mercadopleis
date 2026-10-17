@@ -16,7 +16,7 @@ import { ActivityMenu } from './ActivityMenu';
 export function Navbar() {
   const { isConnected, chainId } = useAccount();
   const { user, isAuthenticated, isAdmin, isLoading, signIn } = useAuth();
-  const { t, language } = useLanguage();
+  const { t, L } = useLanguage();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
@@ -142,7 +142,7 @@ export function Navbar() {
 
           <div className="shrink-0">
             <ConnectButton
-              label={language === 'en' ? 'Connect' : 'Conectar'}
+              label={L('Conectar', 'Connect', 'Conectar')}
               chainStatus="none"
               showBalance={false}
               accountStatus={{

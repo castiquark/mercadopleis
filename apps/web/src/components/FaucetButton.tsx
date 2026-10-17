@@ -17,8 +17,7 @@ interface FaucetButtonProps {
 
 export function FaucetButton({ amount = '1000', variant = 'navbar', onMintSuccess }: FaucetButtonProps) {
   const { address, isConnected, chainId } = useAccount();
-  const { language } = useLanguage();
-  const en = language === 'en';
+  const { L } = useLanguage();
   const [isMinting, setIsMinting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -28,7 +27,7 @@ export function FaucetButton({ amount = '1000', variant = 'navbar', onMintSucces
   const isTestnet = (chainId || sepolia) === sepolia;
   const usdcAddress = CONTRACT_CONFIG.USDC_BASE_SEPOLIA;
   const publicClient = usePublicClient({ chainId: sepolia });
-  const formattedAmount = Number(amount).toLocaleString(en ? 'en-US' : 'es-ES');
+  const formattedAmount = Number(amount).toLocaleString(L('es-ES', 'en-US', 'pt-BR'));
 
   const { refetch: refetchBalance } = useReadContract({
     address: usdcAddress,
@@ -67,11 +66,11 @@ export function FaucetButton({ amount = '1000', variant = 'navbar', onMintSucces
       setTimeout(() => setSuccess(false), 4000);
     } catch (err: any) {
       if (isUserRejection(err)) {
-        setErrorMessage(en ? 'Cancelled in your wallet.' : 'Reclamo cancelado en tu wallet.');
+        setErrorMessage(L('Reclamo cancelado en tu wallet.', 'Cancelled in your wallet.', 'Cancelado na sua carteira.'));
         setTimeout(() => setErrorMessage(null), 3000);
       } else {
         console.error('Error minting test USDC:', err);
-        setErrorMessage(err?.shortMessage || err?.message || (en ? 'Could not mint test USDC' : 'Error al reclamar USDC de prueba'));
+        setErrorMessage(err?.shortMessage || err?.message || (L('Error al reclamar USDC de prueba', 'Could not mint test USDC', 'Não foi possível gerar USDC de teste')));
         setTimeout(() => setErrorMessage(null), 5000);
       }
     } finally {
@@ -91,15 +90,13 @@ export function FaucetButton({ amount = '1000', variant = 'navbar', onMintSucces
               : 'border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400'
           }`}
           title={
-            en
-              ? `Mint ${formattedAmount} test USDC on Base Sepolia to try the marketplace`
-              : `Obtén ${formattedAmount} USDC de prueba en Base Sepolia para probar el marketplace`
+            L(`Obtén ${formattedAmount} USDC de prueba en Base Sepolia para probar el marketplace`, `Mint ${formattedAmount} test USDC on Base Sepolia to try the marketplace`, `Obtenha ${formattedAmount} USDC de teste na Base Sepolia para experimentar o marketplace`)
           }
         >
           {isMinting ? (
             <>
               <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-300" />
-              <span>{en ? 'Minting...' : 'Creando...'}</span>
+              <span>{L('Creando...', 'Minting...', 'Gerando...')}</span>
             </>
           ) : success ? (
             <>
@@ -109,7 +106,7 @@ export function FaucetButton({ amount = '1000', variant = 'navbar', onMintSucces
           ) : (
             <>
               <Droplet className="h-3.5 w-3.5 text-cyan-400 fill-cyan-400/20" />
-              <span>{en ? 'Test USDC faucet' : 'Faucet USDC de prueba'}</span>
+              <span>{L('Faucet USDC de prueba', 'Test USDC faucet', 'Faucet de USDC de teste')}</span>
             </>
           )}
         </button>
@@ -133,17 +130,17 @@ export function FaucetButton({ amount = '1000', variant = 'navbar', onMintSucces
         {isMinting ? (
           <>
             <Loader2 className="h-3 w-3 animate-spin" />
-            <span>{en ? `Minting ${formattedAmount} USDC...` : `Creando ${formattedAmount} USDC...`}</span>
+            <span>{L(`Creando ${formattedAmount} USDC...`, `Minting ${formattedAmount} USDC...`, `Gerando ${formattedAmount} USDC...`)}</span>
           </>
         ) : success ? (
           <>
             <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-            <span>{en ? `${formattedAmount} test USDC received` : `¡${formattedAmount} USDC de prueba acreditados!`}</span>
+            <span>{L(`¡${formattedAmount} USDC de prueba acreditados!`, `${formattedAmount} test USDC received`, `${formattedAmount} USDC de teste recebidos!`)}</span>
           </>
         ) : (
           <>
             <Sparkles className="h-3 w-3" />
-            <span>{en ? `Get ${formattedAmount} test USDC` : `Obtener ${formattedAmount} USDC de prueba`}</span>
+            <span>{L(`Obtener ${formattedAmount} USDC de prueba`, `Get ${formattedAmount} test USDC`, `Obter ${formattedAmount} USDC de teste`)}</span>
           </>
         )}
       </button>

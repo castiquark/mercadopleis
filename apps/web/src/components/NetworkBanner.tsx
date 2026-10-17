@@ -13,8 +13,7 @@ import { CONTRACT_CONFIG } from '@mercadopleis/types';
 export function NetworkBanner() {
   const { isConnected, chainId } = useAccount();
   const { switchChain, isPending } = useSwitchChain();
-  const { language } = useLanguage();
-  const en = language === 'en';
+  const { L } = useLanguage();
 
   if (!isConnected || chainId === CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID) return null;
   const isSepolia = chainId === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
@@ -34,15 +33,13 @@ export function NetworkBanner() {
           <span>
             {isSepolia ? (
               <>
-                <strong>{en ? 'Test mode (Base Sepolia).' : 'Modo prueba (Base Sepolia).'}</strong>{' '}
-                {en
-                  ? 'Payments use test USDC with no real value and orders are test orders. To hire for real, switch your wallet to Base Mainnet.'
-                  : 'Los pagos usan USDC de prueba sin valor real y las órdenes son de prueba. Para contratar de verdad, cambia tu wallet a Base Mainnet.'}
+                <strong>{L('Modo prueba (Base Sepolia).', 'Test mode (Base Sepolia).', 'Modo de teste (Base Sepolia).')}</strong>{' '}
+                {L('Los pagos usan USDC de prueba sin valor real y las órdenes son de prueba. Para contratar de verdad, cambia tu wallet a Base Mainnet.', 'Payments use test USDC with no real value and orders are test orders. To hire for real, switch your wallet to Base Mainnet.', 'Os pagamentos usam USDC de teste sem valor real e os pedidos são de teste. Para contratar de verdade, mude sua carteira para a Base Mainnet.')}
               </>
             ) : (
               <>
-                <strong>{en ? 'Unsupported network.' : 'Red no soportada.'}</strong>{' '}
-                {en ? 'Switch your wallet to Base Mainnet to pay or manage orders.' : 'Cambia tu wallet a Base Mainnet para pagar o gestionar órdenes.'}
+                <strong>{L('Red no soportada.', 'Unsupported network.', 'Rede não suportada.')}</strong>{' '}
+                {L('Cambia tu wallet a Base Mainnet para pagar o gestionar órdenes.', 'Switch your wallet to Base Mainnet to pay or manage orders.', 'Mude sua carteira para a Base Mainnet para pagar ou gerenciar pedidos.')}
               </>
             )}
           </span>
@@ -55,7 +52,7 @@ export function NetworkBanner() {
             isSepolia ? 'border-amber-500/40' : 'border-red-500/40'
           }`}
         >
-          {isPending ? (en ? 'Check your wallet…' : 'Revisa tu wallet…') : en ? 'Switch to Base Mainnet' : 'Cambiar a Base Mainnet'}
+          {isPending ? (L('Revisa tu wallet…', 'Check your wallet…', 'Confira sua carteira…')) : L('Cambiar a Base Mainnet', 'Switch to Base Mainnet', 'Mudar para Base Mainnet')}
         </button>
       </div>
     </div>

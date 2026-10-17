@@ -50,8 +50,7 @@ interface Message {
 
 export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
   const { address } = useAccount();
-  const { language } = useLanguage();
-  const en = language === 'en';
+  const { L } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -80,7 +79,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
       const diff = targetTimestamp - Date.now();
 
       if (diff <= 0) {
-        setTimeLeft(en ? 'Review period over: the seller can claim the payment' : 'Revisión vencida: el vendedor ya puede cobrar');
+        setTimeLeft(L('Revisión vencida: el vendedor ya puede cobrar', 'Review period over: the seller can claim the payment', 'Revisão encerrada: o vendedor já pode receber'));
         return;
       }
 
@@ -95,7 +94,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [order.status, order.autoReleaseDeadline, en]);
+  }, [order.status, order.autoReleaseDeadline, L]);
 
   // Load order messages
   useEffect(() => {
@@ -141,8 +140,8 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
         // Keep the text so the user can retry; never show a message the server did not store.
         setSendError(
           res.status === 401
-            ? (en ? 'Sign in with your wallet to send messages.' : 'Firma sesión con tu wallet para enviar mensajes.')
-            : (en ? 'The message could not be sent. Try again.' : 'No se pudo enviar el mensaje. Inténtalo de nuevo.')
+            ? (L('Firma sesión con tu wallet para enviar mensajes.', 'Sign in with your wallet to send messages.', 'Entre com sua carteira para enviar mensagens.'))
+            : (L('No se pudo enviar el mensaje. Inténtalo de nuevo.', 'The message could not be sent. Try again.', 'Não foi possível enviar a mensagem. Tente novamente.'))
         );
         return;
       }
@@ -154,7 +153,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
       setNewMessage('');
     } catch (err) {
       console.warn('Message send failed:', err);
-      setSendError(en ? 'The message could not be sent. Try again.' : 'No se pudo enviar el mensaje. Inténtalo de nuevo.');
+      setSendError(L('No se pudo enviar el mensaje. Inténtalo de nuevo.', 'The message could not be sent. Try again.', 'Não foi possível enviar a mensagem. Tente novamente.'));
     } finally {
       setIsSending(false);
     }
@@ -180,7 +179,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
           <div className="flex items-center gap-2 mb-4">
             <ShieldCheck className="h-4 w-4 text-accent" />
             <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-              {en ? 'On-chain timeline' : 'Línea de tiempo on-chain'} ({networkName})
+              {L('Línea de tiempo on-chain', 'On-chain timeline', 'Linha do tempo on-chain')} ({networkName})
             </h4>
           </div>
 
@@ -192,11 +191,11 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
               </div>
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white">{en ? 'Funds in escrow' : 'Fondos en escrow'}</span>
+                  <span className="text-xs font-bold text-white">{L('Fondos en escrow', 'Funds in escrow', 'Fundos no escrow')}</span>
                   <span className="text-[11px] text-blue-400 font-semibold">{order.amountUsdc} USDC</span>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  {en ? 'The buyer locked the funds in the smart contract.' : 'El comprador bloqueó los fondos en el smart contract.'}
+                  {L('El comprador bloqueó los fondos en el smart contract.', 'The buyer locked the funds in the smart contract.', 'O comprador bloqueou os fundos no smart contract.')}
                 </p>
                 {fundingTx && txLink(fundingTx)}
               </div>
@@ -213,16 +212,16 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
               </div>
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white">{en ? 'Delivery' : 'Entrega del trabajo'}</span>
+                  <span className="text-xs font-bold text-white">{L('Entrega del trabajo', 'Delivery', 'Entrega do trabalho')}</span>
                   <span className={`text-[11px] font-semibold ${isDelivered ? 'text-purple-400' : 'text-slate-500'}`}>
-                    {isDelivered ? (en ? 'Delivered' : 'Entregado') : (en ? 'Pending' : 'Pendiente')}
+                    {isDelivered ? (L('Entregado', 'Delivered', 'Entregue')) : (L('Pendiente', 'Pending', 'Pendente'))}
                   </span>
                 </div>
 
                 {order.deliveryUrl ? (
                   <div className="mt-1.5 rounded-lg border border-purple-500/30 bg-purple-950/20 p-2.5 text-xs space-y-1.5">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-purple-300">{en ? 'Deliverable:' : 'Entregable:'}</span>
+                      <span className="text-[10px] uppercase font-bold text-purple-300">{L('Entregable:', 'Deliverable:', 'Entregável:')}</span>
                       <DeliverableLink
                         orderId={order.id}
                         reference={order.deliveryUrl}
@@ -232,7 +231,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                     {order.deliveryHash && (
                       <div className="rounded bg-black/40 px-2 py-1 border border-purple-500/20 font-mono text-[10px] text-slate-300">
                         <span className="text-purple-400 font-bold block text-[9px] uppercase tracking-wider">
-                          {en ? 'SHA-256 hash recorded in the escrow:' : 'Hash SHA-256 registrado en el escrow:'}
+                          {L('Hash SHA-256 registrado en el escrow:', 'SHA-256 hash recorded in the escrow:', 'Hash SHA-256 registrado no escrow:')}
                         </span>
                         <span className="break-all select-all text-slate-200">{order.deliveryHash}</span>
                       </div>
@@ -241,8 +240,8 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                 ) : (
                   <p className="text-[11px] text-slate-400 mt-0.5">
                     {isDelivered
-                      ? (en ? 'Delivery recorded in the contract.' : 'Entrega registrada en el contrato.')
-                      : (en ? 'The seller is working on the service.' : 'El prestador está realizando el servicio.')}
+                      ? (L('Entrega registrada en el contrato.', 'Delivery recorded in the contract.', 'Entrega registrada no contrato.'))
+                      : (L('El prestador está realizando el servicio.', 'The seller is working on the service.', 'O vendedor está realizando o serviço.'))}
                   </p>
                 )}
 
@@ -252,7 +251,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                     <Timer className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
                     <div>
                       <span className="text-[10px] uppercase tracking-wider block font-semibold text-amber-400/90">
-                        {en ? 'Review period ends in:' : 'La revisión termina en:'}
+                        {L('La revisión termina en:', 'Review period ends in:', 'A revisão termina em:')}
                       </span>
                       <span className="font-mono font-bold text-white text-xs">{timeLeft}</span>
                     </div>
@@ -278,7 +277,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
               </div>
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white">{en ? 'Settlement' : 'Liquidación y cierre'}</span>
+                  <span className="text-xs font-bold text-white">{L('Liquidación y cierre', 'Settlement', 'Liquidação e encerramento')}</span>
                   <span className={`text-[11px] font-semibold ${
                     order.status === 'RELEASED'
                       ? 'text-accent'
@@ -287,30 +286,26 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                       : 'text-slate-500'
                   }`}>
                     {order.status === 'RELEASED'
-                      ? (en ? 'Released' : 'Liberado')
+                      ? (L('Liberado', 'Released', 'Liberado'))
                       : order.status === 'REFUNDED'
-                      ? (en ? 'Refunded' : 'Reembolsado')
+                      ? (L('Reembolsado', 'Refunded', 'Reembolsado'))
                       : order.status === 'DISPUTED'
-                      ? (en ? 'In dispute' : 'En disputa')
-                      : (en ? 'Pending' : 'En espera')}
+                      ? (L('En disputa', 'In dispute', 'Em disputa'))
+                      : (L('En espera', 'Pending', 'Aguardando'))}
                   </span>
                 </div>
 
                 {order.status === 'RELEASED' && (
                   <p className="text-[11px] text-slate-300 mt-0.5">
-                    {en ? 'Paid out: ' : 'Fondos transferidos: '}
+                    {L('Fondos transferidos: ', 'Paid out: ', 'Fundos transferidos: ')}
                     <strong className="text-accent">{order.sellerAmountUsdc} USDC</strong>
-                    {en
-                      ? ` to the seller (+${order.platformFeeUsdc} USDC 3% fee).`
-                      : ` al prestador (+${order.platformFeeUsdc} USDC de comisión del 3%).`}
+                    {L(` al prestador (+${order.platformFeeUsdc} USDC de comisión del 3%).`, ` to the seller (+${order.platformFeeUsdc} USDC 3% fee).`, ` para o vendedor (+${order.platformFeeUsdc} USDC de taxa de 3%).`)}
                   </p>
                 )}
 
                 {order.status === 'REFUNDED' && (
                   <p className="text-[11px] text-amber-300 mt-0.5">
-                    {en
-                      ? `Full amount returned to the buyer (${order.amountUsdc} USDC).`
-                      : `Monto íntegro devuelto al comprador (${order.amountUsdc} USDC).`}
+                    {L(`Monto íntegro devuelto al comprador (${order.amountUsdc} USDC).`, `Full amount returned to the buyer (${order.amountUsdc} USDC).`, `Valor total devolvido ao comprador (${order.amountUsdc} USDC).`)}
                   </p>
                 )}
 
@@ -325,10 +320,10 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
           <div className="flex items-center justify-between border-b border-border/70 pb-3 mb-4">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-cyan-400" />
-              <h4 className="text-sm font-bold text-white">{en ? 'Order messages' : 'Mensajes de la orden'}</h4>
+              <h4 className="text-sm font-bold text-white">{L('Mensajes de la orden', 'Order messages', 'Mensagens do pedido')}</h4>
             </div>
             <span className="text-[11px] font-mono text-slate-400">
-              {messages.length} {en ? (messages.length === 1 ? 'message' : 'messages') : (messages.length === 1 ? 'mensaje' : 'mensajes')}
+              {messages.length} {messages.length === 1 ? L('mensaje', 'message', 'mensagem') : L('mensajes', 'messages', 'mensagens')}
             </span>
           </div>
 
@@ -336,9 +331,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
           <div className="flex-1 space-y-3 overflow-y-auto max-h-60 pr-1">
             {messages.length === 0 ? (
               <div className="py-8 text-center text-xs text-slate-500">
-                {en
-                  ? 'No messages yet. Start the conversation with the other party here.'
-                  : 'No hay mensajes aún. Comienza la conversación con tu contraparte aquí.'}
+                {L('No hay mensajes aún. Comienza la conversación con tu contraparte aquí.', 'No messages yet. Start the conversation with the other party here.', 'Ainda não há mensagens. Comece a conversa com a outra parte aqui.')}
               </div>
             ) : (
               messages.map((msg) => {
@@ -353,12 +346,12 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                     <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-1">
                       <span className="font-semibold text-slate-300">
                         {isMe
-                          ? (en ? 'You' : 'Tú')
-                          : msg.sender?.displayName || msg.sender?.username || (wallet ? `${wallet.slice(0, 6)}...${wallet.slice(-4)}` : (en ? 'User' : 'Usuario'))}
+                          ? (L('Tú', 'You', 'Você'))
+                          : msg.sender?.displayName || msg.sender?.username || (wallet ? `${wallet.slice(0, 6)}...${wallet.slice(-4)}` : (L('Usuario', 'User', 'Usuário')))}
                       </span>
                       <span>•</span>
                       <span>
-                        {new Date(msg.createdAt).toLocaleTimeString(en ? 'en-US' : 'es-ES', {
+                        {new Date(msg.createdAt).toLocaleTimeString(L('es-ES', 'en-US', 'pt-BR'), {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
@@ -385,14 +378,14 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder={en ? 'Write a message about this order...' : 'Escribe un mensaje o consulta sobre esta orden...'}
-              aria-label={en ? 'Message' : 'Mensaje'}
+              placeholder={L('Escribe un mensaje o consulta sobre esta orden...', 'Write a message about this order...', 'Escreva uma mensagem sobre este pedido...')}
+              aria-label={L('Mensaje', 'Message', 'Mensagem')}
               className="flex-1 rounded-xl border border-border bg-surface px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
             />
             <button
               type="submit"
               disabled={!newMessage.trim() || isSending}
-              aria-label={en ? 'Send message' : 'Enviar mensaje'}
+              aria-label={L('Enviar mensaje', 'Send message', 'Enviar mensagem')}
               className="inline-flex items-center justify-center rounded-xl bg-cyan-500 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-400 active:scale-95 disabled:opacity-40"
             >
               <Send className="h-3.5 w-3.5" />

@@ -11,7 +11,8 @@ interface LegalDocumentProps {
 }
 
 export function LegalDocument({ content }: LegalDocumentProps) {
-  const { language } = useLanguage();
+  const { language, L } = useLanguage();
+  // Legal texts exist in Spanish and English; Portuguese readers get the Spanish version with a notice.
   const doc = content[language === 'en' ? 'en' : 'es'];
 
   return (
@@ -21,11 +22,16 @@ export function LegalDocument({ content }: LegalDocumentProps) {
         className="inline-flex min-h-10 items-center gap-2 text-sm text-slate-400 transition hover:text-white sm:min-h-0"
       >
         <ArrowLeft className="h-4 w-4" />
-        <span>{language === 'en' ? 'Back to Catalog' : 'Volver al Catálogo'}</span>
+        <span>{L('Volver al Catálogo', 'Back to Catalog', 'Voltar ao Catálogo')}</span>
       </Link>
 
       <h1 className="mt-6 text-3xl font-extrabold text-white">{doc.title}</h1>
       <p className="mt-1 text-xs text-slate-500">{doc.updatedLabel}</p>
+      {language === 'pt' && (
+        <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+          Este documento ainda não tem versão em português. Abaixo está a versão em espanhol, que é a que vale.
+        </p>
+      )}
       <p className="mt-6 text-sm leading-relaxed text-slate-300">{doc.intro}</p>
 
       {doc.sections.map((section) => (
