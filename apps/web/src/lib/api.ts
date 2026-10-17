@@ -486,3 +486,26 @@ export const updateProposal = (wallet: string | null | undefined, requestId: str
     method: 'PATCH',
     body: JSON.stringify({ action }),
   });
+
+export interface ActivitySummary {
+  total: number;
+  items: {
+    kind: 'deliver' | 'review' | 'claim' | 'dispute' | 'message' | 'proposals' | 'admin_disputes';
+    count: number;
+    title: string;
+    href: string;
+    contractOrderId?: number | null;
+    chainId?: number;
+  }[];
+}
+
+/** What needs the signed-in user's attention (header menu). Returns null when signed out or on errors. */
+export async function fetchActivity(token: string): Promise<ActivitySummary | null> {
+  try {
+    const res = await fetch(`${API_URL}/me/activity`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+    if (!res.ok) return null;
+    return (await res.json()) as ActivitySummary;
+  } catch {
+    return null;
+  }
+}

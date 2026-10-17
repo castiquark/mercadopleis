@@ -17,6 +17,7 @@ export * from './blockchainTransactions';
 export * from './orderMessages';
 export * from './rateLimits';
 export * from './authNonces';
+export * from './orderReads';
 export * from './requests';
 
 export const usersRelations = relations(users, ({ many }) => ({

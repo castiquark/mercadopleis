@@ -264,6 +264,21 @@ export default function OrdersDashboardPage() {
     loadOrders();
   }, [loadOrders]);
 
+  // Links from the activity menu (/orders?tab=seller&order=<id>) open the right tab and order.
+  const [focusOrderId, setFocusOrderId] = useState<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab === 'buyer' || tab === 'seller') setActiveTab(tab);
+    setFocusOrderId(params.get('order'));
+  }, []);
+  useEffect(() => {
+    if (!focusOrderId || !orders.some((o) => o.id === focusOrderId)) return;
+    setExpandedOrderId(focusOrderId);
+    document.getElementById(`order-${focusOrderId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setFocusOrderId(null);
+  }, [focusOrderId, orders]);
+
   const filteredOrders = orders.filter((o) => o.role === activeTab);
 
   // Each network has its own escrow, so acting on an order while the wallet is on another network would
@@ -688,7 +703,8 @@ export default function OrdersDashboardPage() {
           return (
             <div
               key={order.id}
-              className="overflow-hidden rounded-2xl border border-border bg-surface p-6 transition hover:border-slate-600"
+              id={`order-${order.id}`}
+              className="scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-surface p-6 transition hover:border-slate-600"
             >
               <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
                 {/* Order info */}

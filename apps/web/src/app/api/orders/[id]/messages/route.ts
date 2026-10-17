@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, orders, orderMessages } from '@mercadopleis/database';
+import { db, orders, orderMessages, orderReads } from '@mercadopleis/database';
 import { eq, asc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { validateMessage } from '@/lib/validation';
 import { enforceRateLimit } from '@/lib/rateLimit';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Records that the user has seen the thread up to now (unread counts in the activity menu). Best effort. */
+async function markRead(userId: string, orderId: string) {
+  await db
+    .insert(orderReads)
+    .values({ userId, orderId, lastReadAt: new Date() })
+    .onConflictDoUpdate({ target: [orderReads.userId, orderReads.orderId], set: { lastReadAt: new Date() } })
+    .catch((e: unknown) => console.warn('markRead:', e));
+}
 
 export async function GET(
   request: NextRequest,
@@ -16,6 +27,9 @@ export async function GET(
 
   try {
     const { id } = await params;
+    if (!UUID.test(id)) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
 
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, id),
@@ -28,7 +42,7 @@ export async function GET(
     // RBAC: Only buyer, seller, or admin can read messages
     if (order.buyerId !== authUser.id && order.sellerId !== authUser.id && authUser.role !== 'ADMIN') {
       return NextResponse.json(
-        { error: 'Forbidden: No tienes acceso a los mensajes de esta orden' },
+        { error: 'Forbidden: only the buyer, the seller or an admin can read these messages' },
         { status: 403 }
       );
     }
@@ -47,6 +61,8 @@ export async function GET(
         },
       },
     });
+
+    if (order.buyerId === authUser.id || order.sellerId === authUser.id) await markRead(authUser.id, id);
 
     return NextResponse.json({ messages });
   } catch (err: any) {
@@ -76,6 +92,9 @@ export async function POST(
 
   try {
     const { id } = await params;
+    if (!UUID.test(id)) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
 
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, id),
@@ -88,7 +107,7 @@ export async function POST(
     // RBAC: Only buyer, seller, or admin can send messages for this order
     if (order.buyerId !== authUser.id && order.sellerId !== authUser.id && authUser.role !== 'ADMIN') {
       return NextResponse.json(
-        { error: 'Forbidden: No tienes autorización para enviar mensajes en esta orden' },
+        { error: 'Forbidden: only the buyer, the seller or an admin can post messages here' },
         { status: 403 }
       );
     }
@@ -115,6 +134,8 @@ export async function POST(
         },
       },
     });
+
+    if (order.buyerId === authUser.id || order.sellerId === authUser.id) await markRead(authUser.id, id);
 
     return NextResponse.json({ message: fullMessage });
   } catch (err: any) {

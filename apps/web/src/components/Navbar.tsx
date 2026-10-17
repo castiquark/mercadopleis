@@ -11,6 +11,7 @@ import { FaucetButton } from './FaucetButton';
 import { LanguageSwitch } from './LanguageSwitch';
 import { NetworkSwitch } from './NetworkSwitch';
 import { NetworkBanner } from './NetworkBanner';
+import { ActivityMenu } from './ActivityMenu';
 
 export function Navbar() {
   const { isConnected, chainId } = useAccount();
@@ -106,6 +107,9 @@ export function Navbar() {
               <FaucetButton variant="navbar" amount="1000" />
             </div>
           )}
+
+          {/* What needs the signed-in user's attention */}
+          <ActivityMenu />
 
           {/* Language Switcher */}
           <LanguageSwitch />
