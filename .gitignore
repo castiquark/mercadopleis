@@ -82,3 +82,5 @@ marketing-assets/
 packages/mcp-server/*.mcpb
 packages/mcp-server/.mcpb-stage/
 packages/mcp-server/mcp-publisher.exe
+# Testnet lifecycle state (throwaway test keys)
+packages/mcp-server/testnet-lifecycle-*.json

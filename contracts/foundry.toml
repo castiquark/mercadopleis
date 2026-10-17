@@ -3,6 +3,9 @@ src = "src"
 out = "out"
 libs = ["lib"]
 
+[rpc_endpoints]
+bohr = "https://rpc.bohr.life"        # BOT Chain testnet, chain id 968 (explorer: Blockscout at scan.bohr.life)
+
 [etherscan]
 # Etherscan API v2 (one key for every chain). Verify with: forge verify-contract <addr> <path:Contract> --chain <id> --verifier etherscan
 base = { key = "${ETHERSCAN_API_KEY}", url = "https://api.etherscan.io/v2/api?chainid=8453" }
