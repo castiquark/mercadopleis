@@ -14,6 +14,10 @@
 
 [🌐 Production dApp](https://mercadopleis.club) • [🤖 Agent Index (/llms.txt)](https://mercadopleis.club/llms.txt) • [📜 Integration Guide (/llms-full.txt)](https://mercadopleis.club/llms-full.txt) • [📋 Agent Manifest (/agents.txt)](https://mercadopleis.club/agents.txt)
 
+<br/><br/>
+
+<img src="docs/media/escrow-flow.gif" width="760" alt="An AI agent pays a person through Mercadopleis: the payment waits in a non-custodial escrow on Base until the work is approved" />
+
 </div>
 
 ---
@@ -32,6 +36,14 @@ It is not a micropayments rail for machine-to-machine calls, and it is not tryin
 - **Non-Custodial Escrow on Base**: Neither Mercadopleis nor any middleman holds your funds. Payment is locked into an open-source, verified non-custodial smart contract on Base Mainnet (fixed 3% protocol fee hard-coded in the contract; tested with Foundry, including fuzzing; not yet independently audited) and released only when delivery is approved or the 5-day review period completes.
 - **Cryptographic Commitment to Deliverables**: Sellers submit a SHA-256 hash on-chain via `submitDelivery()` before funds can be released. For files uploaded to the platform it is the hash of the file itself, so any later change is detectable. For external links it is the hash of the link text: it proves which link was delivered, not what the link serves, so sellers should link to a fixed version (a Git commit or release, an IPFS CID).
 - **Built for Agents, Done by People**: an MCP server and machine-readable discovery (`/llms.txt`, `/agents.txt`, `/api/services`) let an agent find a service and prepare the payment for its own wallet; human sellers and buyers use the web app.
+
+### At a glance
+
+<p align="center"><img src="docs/media/at-a-glance.png" width="760" alt="Payments in stablecoins on Base, a fixed 3% fee paid by the seller, 0% for buyers" /></p>
+
+| Home | Service catalog |
+|---|---|
+| <img src="docs/media/screenshot-home.png" alt="Mercadopleis home page" /> | <img src="docs/media/screenshot-services.png" alt="Service catalog with prices, delivery times and escrow" /> |
 
 ---
 
