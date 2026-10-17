@@ -8,10 +8,15 @@ export function currentEscrowKey(chainId: number): string {
 
 export interface ResolvedNetwork {
   chainId: number;
+  /** Display name of the network the payment uses. */
+  name: string;
   supported: boolean;
   isTestnet: boolean;
   escrow: `0x${string}`;
+  /** Settlement stablecoin of the network. Kept as `usdc` for existing callers; see tokenSymbol. */
   usdc: `0x${string}`;
+  tokenSymbol: string;
+  tokenDecimals: number;
 }
 
 const MAINNET = CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID;
@@ -28,8 +33,11 @@ export function resolveNetwork(walletChainId?: number | null): ResolvedNetwork {
   const effective = chainId === SEPOLIA ? SEPOLIA : MAINNET;
   return {
     chainId,
+    name: effective === SEPOLIA ? 'Base Sepolia' : 'Base Mainnet',
     supported,
     isTestnet: effective === SEPOLIA,
+    tokenSymbol: 'USDC',
+    tokenDecimals: 6,
     escrow: ESCROW_ADDRESSES[effective],
     usdc: effective === SEPOLIA ? CONTRACT_CONFIG.USDC_BASE_SEPOLIA : CONTRACT_CONFIG.USDC_BASE_MAINNET,
   };

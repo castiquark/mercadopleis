@@ -27,12 +27,13 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
 
 
   const network = resolveNetwork(chainId);
+  const sym = network.tokenSymbol;
   const { openChainModal } = useChainModal();
   const activeChainId = network.chainId;
   const escrowAddress = network.escrow;
   const usdcAddress = network.usdc;
 
-  const rawAmount = service ? parseUnits(service.priceUsdc.toString(), 6) : 0n;
+  const rawAmount = service ? parseUnits(service.priceUsdc.toString(), network.tokenDecimals) : 0n;
 
   // Read current USDC allowance
   const { data: currentAllowance, refetch: refetchAllowance } = useReadContract({
@@ -262,11 +263,11 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
                     : 'Tu wallet está en una red no soportada. Cambia a Base Mainnet para pagar.'
                   : network.isTestnet
                     ? language === 'en'
-                      ? 'Test mode: you will pay on Base Sepolia with test USDC (no real value). This is not a real hire.'
-                      : 'Modo prueba: pagarás en Base Sepolia con USDC de prueba (sin valor real). No es una contratación real.'
+                      ? `Test mode: you will pay on ${network.name} with test ${sym} (no real value). This is not a real hire.`
+                      : `Modo prueba: pagarás en ${network.name} con ${sym} de prueba (sin valor real). No es una contratación real.`
                     : language === 'en'
-                      ? 'You will pay on Base Mainnet with real USDC.'
-                      : 'Pagarás en Base Mainnet con USDC real.'}{' '}
+                      ? `You will pay on ${network.name} with real ${sym}.`
+                      : `Pagarás en ${network.name} con ${sym} real.`}{' '}
                 <span className="opacity-80">
                   {language === 'en'
                     ? 'Check the network selector next to your wallet before confirming.'
@@ -314,18 +315,18 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
           <div className="mt-4 space-y-2 border-t border-border/60 pt-3 text-sm">
             <div className="flex justify-between text-slate-300">
               <span>{language === 'en' ? 'Service price' : 'Precio del servicio'}</span>
-              <span className="font-medium text-white">{service.priceUsdc} USDC</span>
+              <span className="font-medium text-white">{service.priceUsdc} {sym}</span>
             </div>
             <div className="flex justify-between text-slate-400">
               <span className="flex items-center gap-1">
                 {language === 'en' ? 'Buyer fee' : 'Comisión para comprador'}
                 <span className="rounded bg-accent/10 px-1 text-[10px] font-semibold text-accent">0%</span>
               </span>
-              <span className="text-accent font-medium">0.00 USDC</span>
+              <span className="text-accent font-medium">0.00 {sym}</span>
             </div>
             <div className="flex justify-between border-t border-border/60 pt-2 text-base font-bold text-white">
               <span>{language === 'en' ? 'Total to fund' : 'Total a fondear'}</span>
-              <span className="text-primary-light">{service.priceUsdc} USDC</span>
+              <span className="text-primary-light">{service.priceUsdc} {sym}</span>
             </div>
           </div>
         </div>
@@ -362,10 +363,10 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
         {isConnected && (
           <div className="mt-4 flex items-center justify-between rounded-xl border border-border/70 bg-surface-elevated/40 px-3.5 py-2.5 text-xs">
             <span className="text-slate-400">
-              {language === 'en' ? 'Your USDC balance:' : 'Tu saldo de USDC:'}{' '}
+              {language === 'en' ? `Your ${sym} balance:` : `Tu saldo de ${sym}:`}{' '}
               <strong className="text-white">
                 {currentBalance !== undefined
-                  ? `${Number(formatUnits(currentBalance, 6)).toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC`
+                  ? `${Number(formatUnits(currentBalance, network.tokenDecimals)).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${sym}`
                   : (language === 'en' ? 'Loading...' : 'Cargando...')}
               </strong>
             </span>
@@ -390,8 +391,8 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
                     ? 'Insufficient balance for this order. Claim testnet funds above with 1 click.'
                     : 'Saldo insuficiente para esta orden. Reclama fondos de prueba arriba con 1 clic.')
                 : (language === 'en'
-                    ? 'Insufficient USDC balance on Base Mainnet. Please fund your wallet with USDC.'
-                    : 'Saldo insuficiente de USDC en Base Mainnet. Por favor fondea tu wallet con USDC.')}
+                    ? `Insufficient ${sym} balance on ${network.name}. Please fund your wallet with ${sym}.`
+                    : `Saldo insuficiente de ${sym} en ${network.name}. Por favor fondea tu wallet con ${sym}.`)}
             </span>
           </div>
         )}
@@ -429,11 +430,11 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
               disabled={step !== 'quote'}
               className="w-full rounded-xl bg-primary py-3 font-semibold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-hover active:scale-[0.99] disabled:opacity-50"
             >
-              {step === 'approving' && (language === 'en' ? '1/2 Approving USDC in your wallet...' : '1/2 Aprobando USDC en tu wallet...')}
+              {step === 'approving' && (language === 'en' ? `1/2 Approving ${sym} in your wallet...` : `1/2 Aprobando ${sym} en tu wallet...`)}
               {step === 'funding' && (language === 'en' ? '2/2 Confirming deposit in the Smart Contract...' : '2/2 Confirmando depósito en el Smart Contract...')}
               {step === 'quote' && (
                 needsApproval
-                  ? (language === 'en' ? 'Approve USDC & Fund Escrow' : 'Aprobar USDC y Fondear Escrow')
+                  ? (language === 'en' ? `Approve ${sym} & Fund Escrow` : `Aprobar ${sym} y Fondear Escrow`)
                   : (language === 'en' ? 'Confirm & Fund in Escrow' : 'Confirmar y Fondear en Escrow')
               )}
             </button>

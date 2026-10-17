@@ -4,7 +4,6 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { concatHex, createPublicClient, encodeFunctionData, http, isAddress, parseUnits } from 'viem';
-import { base, baseSepolia } from 'viem/chains';
 import { createHash } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -28,7 +27,7 @@ import {
   type ApiOrder,
 } from './session.js';
 import { API_URL } from './config.js';
-import { BUILDER_DATA_SUFFIX, CHAIN_ID, NETWORKS, ORDER_STATUS, erc20Abi, escrowAbi } from './config.js';
+import { BUILDER_DATA_SUFFIX, CHAIN_ID, ORDER_STATUS, erc20Abi, escrowAbi, getNetwork } from './config.js';
 
 // package.json sits next to src/ and dist/, so this works both in development and when installed from npm.
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
@@ -57,14 +56,21 @@ const summarize = (s: Service) => ({
 });
 
 function publicClient(chainId: number) {
-  const net = NETWORKS[chainId];
-  if (!net) throw new Error(`Unsupported chainId ${chainId}. Use 8453 (Base) or 84532 (Base Sepolia).`);
-  return createPublicClient({ chain: chainId === 8453 ? base : baseSepolia, transport: http(net.rpc) });
+  const net = getNetwork(chainId);
+  return createPublicClient({ chain: net.chain, transport: http(net.rpc) });
+}
+
+/** Tools backed by the mercadopleis.club API only work on the networks it indexes. */
+function apiOnly(chainId: number) {
+  const net = getNetwork(chainId);
+  return net.api
+    ? null
+    : fail(`${net.name} is supported for on-chain tools only (create_order, get_order_status, get_delivery, prepare_order_action). Order registration, messages and deliverable downloads are not available on this network yet.`);
 }
 
 async function readOrder(orderId: number, chainId: number) {
   return publicClient(chainId).readContract({
-    address: NETWORKS[chainId].escrow,
+    address: getNetwork(chainId).escrow,
     abi: escrowAbi,
     functionName: 'orders',
     args: [BigInt(orderId)],
@@ -75,7 +81,7 @@ server.registerTool(
   'search_services',
   {
     description:
-      'Search Mercadopleis for people who can do work you cannot finish alone (data curation, red-teaming, scraping, automations, transcription), priced in USDC. Filter by capability keywords (e.g. "spanish audio transcription"), price and delivery time.',
+      'Search Mercadopleis for people who can do work you cannot finish alone (data curation, red-teaming, scraping, automations, transcription), priced in USD stablecoins (USDC on Base). Filter by capability keywords (e.g. "spanish audio transcription"), price and delivery time.',
     inputSchema: {
       capability: z.string().optional().describe('Capability keywords, e.g. "web-scraping" or "spanish-audio-transcription"'),
       maxPriceUsdc: z.number().positive().optional(),
@@ -128,7 +134,7 @@ server.registerTool(
   'create_order',
   {
     description:
-      'Prepare (never sign or send) the two transactions a buyer wallet must submit to hire a service: 1) USDC approve, 2) createAndFundOrder on the escrow. Non-custodial: this server holds no keys. Funds are released only when the buyer approves delivery, after the 5-day review window, or by arbitration.',
+      'Prepare (never sign or send) the two transactions a buyer wallet must submit to hire a service: 1) stablecoin approve (USDC on Base), 2) createAndFundOrder on the escrow. Non-custodial: this server holds no keys. Funds are released only when the buyer approves delivery, after the 5-day review window, or by arbitration.',
     inputSchema: {
       serviceId: z.string().describe('Service slug or UUID'),
       buyerWallet: z.string().describe('Address of the wallet that will fund the escrow'),
@@ -142,14 +148,19 @@ server.registerTool(
     if (!seller || !isAddress(seller)) return fail('Service has no valid seller wallet');
     if (seller.toLowerCase() === buyerWallet.toLowerCase()) return fail('Buyer and seller must be different wallets');
 
-    const net = NETWORKS[CHAIN_ID];
+    let net;
+    try {
+      net = getNetwork(CHAIN_ID);
+    } catch (e) {
+      return fail((e as Error).message);
+    }
     const price = service.price?.amount ?? service.priceUsdc;
-    const amount = parseUnits(price, 6);
+    const amount = parseUnits(price, net.token.decimals);
     const approveData = encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [net.escrow, amount] });
     const fundData = encodeFunctionData({
       abi: escrowAbi,
       functionName: 'createAndFundOrder',
-      args: [seller as `0x${string}`, net.usdc, amount, BigInt(service.deliveryDays)],
+      args: [seller as `0x${string}`, net.token.address, amount, BigInt(service.deliveryDays)],
     });
 
     return json({
@@ -157,10 +168,11 @@ server.registerTool(
       chainId: CHAIN_ID,
       service: summarize(service),
       priceUsdc: price,
+      token: { symbol: net.token.symbol, address: net.token.address },
       buyerFee: '0%',
       sellerFee: '3% deducted on release',
       transactions: [
-        { step: 1, description: 'Approve USDC spending by the escrow', from: buyerWallet, to: net.usdc, value: '0', data: approveData },
+        { step: 1, description: `Approve ${net.token.symbol} spending by the escrow`, from: buyerWallet, to: net.token.address, value: '0', data: approveData },
         {
           step: 2,
           description: 'Create and fund the escrow order (emits OrderFunded with the orderId)',
@@ -170,7 +182,9 @@ server.registerTool(
           data: concatHex([fundData, BUILDER_DATA_SUFFIX]),
         },
       ],
-      next: 'After step 2 is mined, read the orderId from the OrderFunded event. Sign in (prepare_login, login), call register_order with the funding tx hash, and use send_message to give the seller the task details. Poll get_order_status; when it is Delivered, use get_deliverable and finish with prepare_order_action.',
+      next: net.api
+        ? 'After step 2 is mined, read the orderId from the OrderFunded event. Sign in (prepare_login, login), call register_order with the funding tx hash, and use send_message to give the seller the task details. Poll get_order_status; when it is Delivered, use get_deliverable and finish with prepare_order_action.'
+        : 'After step 2 is mined, read the orderId from the OrderFunded event. On this network only on-chain tools are available: poll get_order_status and get_delivery, then finish with prepare_order_action.',
     });
   },
 );
@@ -183,6 +197,12 @@ server.registerTool(
   },
   async ({ orderId, chainId }) => {
     const id = chainId ?? CHAIN_ID;
+    let net;
+    try {
+      net = getNetwork(id);
+    } catch (e) {
+      return fail((e as Error).message);
+    }
     const [buyer, seller, token, amount, deadline, autoReleaseTime, deliveryHash, status] = await readOrder(orderId, id);
     if (status === 0) return fail(`Order ${orderId} does not exist on chain ${id}`);
     const ts = (n: bigint) => (n > 0n ? new Date(Number(n) * 1000).toISOString() : null);
@@ -193,11 +213,13 @@ server.registerTool(
       buyer,
       seller,
       token,
-      amountUsdc: (Number(amount) / 1e6).toFixed(2),
+      // Field name kept for existing integrations; the unit is the network's stablecoin (tokenSymbol).
+      amountUsdc: (Number(amount) / 10 ** net.token.decimals).toFixed(2),
+      tokenSymbol: token.toLowerCase() === net.token.address.toLowerCase() ? net.token.symbol : null,
       deliveryDeadline: ts(deadline),
       autoReleaseTime: ts(autoReleaseTime),
       deliveryHash: deliveryHash === ZERO_HASH ? null : deliveryHash,
-      explorer: `${NETWORKS[id].explorer}/address/${NETWORKS[id].escrow}`,
+      explorer: `${net.explorer}/address/${net.escrow}`,
     });
   },
 );
@@ -260,8 +282,12 @@ server.registerTool(
   },
   async ({ orderId, action, chainId }) => {
     const id = chainId ?? CHAIN_ID;
-    const net = NETWORKS[id];
-    if (!net) return fail(`Unsupported chainId ${id}. Use 8453 (Base) or 84532 (Base Sepolia).`);
+    let net;
+    try {
+      net = getNetwork(id);
+    } catch (e) {
+      return fail((e as Error).message);
+    }
     const [buyer, , , , deadline, , , status] = await readOrder(orderId, id);
     if (status === 0) return fail(`Order ${orderId} does not exist on chain ${id}`);
 
@@ -291,7 +317,7 @@ const apiFail = (e: unknown) => fail(e instanceof ApiError ? e.message : `Unexpe
 
 /** Maps an on-chain order id to the platform's order record, importing it from the chain if needed. */
 async function findMyOrder(orderId: number, chainId: number): Promise<ApiOrder | null> {
-  const escrow = NETWORKS[chainId].escrow.toLowerCase();
+  const escrow = getNetwork(chainId).escrow.toLowerCase();
   const match = (list: ApiOrder[]) =>
     list.find(
       (o) => o.contractOrderId === orderId && o.chainId === chainId && (!o.escrowAddress || o.escrowAddress.toLowerCase() === escrow)
@@ -364,6 +390,8 @@ server.registerTool(
   async ({ serviceId, orderId, txHash, chainId }) => {
     const id = chainId ?? CHAIN_ID;
     try {
+      const blocked = apiOnly(id);
+      if (blocked) return blocked;
       const service = await fetchService(serviceId);
       if (!service) return fail(`Service "${serviceId}" not found`);
       const { order } = await registerOrder({ serviceId: service.id, contractOrderId: orderId, txHashFunding: txHash, chainId: id });
@@ -384,6 +412,8 @@ server.registerTool(
   async ({ orderId, content, chainId }) => {
     const id = chainId ?? CHAIN_ID;
     try {
+      const blocked = apiOnly(id);
+      if (blocked) return blocked;
       const order = await findMyOrder(orderId, id);
       if (!order) return fail(notFoundHint(orderId));
       const { message } = await postMessage(order.id, content);
@@ -403,6 +433,8 @@ server.registerTool(
   async ({ orderId, chainId }) => {
     const id = chainId ?? CHAIN_ID;
     try {
+      const blocked = apiOnly(id);
+      if (blocked) return blocked;
       const order = await findMyOrder(orderId, id);
       if (!order) return fail(notFoundHint(orderId));
       const me = currentSession()?.address.toLowerCase();
@@ -431,6 +463,8 @@ server.registerTool(
   async ({ orderId, chainId }) => {
     const id = chainId ?? CHAIN_ID;
     try {
+      const blocked = apiOnly(id);
+      if (blocked) return blocked;
       const [, , , , , , onchainHash, status] = await readOrder(orderId, id);
       if (status === 0) return fail(`Order ${orderId} does not exist on chain ${id}`);
       if (onchainHash === ZERO_HASH) return fail(`Order ${orderId} has no delivery yet (status: ${ORDER_STATUS[status]})`);

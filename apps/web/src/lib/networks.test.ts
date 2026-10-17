@@ -4,6 +4,11 @@ import { currentEscrowKey, resolveNetwork } from './networks';
 const MAINNET_USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
 describe('resolveNetwork', () => {
+  it('names the network and its settlement token for the payment screens', () => {
+    expect(resolveNetwork(8453)).toMatchObject({ name: 'Base Mainnet', tokenSymbol: 'USDC', tokenDecimals: 6 });
+    expect(resolveNetwork(84532)).toMatchObject({ name: 'Base Sepolia', tokenSymbol: 'USDC', tokenDecimals: 6 });
+  });
+
   it('defaults to Base Mainnet when no wallet is connected', () => {
     for (const input of [undefined, null]) {
       const n = resolveNetwork(input);

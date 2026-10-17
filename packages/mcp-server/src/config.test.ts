@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { concatHex, decodeFunctionData, encodeFunctionData, getAddress, parseUnits } from 'viem';
 import { MarketplaceEscrowAbi } from '../../contracts-abi/src/MarketplaceEscrowAbi';
-import { BUILDER_DATA_SUFFIX, NETWORKS, ORDER_STATUS, erc20Abi, escrowAbi } from './config';
+import { BUILDER_DATA_SUFFIX, NETWORKS, ORDER_STATUS, erc20Abi, escrowAbi, getNetwork } from './config';
 
 const repoRoot = resolve(__dirname, '../../..');
 
@@ -47,7 +47,25 @@ describe('drift guards against the contract', () => {
   });
 
   it('uses the official USDC on Base Mainnet', () => {
-    expect(NETWORKS[8453].usdc).toBe('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913');
+    expect(NETWORKS[8453].token).toEqual({ address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', symbol: 'USDC', decimals: 6 });
+  });
+
+  it('every network uses its own chain id and the API only indexes Base', () => {
+    for (const [id, net] of Object.entries(NETWORKS)) {
+      expect(net.chain.id).toBe(Number(id));
+      expect(net.api).toBe(id === '8453' || id === '84532');
+    }
+  });
+});
+
+describe('network selection', () => {
+  it('explains how to enable BOT Chain testnet when it is not configured', () => {
+    if (NETWORKS[968]) return; // configured through env in this run
+    expect(() => getNetwork(968)).toThrow(/MERCADOPLEIS_BOHR_ESCROW/);
+  });
+
+  it('lists the supported networks for an unknown chain id', () => {
+    expect(() => getNetwork(1)).toThrow(/8453 \(Base Mainnet\)/);
   });
 });
 
@@ -67,8 +85,8 @@ describe('order calldata', () => {
     const amount = parseUnits('20.00', 6);
     expect(amount).toBe(20_000_000n);
     const seller = '0x9ddf9f930ff5b7064ffcee63738af7f6a31afb10';
-    const fund = encodeFunctionData({ abi: escrowAbi, functionName: 'createAndFundOrder', args: [seller, NETWORKS[8453].usdc, amount, 2n] });
-    expect(decodeFunctionData({ abi: escrowAbi, data: fund }).args).toEqual([getAddress(seller), NETWORKS[8453].usdc, amount, 2n]);
+    const fund = encodeFunctionData({ abi: escrowAbi, functionName: 'createAndFundOrder', args: [seller, NETWORKS[8453].token.address, amount, 2n] });
+    expect(decodeFunctionData({ abi: escrowAbi, data: fund }).args).toEqual([getAddress(seller), NETWORKS[8453].token.address, amount, 2n]);
     const approve = encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [NETWORKS[8453].escrow, amount] });
     expect(decodeFunctionData({ abi: erc20Abi, data: approve }).args).toEqual([NETWORKS[8453].escrow, amount]);
   });
