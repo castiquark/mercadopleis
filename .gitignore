@@ -14,13 +14,15 @@ out
 # Turborepo cache
 .turbo
 
-# Environment & secrets
+# Environment & secrets (only the placeholder example is versioned)
 .env
 .env.*
 *.env
+!.env.example
 contracts/.env
 scratch
 *.pem
+*.key
 
 # Foundry
 contracts/cache
@@ -62,6 +64,13 @@ skills-lock.json
 # Misc build / test artifacts
 *.tsbuildinfo
 coverage
+.eslintcache
+test-results/
+playwright-report/
+*.log
+
+# Local scratch folders for manual tests
+tmp-*/
 
 # Internal production-ops scripts (use deployer keys / touch prod data)
 apps/web/scripts/test-rbac-production.ts
@@ -78,9 +87,11 @@ DEPLOY_CHECKLIST_OCT14.md
 # Local marketing assets (kept out of apps/web/public so manual deploys never publish them)
 marketing-assets/
 
-# MCP bundle build output
+# MCP bundle build output and publisher binary
 packages/mcp-server/*.mcpb
 packages/mcp-server/.mcpb-stage/
 packages/mcp-server/mcp-publisher.exe
+.mcpregistry_*
+
 # Testnet lifecycle state (throwaway test keys)
 packages/mcp-server/testnet-lifecycle-*.json
