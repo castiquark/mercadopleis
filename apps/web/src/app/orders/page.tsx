@@ -7,7 +7,8 @@ import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/lib/languageContext';
-import { fetchMyOrders, updateOrder, submitReview, openDisputeApi, uploadDeliverable, syncChain } from '@/lib/api';
+import { fetchMyOrders, updateOrder, submitReview, openDisputeApi, uploadDeliverable, syncChain, createOrder } from '@/lib/api';
+import { clearPendingOrders, loadPendingOrders, removePendingOrder, type PendingOrder } from '@/lib/pendingOrders';
 import {
   ShieldCheck,
   Clock,
@@ -56,6 +57,8 @@ interface MockOrder {
   autoReleaseDeadline?: number;
   sellerAddress: string;
   buyerAddress: string;
+  /** Funded on-chain but not yet registered with the API (see lib/pendingOrders). */
+  pendingRegistration?: boolean;
   dispute?: {
     id: string;
     reason: string;
@@ -76,7 +79,7 @@ interface MockOrder {
 
 export default function OrdersDashboardPage() {
   const { isConnected, chainId, address } = useAccount();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'buyer' | 'seller'>('buyer');
   const [orders, setOrders] = useState<MockOrder[]>([]);
@@ -161,8 +164,48 @@ export default function OrdersDashboardPage() {
   // Load orders from API and local store
   const loadOrders = useCallback(async () => {
     try {
-      const localCustom = JSON.parse(localStorage.getItem('mercadopleis_custom_orders') || '[]');
-      const apiOrders = await fetchMyOrders(undefined, address);
+      let apiOrders = await fetchMyOrders(undefined, address);
+
+      // Retry the registration of orders funded from this browser that the API has not accepted yet.
+      const isRegistered = (p: PendingOrder) =>
+        Array.isArray(apiOrders) &&
+        apiOrders.some((o: any) => o.chainId === p.chainId && Number(o.contractOrderId) === p.contractOrderId);
+      const mine = loadPendingOrders().filter((p) => !address || p.buyerWallet.toLowerCase() === address.toLowerCase());
+      let newlyRegistered = false;
+      for (const p of mine) {
+        if (isRegistered(p)) {
+          removePendingOrder(p);
+          continue;
+        }
+        if (!isAuthenticated) continue;
+        try {
+          await createOrder({ serviceId: p.serviceId, contractOrderId: p.contractOrderId, txHashFunding: p.txHashFunding, buyerWallet: p.buyerWallet, chainId: p.chainId });
+          removePendingOrder(p);
+          newlyRegistered = true;
+        } catch (e) {
+          console.warn('Pending order registration retry:', e);
+        }
+      }
+      if (newlyRegistered) apiOrders = await fetchMyOrders(undefined, address);
+      const pendingOrders: MockOrder[] = loadPendingOrders()
+        .filter((p) => !address || p.buyerWallet.toLowerCase() === address.toLowerCase())
+        .filter((p) => !isRegistered(p))
+        .map((p) => ({
+          id: `pending-${p.chainId}-${p.contractOrderId}`,
+          contractOrderId: p.contractOrderId,
+          serviceTitle: p.serviceTitle,
+          role: 'buyer',
+          amountUsdc: p.amountUsdc,
+          sellerAmountUsdc: Number((p.amountUsdc * 0.97).toFixed(2)),
+          platformFeeUsdc: Number((p.amountUsdc * 0.03).toFixed(2)),
+          status: 'FUNDED',
+          chainId: p.chainId,
+          txHashFunding: p.txHashFunding,
+          deadlineTimestamp: Math.floor(p.createdAt / 1000) + p.deliveryDays * 86400,
+          sellerAddress: p.sellerWallet,
+          buyerAddress: p.buyerWallet,
+          pendingRegistration: true,
+        }));
 
       let dynamicOrders: MockOrder[] = [];
 
@@ -197,8 +240,8 @@ export default function OrdersDashboardPage() {
         setReviewedOrders((prev) => ({ ...loadedReviews, ...prev }));
       }
 
-      // Combine API orders with the locally cached orders of this browser
-      const baseList = [...dynamicOrders, ...localCustom];
+      // API orders plus the ones from this browser still waiting for registration
+      const baseList = [...dynamicOrders, ...pendingOrders];
       const ordersToDisplay = baseList;
 
       const existingIds = new Set<string>();
@@ -215,7 +258,7 @@ export default function OrdersDashboardPage() {
     } catch (e) {
       console.warn('Orders load note:', e);
     }
-  }, [user?.id, address, activeChainId, en]);
+  }, [user?.id, address, activeChainId, en, isAuthenticated]);
 
   useEffect(() => {
     loadOrders();
@@ -580,7 +623,7 @@ export default function OrdersDashboardPage() {
           <button
             onClick={() => {
               if (typeof window !== 'undefined') {
-                localStorage.removeItem('mercadopleis_custom_orders');
+                clearPendingOrders();
                 loadOrders();
                 setActionNotice(language === 'en' ? 'Local orders cache cleared.' : 'Caché local de órdenes eliminada.');
               }
@@ -944,7 +987,14 @@ export default function OrdersDashboardPage() {
               </div>
 
               {/* Collapsible Timeline and Chat */}
-              {expandedOrderId === order.id && <OrderTimelineAndChat order={order} />}
+              {order.pendingRegistration && (
+                <p className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+                  {en
+                    ? 'Payment confirmed on-chain. We are still linking this order to its listing; it retries automatically each time you open My Orders while signed in. Messages appear once it is linked. Your funds are safe in the escrow.'
+                    : 'Pago confirmado on-chain. Todavía estamos vinculando esta orden con su publicación; se reintenta sola cada vez que abres Mis Órdenes con la sesión iniciada. Los mensajes aparecen cuando quede vinculada. Tus fondos están seguros en el escrow.'}
+                </p>
+              )}
+              {expandedOrderId === order.id && !order.pendingRegistration && <OrderTimelineAndChat order={order} />}
             </div>
           );
         })}

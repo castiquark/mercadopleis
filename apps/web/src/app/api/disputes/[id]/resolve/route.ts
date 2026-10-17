@@ -28,19 +28,10 @@ async function verifyOnChainDisputeResolution(
 
   try {
     const client = createPublicClient({ chain, transport: http(rpc) });
-    const receipt = await client.getTransactionReceipt({ hash: txHash });
+    const receipt = await client.waitForTransactionReceipt({ hash: txHash, timeout: 8_000, pollingInterval: 1_000 });
 
     if (receipt && receipt.status === 'success') {
-      if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
-        return {
-          isValid: false,
-          sellerPayoutUsdc: '0',
-          buyerRefundUsdc: '0',
-          platformFeeUsdc: '0',
-          error: `Transaction was not sent to valid escrow contract on chain ${targetChainId}`,
-        };
-      }
-
+      // The escrow event is the proof: the transaction may reach the escrow through a smart account or relayer.
       const logs = parseEventLogs({
         abi: MarketplaceEscrowAbi,
         logs: receipt.logs,
@@ -48,7 +39,7 @@ async function verifyOnChainDisputeResolution(
       });
 
       if (logs.length > 0) {
-        const log = logs[0];
+        const log = logs.find((l) => l.address.toLowerCase() === escrow.toLowerCase()) ?? logs[0];
         if (
           log.address.toLowerCase() === escrow.toLowerCase() &&
           Number(log.args.orderId) === contractOrderId

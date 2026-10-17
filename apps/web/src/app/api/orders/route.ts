@@ -35,43 +35,31 @@ async function verifyOnChainFunding(
 
   try {
     const client = createPublicClient({ chain, transport: http(rpc) });
-    const receipt = await client.getTransactionReceipt({ hash: txHash });
+    // The wallet may already see the receipt while this RPC has not indexed it yet, so wait briefly for it.
+    const receipt = await client.waitForTransactionReceipt({ hash: txHash, timeout: 8_000, pollingInterval: 1_000 });
 
     if (receipt && receipt.status === 'success') {
-      if (!receipt.to || receipt.to.toLowerCase() !== escrow.toLowerCase()) {
-        return {
-          isValid: false,
-          chainId: targetChainId,
-          orderId: 0,
-          buyer: '',
-          seller: '',
-          token: '',
-          amount: 0n,
-          deadline: 0,
-          error: `Transaction was not sent to valid escrow contract (${escrow}) on chain ${targetChainId}`,
-        };
-      }
-
+      // The OrderFunded event emitted by the escrow is the proof. The transaction itself may be sent to another
+      // contract: smart accounts (EIP-7702, ERC-4337), relayers and batched calls reach the escrow indirectly,
+      // and the escrow still records the user's wallet as the buyer.
       const logs = parseEventLogs({
         abi: MarketplaceEscrowAbi,
         logs: receipt.logs,
         eventName: 'OrderFunded',
       });
+      const log = logs.find((l) => l.address.toLowerCase() === escrow.toLowerCase());
 
-      if (logs.length > 0) {
-        const log = logs[0];
-        if (log.address.toLowerCase() === escrow.toLowerCase()) {
-          return {
-            isValid: true,
-            chainId: chain.id,
-            orderId: Number(log.args.orderId),
-            buyer: log.args.buyer,
-            seller: log.args.seller,
-            token: log.args.token,
-            amount: log.args.amount,
-            deadline: Number(log.args.deadline),
-          };
-        }
+      if (log) {
+        return {
+          isValid: true,
+          chainId: chain.id,
+          orderId: Number(log.args.orderId),
+          buyer: log.args.buyer,
+          seller: log.args.seller,
+          token: log.args.token,
+          amount: log.args.amount,
+          deadline: Number(log.args.deadline),
+        };
       }
     }
   } catch (err: any) {

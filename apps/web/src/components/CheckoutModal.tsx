@@ -12,6 +12,7 @@ import { FaucetButton } from './FaucetButton';
 import { isUserRejection } from '../lib/web3Errors';
 import { BUILDER_DATA_SUFFIX } from '@/lib/builderCode';
 import { resolveNetwork } from '@/lib/networks';
+import { addPendingOrder, withRetries } from '@/lib/pendingOrders';
 
 interface CheckoutModalProps {
   service: Service | null;
@@ -156,37 +157,33 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
       const realContractOrderId = Number(logs[0].args.orderId);
       console.log(`[Escrow] Confirmed on-chain Order ID: ${realContractOrderId} (tx: ${fundTx})`);
 
-      // Step 4: Persist real on-chain Order in PostgreSQL backend
+      // Step 4: Register the on-chain order with the API (retried; if it still fails, My Orders keeps retrying).
       try {
         const { createOrder } = await import('@/lib/api');
-        await createOrder({
+        await withRetries(() =>
+          createOrder({
+            serviceId: service.id,
+            contractOrderId: realContractOrderId,
+            txHashFunding: fundTx,
+            buyerWallet: address,
+            chainId: activeChainId,
+          })
+        );
+      } catch (dbErr) {
+        console.warn('[Escrow] Registration pending (funds are safe on-chain):', dbErr);
+        addPendingOrder({
           serviceId: service.id,
+          serviceTitle: service.title,
           contractOrderId: realContractOrderId,
           txHashFunding: fundTx,
-          buyerWallet: address,
           chainId: activeChainId,
+          buyerWallet: address || '',
+          sellerWallet,
+          amountUsdc: Number(service.priceUsdc),
+          deliveryDays: service.deliveryDays,
+          createdAt: Date.now(),
         });
-      } catch (dbErr) {
-        console.warn('[Escrow] Backend registration notice (funds are safe on-chain):', dbErr);
       }
-
-      // Local storage cache with real on-chain contractOrderId
-      const localOrders = JSON.parse(localStorage.getItem('mercadopleis_custom_orders') || '[]');
-      const newLocalOrder = {
-        id: `ord-${Date.now()}`,
-        contractOrderId: realContractOrderId,
-        serviceTitle: service.title,
-        role: 'buyer',
-        amountUsdc: service.priceUsdc,
-        sellerAmountUsdc: Number((service.priceUsdc * 0.97).toFixed(2)),
-        platformFeeUsdc: Number((service.priceUsdc * 0.03).toFixed(2)),
-        status: 'FUNDED',
-        deadlineTimestamp: Math.floor(Date.now() / 1000) + service.deliveryDays * 86400,
-        sellerAddress: sellerWallet,
-        buyerAddress: address,
-        txHashFunding: fundTx,
-      };
-      localStorage.setItem('mercadopleis_custom_orders', JSON.stringify([newLocalOrder, ...localOrders]));
 
       setStep('success');
       setTimeout(() => onSuccess(realContractOrderId.toString()), 2000);
