@@ -1,4 +1,4 @@
-// Legal texts (Terms of Service and Privacy Policy) in Spanish and English.
+// Legal texts (Terms of Service and Privacy Policy) in Spanish, English and Brazilian Portuguese.
 // Operator-specific facts live in LEGAL so they can be completed without touching the wording.
 
 import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
@@ -11,8 +11,9 @@ export const LEGAL = {
   escrowAddress: ESCROW_ADDRESSES[8453] as string,
   updatedEs: '3 de octubre de 2026',
   updatedEn: 'October 3, 2026',
-  /** Set to the governing-law / courts clause once the operator decides it, e.g. { es: '...', en: '...' }. */
-  jurisdiction: null as null | { es: string; en: string },
+  updatedPt: '3 de outubro de 2026',
+  /** Set to the governing-law / courts clause once the operator decides it, e.g. { es: '...', en: '...', pt: '...' }. */
+  jurisdiction: null as null | { es: string; en: string; pt: string },
 };
 
 export interface LegalSection {
@@ -29,7 +30,7 @@ export interface LegalDocumentContent {
 
 const L = LEGAL;
 
-export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
+export const TERMS: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
   es: {
     title: 'Términos del Servicio',
     updatedLabel: `Última actualización: ${L.updatedEs}`,
@@ -39,7 +40,7 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
       {
         title: '1. Qué es Mercadopleis',
         paragraphs: [
-          'Mercadopleis es una plataforma que permite a personas y agentes de inteligencia artificial publicar, descubrir y contratar servicios, y pagarlos en USDC mediante un contrato inteligente de custodia (escrow) desplegado en la red Base.',
+          'Mercadopleis es una plataforma que permite a personas y agentes de inteligencia artificial publicar, descubrir y contratar servicios, y pagarlos en USDC mediante un contrato inteligente de escrow sin custodia desplegado en la red Base.',
           'Mercadopleis no es parte del contrato entre comprador y vendedor, no presta los servicios publicados y no los supervisa. Los listados los escriben los vendedores; no los verificamos ni garantizamos su calidad, legalidad, exactitud ni cumplimiento.',
         ],
       },
@@ -54,7 +55,7 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
         title: '3. Pagos y escrow',
         paragraphs: [
           `El comprador deposita USDC en el contrato de escrow (${L.escrowAddress}). Mercadopleis no custodia fondos: las reglas las ejecuta el contrato.`,
-          'El vendedor registra la entrega con un hash SHA-256: el del archivo, si lo sube a la plataforma, o el del texto del enlace, si entrega un enlace externo. En este último caso el hash prueba qué enlace se entregó, no su contenido, que el vendedor podría cambiar; revísalo antes de aprobar. El comprador dispone de 5 días desde la entrega para aprobarla o abrir una disputa. Si no hay acción, el vendedor puede reclamar la liberación automática. Si el vendedor no entrega dentro del plazo acordado, el comprador puede reclamar el reembolso íntegro.',
+          'El vendedor registra la entrega con un hash SHA-256: el del archivo, si lo sube a la plataforma, o el del texto del enlace, si entrega un enlace externo. En este último caso el hash prueba qué enlace se entregó, no su contenido, que el vendedor podría cambiar; revísalo antes de aprobar. El comprador dispone de 5 días desde la entrega para aprobarla o abrir una disputa. Si no hay acción, el vendedor puede reclamar la liberación del pago. Si el vendedor no entrega dentro del plazo acordado, el comprador puede reclamar el reembolso íntegro.',
           'Comisión: 3% fijo, descontado del cobro del vendedor, y 0% para el comprador. Es una constante del contrato: nadie puede modificarla, ni siquiera su propietario. Se cobra al finalizar el escrow sobre el monto que recibe el vendedor (en una orden normal, el 3% del total); un reembolso íntegro al comprador no tiene comisión. Cada usuario paga el gas de sus transacciones.',
           'Las transacciones en blockchain son irreversibles. Verifica direcciones, red y montos antes de firmar.',
         ],
@@ -123,7 +124,7 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
       {
         title: '1. What Mercadopleis is',
         paragraphs: [
-          'Mercadopleis is a platform where people and AI agents publish, discover and hire services, and pay for them in USDC through an escrow smart contract deployed on the Base network.',
+          'Mercadopleis is a platform where people and AI agents publish, discover and hire services, and pay for them in USDC through a non-custodial escrow smart contract deployed on the Base network.',
           'Mercadopleis is not a party to the contract between buyer and seller, does not perform the listed services and does not supervise them. Listings are written by sellers; we do not vet them or guarantee their quality, legality, accuracy or fulfilment.',
         ],
       },
@@ -138,7 +139,7 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
         title: '3. Payments and escrow',
         paragraphs: [
           `The buyer deposits USDC into the escrow contract (${L.escrowAddress}). Mercadopleis does not hold funds: the contract enforces the rules.`,
-          'The seller records the delivery with a SHA-256 hash: of the file, when it is uploaded to the platform, or of the link text, when an external link is delivered. In that case the hash proves which link was delivered, not its content, which the seller could change; review it before approving. The buyer has 5 days from delivery to approve it or open a dispute. If nothing happens, the seller can claim the automatic release. If the seller does not deliver within the agreed time, the buyer can claim a full refund.',
+          'The seller records the delivery with a SHA-256 hash: of the file, when it is uploaded to the platform, or of the link text, when an external link is delivered. In that case the hash proves which link was delivered, not its content, which the seller could change; review it before approving. The buyer has 5 days from delivery to approve it or open a dispute. If nothing happens, the seller can claim the payout. If the seller does not deliver within the agreed time, the buyer can claim a full refund.',
           'Fee: a fixed 3%, deducted from the seller payout, and 0% for the buyer. It is a constant in the contract: nobody can change it, not even its owner. It is charged when the escrow ends on the amount the seller receives (on a normal order, 3% of the total); a full refund to the buyer carries no fee. Each user pays the gas for their own transactions.',
           'Blockchain transactions are irreversible. Check addresses, network and amounts before signing.',
         ],
@@ -146,16 +147,16 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
       {
         title: '3 bis. Powers of the contract owner',
         paragraphs: [
-          'The contract owner can change the fee recipient, appoint the arbiter, enable or disable accepted tokens, pause the contract and transfer or renounce ownership. It cannot change the fee.',
-          'While the contract is paused, nobody can create orders, record deliveries, approve them, claim releases or refunds, or open disputes; the arbiter can still resolve disputes that are already open. Delivery and review deadlines keep running during a pause.',
+          'The contract owner can change the fee recipient, appoint the arbitrator, enable or disable accepted tokens, pause the contract and transfer or renounce ownership. It cannot change the fee.',
+          'While the contract is paused, nobody can create orders, record deliveries, approve them, claim releases or refunds, or open disputes; the arbitrator can still resolve disputes that are already open. Delivery and review deadlines keep running during a pause.',
           'The owner has no function to withdraw funds from orders in progress. Funds can only move according to the contract rules.',
         ],
       },
       {
         title: '4. Disputes and arbitration',
         paragraphs: [
-          'Buyer or seller can open a dispute while the order is funded or delivered. The appointed arbiter reviews the information from both parties and decides how to split the funds between them. The decision is executed in the contract and is final within the platform, without prejudice to any rights the law gives you against the other party.',
-          'During this early stage, the arbiter is the Mercadopleis operator itself, which also receives the fee. Since the fee is only charged on the part the seller receives, we disclose this so you can take it into account.',
+          'Buyer or seller can open a dispute while the order is funded or delivered. The appointed arbitrator reviews the information from both parties and decides how to split the funds between them. The decision is executed in the contract and is final within the platform, without prejudice to any rights the law gives you against the other party.',
+          'During this early stage, the arbitrator is the Mercadopleis operator itself, which also receives the fee. Since the fee is only charged on the part the seller receives, we disclose this so you can take it into account.',
         ],
       },
       {
@@ -168,7 +169,7 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
       {
         title: '6. Deliverables and intellectual property',
         paragraphs: [
-          'Buyer and seller agree between themselves on the rights to the work. The seller represents that they have the right to deliver it. Files uploaded to the platform are stored privately and can only be downloaded by the buyer, the seller and the arbiter; you grant us a limited licence to store and display them for that purpose.',
+          'Buyer and seller agree between themselves on the rights to the work. The seller represents that they have the right to deliver it. Files uploaded to the platform are stored privately and can only be downloaded by the buyer, the seller and the arbitrator; you grant us a limited licence to store and display them for that purpose.',
         ],
       },
       {
@@ -198,9 +199,93 @@ export const TERMS: Record<'es' | 'en', LegalDocumentContent> = {
       },
     ],
   },
+  pt: {
+    title: 'Termos de Serviço',
+    updatedLabel: `Última atualização: ${L.updatedPt}`,
+    intro:
+      `Estes termos regulam o uso da ${L.siteName} (${L.domain}). Ao conectar sua carteira, publicar um serviço ou contratar um, você aceita estes termos. Se não concordar, não use o serviço.`,
+    sections: [
+      {
+        title: '1. O que é a Mercadopleis',
+        paragraphs: [
+          'A Mercadopleis é uma plataforma que permite a pessoas e agentes de inteligência artificial publicar, descobrir e contratar serviços, pagando por eles em USDC por meio de um contrato inteligente de escrow sem custódia implantado na rede Base.',
+          'A Mercadopleis não faz parte do contrato entre comprador e vendedor, não presta os serviços listados e não os supervisiona. Os anúncios são criados pelos vendedores; não os verificamos nem garantimos sua qualidade, legalidade, exatidão ou cumprimento.',
+        ],
+      },
+      {
+        title: '2. Elegibilidade e sua carteira',
+        paragraphs: [
+          'Você deve ter capacidade legal para contratar e cumprir as leis aplicáveis, incluindo normas sobre sanções, prevenção à lavagem de dinheiro e obrigações tributárias. Você não pode usar o serviço se for proibido por lei.',
+          'Você é o único responsável por sua carteira, chaves privadas e assinaturas. Ninguém na Mercadopleis pode recuperar chaves perdidas nem reverter transações.',
+        ],
+      },
+      {
+        title: '3. Pagamentos e escrow',
+        paragraphs: [
+          `O comprador deposita USDC no contrato de escrow (${L.escrowAddress}). A Mercadopleis não custodia fundos: as regras são executadas pelo contrato.`,
+          'O vendedor registra a entrega com um hash SHA-256: do arquivo, se for enviado pela plataforma, ou do texto do link, se entregar um link externo. Neste último caso, o hash comprova qual link foi entregue, mas não o seu conteúdo, que o vendedor poderia alterar; confira-o antes de aprovar. O comprador tem 5 dias a partir da entrega para aprová-la ou abrir uma disputa. Se não houver manifestação, o vendedor pode solicitar o recebimento. Se o vendedor não entregar dentro do prazo combinado, o comprador pode solicitar o reembolso total.',
+          'Taxa: 3% fixo, descontado do valor recebido pelo vendedor, e 0% para o comprador. Trata-se de uma constante no contrato: ninguém pode alterá-la, nem mesmo o proprietário do contrato. A taxa é cobrada ao finalizar o escrow sobre o valor recebido pelo vendedor (em um pedido normal, 3% do total); o reembolso total ao comprador não possui taxa. Cada usuário paga o gas das suas próprias transações.',
+          'Transações em blockchain são irreversíveis. Verifique endereços, rede e valores antes de assinar.',
+        ],
+      },
+      {
+        title: '3 bis. Atribuições do proprietário do contrato',
+        paragraphs: [
+          'O proprietário do contrato pode: alterar o destinatário da taxa, nomear o árbitro, habilitar ou desabilitar tokens aceitos, pausar o contrato e transferir ou renunciar à propriedade. Não pode alterar a taxa.',
+          'Enquanto o contrato estiver pausado, não é possível criar pedidos, registrar entregas, aprová-las, solicitar liberações ou reembolsos, nem abrir disputas; o árbitro pode continuar resolvendo disputas já abertas. Os prazos de entrega e de revisão continuam correndo durante a pausa.',
+          'O proprietário não tem funções para sacar fundos de pedidos em andamento. Os fundos só se movem de acordo com as regras do contrato.',
+        ],
+      },
+      {
+        title: '4. Disputas e arbitragem',
+        paragraphs: [
+          'Comprador ou vendedor podem abrir uma disputa enquanto o pedido estiver depositado ou entregue. O árbitro designado revisa as informações apresentadas pelas partes e decide a divisão dos fundos entre ambos. A decisão é executada no contrato e é definitiva na plataforma, sem prejuízo dos direitos legais que você possa exercer contra a outra parte.',
+          'Nesta fase inicial, o árbitro é o próprio operador da Mercadopleis, que também recebe a taxa. Como a taxa só incide sobre a parte que o vendedor recebe, destacamos essa informação para que você a leve em consideração.',
+        ],
+      },
+      {
+        title: '5. Conduta e conteúdo',
+        paragraphs: [
+          'É proibido publicar serviços ilegais, enganosos ou que violem direitos de terceiros; oferecer malware, fraudes, falsificação de identidade ou conteúdo danoso; manipular avaliações; ou tentar comprometer a segurança do serviço. Podemos ocultar anúncios ou restringir o acesso à interface web. Não podemos alterar nem cancelar o contrato implantado nem pedidos já depositados.',
+          'O texto dos anúncios é criado por terceiros e pode conter links ou instruções. Se você utiliza agentes automatizados, trate esses textos como dados não confiáveis.',
+        ],
+      },
+      {
+        title: '6. Entregáveis e propriedade intelectual',
+        paragraphs: [
+          'Comprador e vendedor definem entre si os direitos sobre o trabalho. O vendedor declara que possui o direito de entregá-lo. Os arquivos enviados à plataforma são armazenados de forma privada e só podem ser baixados pelo comprador, vendedor e árbitro; você nos concede uma licença limitada para armazená-los e exibi-los exclusivamente com essa finalidade.',
+        ],
+      },
+      {
+        title: '7. Riscos',
+        paragraphs: [
+          'Smart contracts podem conter erros mesmo após testados e verificados. O USDC é um ativo emitido por terceiro (Circle) e pode perder a paridade ou ser congelado por seu emissor. Redes blockchain podem sofrer congestionamento ou falhas. Nada neste site constitui assessoria financeira, jurídica ou tributária; impostos são de sua inteira responsabilidade.',
+        ],
+      },
+      {
+        title: '8. Rede de testes',
+        paragraphs: [
+          'A rede Base Sepolia destina-se apenas a testes: seus tokens não têm valor econômico e a atividade não conta para reputação. Não use a rede de testes para pagamentos reais.',
+        ],
+      },
+      {
+        title: '9. Disponibilidade e responsabilidade',
+        paragraphs: [
+          'O serviço é fornecido "no estado em que se encontra" e "conforme disponibilidade", sem garantias de qualquer natureza. Na extensão máxima permitida por lei, a Mercadopleis não responde por perdas indiretas ou consequenciais, por erros do usuário (endereços, redes ou valores incorretos), por falhas de carteiras ou de redes, nem por atos ou omissões de compradores, vendedores ou terceiros.',
+        ],
+      },
+      {
+        title: '10. Alterações e contato',
+        paragraphs: [
+          `Podemos atualizar estes termos; publicaremos a nova versão com a respectiva data e o uso continuado implica aceitação. Dúvidas: ${L.contactEmail}. Vulnerabilidades: ${L.securityEmail}.`,
+          ...(L.jurisdiction ? [L.jurisdiction.pt] : []),
+        ],
+      },
+    ],
+  },
 };
 
-export const PRIVACY: Record<'es' | 'en', LegalDocumentContent> = {
+export const PRIVACY: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
   es: {
     title: 'Política de Privacidad',
     updatedLabel: `Última actualización: ${L.updatedEs}`,
@@ -273,7 +358,7 @@ export const PRIVACY: Record<'es' | 'en', LegalDocumentContent> = {
           'Wallet: your public address, used to sign in with a signature (SIWE). We never receive your keys.',
           'Profile: display name, bio, country and avatar, only if you fill them in. They are public on your listings.',
           'Activity: services you publish, orders (identifiers, amounts, statuses, hashes and transactions), reviews, disputes with their reason and evidence, and messages inside each order.',
-          'Files: deliverables you upload are stored privately and can only be downloaded by the buyer, the seller and the arbiter through short-lived signed links.',
+          'Files: deliverables you upload are stored privately and can only be downloaded by the buyer, the seller and the arbitrator through short-lived signed links.',
           'Technical data: IP address and request headers, used for security and to limit abuse. Rate-limit counters are kept for a few hours.',
         ],
       },
@@ -318,6 +403,66 @@ export const PRIVACY: Record<'es' | 'en', LegalDocumentContent> = {
       {
         title: '8. Changes',
         paragraphs: ['We will publish any change on this page with its update date.'],
+      },
+    ],
+  },
+  pt: {
+    title: 'Política de Privacidade',
+    updatedLabel: `Última atualização: ${L.updatedPt}`,
+    intro:
+      `Esta política explica quais dados a ${L.siteName} (${L.domain}) trata, para quais finalidades e quais são as suas opções. Contato sobre privacidade: ${L.contactEmail}.`,
+    sections: [
+      {
+        title: '1. Dados que tratamos',
+        paragraphs: [
+          'Carteira: seu endereço público, utilizado para iniciar sessão mediante assinatura criptográfica (SIWE). Nunca recebemos suas chaves privadas.',
+          'Perfil: nome de exibição, biografia, país e avatar, caso decida preenchê-los. Essas informações são públicas nos seus serviços.',
+          'Atividade: serviços que você publica, pedidos (identificadores, valores, status, hashes e transações), avaliações, disputas com motivo e provas, e mensagens trocadas dentro de cada pedido.',
+          'Arquivos: entregáveis enviados são armazenados de forma privada e só podem ser baixados por comprador, vendedor e árbitro por meio de links assinados de curta duração.',
+          'Dados técnicos: endereço IP e cabeçalhos de requisição, utilizados para segurança e controle de abusos. Contadores de limite de requisições são retidos por algumas horas.',
+        ],
+      },
+      {
+        title: '2. Para que usamos os dados',
+        paragraphs: [
+          'Para prestar o serviço (autenticar você, exibir seus pedidos, permitir mensagens e mediação de disputas), manter a segurança e prevenir abusos, e cumprir obrigações legais. Recursos analíticos são ativados somente com seu consentimento.',
+        ],
+      },
+      {
+        title: '3. Cookies e armazenamento local',
+        paragraphs: [
+          'Usamos o armazenamento local do seu navegador para manter sua sessão, preferências de idioma, cópia dos pedidos recentes e consentimento de cookies. São essenciais para o funcionamento do site.',
+          'Se você aceitar, carregamos o Google Analytics (ID de medição G-2GCQ3QTT5D) para entender como o site é utilizado. Se você recusar, o script não é carregado. Você pode alterar sua escolha a qualquer momento em "Configurações de cookies" no rodapé da página.',
+        ],
+      },
+      {
+        title: '4. Com quem compartilhamos dados',
+        paragraphs: [
+          'Prestadores de serviços essenciais: Netlify (hospedagem), Neon (banco de dados e armazenamento de arquivos), Google (análise, somente com seu consentimento), WalletConnect/Reown e RainbowKit (conexão de carteiras) e provedores de nós RPC da Base, que recebem seu IP quando o navegador consulta a blockchain. Alguns operam nos Estados Unidos ou em outros países.',
+          'Não vendemos seus dados pessoais.',
+        ],
+      },
+      {
+        title: '5. Blockchain',
+        paragraphs: [
+          'Transações, endereços, valores e hashes registrados na Base são públicos e permanentes. Não temos como apagá-los ou alterá-los.',
+        ],
+      },
+      {
+        title: '6. Retenção e segurança',
+        paragraphs: [
+          'Retemos dados pelo tempo necessário para a prestação do serviço, segurança e cumprimento de obrigações legais. Aplicamos medidas técnicas razoáveis (conexões criptografadas, armazenamento privado e limites de requisições), mas nenhum sistema é totalmente infalível.',
+        ],
+      },
+      {
+        title: '7. Seus direitos',
+        paragraphs: [
+          `Você pode solicitar acesso, retificação, exclusão dos dados armazenados fora da blockchain, oposição ou portabilidade pelo e-mail ${L.contactEmail}. Dados on-chain não podem ser excluídos. O serviço não é direcionado a menores de idade.`,
+        ],
+      },
+      {
+        title: '8. Alterações',
+        paragraphs: ['Publicaremos qualquer alteração nesta página com a respectiva data de atualização.'],
       },
     ],
   },

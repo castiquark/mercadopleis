@@ -248,7 +248,7 @@ export default function ServiceDetailPage() {
                   L('El vendedor registra la entrega con su hash SHA-256 on-chain', 'The seller records the delivery with its SHA-256 hash on-chain', 'O vendedor registra a entrega com o hash SHA-256 on-chain'),
                   L('Tienes 5 días para aprobarla o abrir una disputa', 'You have 5 days to approve it or open a dispute', 'Você tem 5 dias para aprovar ou abrir uma disputa'),
                   L('Reembolso íntegro si no se entrega en el plazo acordado', 'Full refund if it is not delivered within the agreed time', 'Reembolso total se não for entregue no prazo combinado'),
-                  L('Los archivos subidos son privados: solo tú, el vendedor y el árbitro pueden descargarlos', 'Uploaded files are private: only you, the seller and the arbiter can download them', 'Os arquivos enviados são privados: só você, o vendedor e o árbitro podem baixá-los'),
+                  L('Los archivos subidos son privados: solo tú, el vendedor y el árbitro pueden descargarlos', 'Uploaded files are private: only you, the seller and the arbitrator can download them', 'Os arquivos enviados são privados: só você, o vendedor e o árbitro podem baixá-los'),
                 ].map((item) => (
                   <div key={item} className="flex items-start gap-2.5 text-sm text-slate-200">
                     <Check className="h-4 w-4 shrink-0 text-accent mt-0.5" />
@@ -371,15 +371,15 @@ export default function ServiceDetailPage() {
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-primary-light mt-0.5" />
                 <span>
-                  <strong>{L('Escrow Non-Custodial:', 'Non-Custodial Escrow:', 'Escrow sem custódia:')}</strong>{' '}
+                  <strong>{L('Escrow sin custodia:', 'Non-Custodial Escrow:', 'Escrow sem custódia:')}</strong>{' '}
                   {L('Los USDC quedan bloqueados en el contrato hasta que apruebes o termine el período de revisión.', 'USDC stays locked in the smart contract until you approve or the review period ends.', 'Os USDC ficam bloqueados no contrato até você aprovar ou terminar o período de revisão.')}
                 </span>
               </div>
               <div className="flex items-start gap-2">
                 <Clock className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
                 <span>
-                  <strong>{L('5 días de revisión:', '5-day inspection:', '5 dias de revisão:')}</strong>{' '}
-                  {L('Ventana garantizada para validar entregas antes del auto-release.', 'Guaranteed window to inspect deliveries prior to auto-release.', 'Janela garantida para validar entregas antes da liberação automática.')}
+                  <strong>{L('5 días de revisión:', '5-day review period:', '5 dias de revisão:')}</strong>{' '}
+                  {L('Plazo para validar entregas antes de que el vendedor pueda cobrar.', 'Window to review deliverables before the seller can claim payment.', 'Prazo para validar entregas antes que o vendedor possa receber.')}
                 </span>
               </div>
             </div>

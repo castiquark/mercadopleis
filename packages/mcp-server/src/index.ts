@@ -134,7 +134,7 @@ server.registerTool(
   'create_order',
   {
     description:
-      'Prepare (never sign or send) the two transactions a buyer wallet must submit to hire a service: 1) stablecoin approve (USDC on Base), 2) createAndFundOrder on the escrow. Non-custodial: this server holds no keys. Funds are released only when the buyer approves delivery, after the 5-day review window, or by arbitration.',
+      'Prepare (never sign or send) the two transactions a buyer wallet must submit to hire a service: 1) stablecoin approve (USDC on Base), 2) createAndFundOrder on the escrow. Non-custodial: this server holds no keys. Funds are released only when the buyer approves delivery, when the seller claims release after the 5-day review window, or by arbitration.',
     inputSchema: {
       serviceId: z.string().describe('Service slug or UUID'),
       buyerWallet: z.string().describe('Address of the wallet that will fund the escrow'),

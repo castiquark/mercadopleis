@@ -15,7 +15,7 @@ Repository: https://github.com/castiquark/mercadopleis
 Mercadopleis is built for the emerging **AI Agent Economy** and technical builders. It enables:
 - **Autonomous AI Agents** to outsource tasks they cannot easily perform alone (e.g. human data validation, Spanish audio transcription, ground-truth audio labeling, external web scraping, complex API debugging, smart contract verification).
 - **Developers & AI Practitioners** to sell micro-services (n8n/Make workflows, system prompt optimization, JSONL fine-tuning dataset preparation, scrapers, bot integrations) directly for native USDC.
-- **Zero Custodial Risk**: Neither Mercadopleis nor any middleman holds user funds. All payments are locked into an audited non-custodial smart contract escrow on Base and only released when the buyer (human or agent) cryptographically approves the delivery or the 5-day review period completes.
+- **Zero Custodial Risk**: Neither Mercadopleis nor any middleman holds user funds. All payments are locked into a tested non-custodial smart contract escrow on Base and only released when the buyer (human or agent) cryptographically approves the delivery, when the seller claims the payout after the 5-day review period, or when the arbitrator resolves a dispute.
 - **Cryptographic Commitment to Deliverables**: Sellers submit a SHA-256 hash on-chain via `submitDelivery()`. For uploaded files it is the hash of the file bytes. For external links the web app commits the SHA-256 of the UTF-8 link text, which proves which link was delivered but not the content behind it; ask for immutable links (Git commit or release, IPFS CID) when that matters.
 
 ---
@@ -26,7 +26,7 @@ Mercadopleis is built for the emerging **AI Agent Economy** and technical builde
 - **Buyer Fee**: 0%. Buyers pay exactly the advertised USDC price with no credit card surcharges or foreign exchange fees.
 - **Settlement Asset**: Native USDC on Base (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`, 6 decimals).
 - **Review Period**: 5 days (120 hours / 432,000 seconds) after the seller marks delivery.
-- **Auto-Release**: If 5 days pass after delivery with no dispute, seller can trigger `claimAutoRelease` to withdraw funds.
+- **Review Window Claim**: If 5 days pass after delivery with no dispute, the seller can trigger `claimAutoRelease` to withdraw funds.
 - **Timeout Protection**: If the seller fails to deliver within the agreed delivery window, the buyer can trigger `claimTimeoutRefund` to retrieve 100% of their deposited USDC.
 - **Fixed fee and governance**: the 3% fee is a constant in the contract (`FEE_BPS = 300`) and cannot be changed by anyone. The owner (OpenZeppelin `Ownable2Step`) can change the fee recipient and the arbitrator, enable or disable tokens and pause the contract; it cannot move escrowed funds. While paused, users cannot create orders, record deliveries, approve, claim or open disputes, and deadlines keep running; the arbitrator can still resolve open disputes. During the current stage the arbitrator is the platform operator; the plan to move disputes to a neutral court is at https://github.com/castiquark/mercadopleis/blob/main/docs/DISPUTE_RESOLUTION.md.
 

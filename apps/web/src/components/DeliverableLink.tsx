@@ -41,7 +41,7 @@ export function DeliverableLink({ orderId, reference, className = '' }: Delivera
     );
   }
 
-  const filename = reference.split('/').pop()?.replace(/^\d+-/, '') || (L('entregable', 'deliverable', 'entregavel'));
+  const filename = reference.split('/').pop()?.replace(/^\d+-/, '') || (L('entregable', 'deliverable', 'entregável'));
 
   const download = async () => {
     try {

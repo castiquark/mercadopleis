@@ -98,7 +98,7 @@ export default function NewServicePage() {
             {L('Publicar Nuevo Servicio', 'Publish New Service', 'Publicar Novo Serviço')}
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            {L('Define tu tarifa en USDC y plazo de entrega. Cobra mediante liquidación automática por smart contract.', 'Set your USDC price and delivery timeframe. Get paid via automated smart contract escrow.', 'Defina seu preço em USDC e o prazo de entrega. Receba com liquidação automática por smart contract.')}
+            {L('Define tu tarifa en USDC y plazo de entrega. Cobra mediante escrow por smart contract sin custodia.', 'Set your USDC price and delivery timeframe. Get paid through non-custodial smart contract escrow.', 'Defina seu preço em USDC e o prazo de entrega. Receba por meio de escrow sem custódia via smart contract.')}
           </p>
 
           {!isConnected && (

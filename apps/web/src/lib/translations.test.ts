@@ -26,10 +26,10 @@ describe('interface texts', () => {
 });
 
 describe('terms disclose the operator powers', () => {
-  it.each(['es', 'en'] as const)('%s mentions renouncing ownership, deadlines during a pause and who arbitrates', (lang) => {
+  it.each(['es', 'en', 'pt'] as const)('%s mentions renouncing ownership, deadlines during a pause and who arbitrates', (lang) => {
     const text = TERMS[lang].sections.flatMap((s) => s.paragraphs).join('\n');
-    expect(text).toMatch(lang === 'es' ? /renunciar a la propiedad/ : /renounce ownership/);
-    expect(text).toMatch(lang === 'es' ? /siguen corriendo durante la pausa/ : /keep running during a pause/);
-    expect(text).toMatch(lang === 'es' ? /el árbitro es el propio operador/ : /the arbiter is the Mercadopleis operator/);
+    expect(text).toMatch({ es: /renunciar a la propiedad/, en: /renounce ownership/, pt: /renunciar à propriedade/ }[lang]);
+    expect(text).toMatch({ es: /siguen corriendo durante la pausa/, en: /keep running during a pause/, pt: /continuam correndo durante a pausa/ }[lang]);
+    expect(text).toMatch({ es: /el árbitro es el propio operador/, en: /the arbitrator is the Mercadopleis operator/, pt: /o árbitro é o próprio operador/ }[lang]);
   });
 });

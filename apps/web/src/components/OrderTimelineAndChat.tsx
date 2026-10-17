@@ -241,7 +241,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                   <p className="text-[11px] text-slate-400 mt-0.5">
                     {isDelivered
                       ? (L('Entrega registrada en el contrato.', 'Delivery recorded in the contract.', 'Entrega registrada no contrato.'))
-                      : (L('El prestador está realizando el servicio.', 'The seller is working on the service.', 'O vendedor está realizando o serviço.'))}
+                      : (L('El vendedor está realizando el servicio.', 'The seller is working on the service.', 'O vendedor está realizando o serviço.'))}
                   </p>
                 )}
 
@@ -299,7 +299,7 @@ export function OrderTimelineAndChat({ order }: OrderTimelineAndChatProps) {
                   <p className="text-[11px] text-slate-300 mt-0.5">
                     {L('Fondos transferidos: ', 'Paid out: ', 'Fundos transferidos: ')}
                     <strong className="text-accent">{order.sellerAmountUsdc} USDC</strong>
-                    {L(` al prestador (+${order.platformFeeUsdc} USDC de comisión del 3%).`, ` to the seller (+${order.platformFeeUsdc} USDC 3% fee).`, ` para o vendedor (+${order.platformFeeUsdc} USDC de taxa de 3%).`)}
+                    {L(` al vendedor (+${order.platformFeeUsdc} USDC de comisión del 3%).`, ` to the seller (+${order.platformFeeUsdc} USDC 3% fee).`, ` para o vendedor (+${order.platformFeeUsdc} USDC de taxa de 3%).`)}
                   </p>
                 )}
 

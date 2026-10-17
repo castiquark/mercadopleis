@@ -7,7 +7,7 @@ export const translations = {
     // Nav
     postService: 'Publicar Servicio',
     myOrders: 'Mis Órdenes',
-    requests: 'Pedidos',
+    requests: 'Solicitudes',
     adminPanel: 'Panel Admin',
     faucet: 'Faucet',
     signSession: 'Firmar Sesión (SIWE)',
@@ -31,11 +31,11 @@ export const translations = {
     locationSectionSubtitle: 'Indica dónde se realiza el servicio o el área de cobertura para que clientes cercanos puedan encontrarte.',
     countryLabel: 'País',
     cityLabel: 'Ciudad / Departamento / Provincia',
-    localityLabel: 'Localidad / Barrio / Balneario',
-    localityPlaceholder: 'ej. Punta del Este, La Barra, Pocitos, Palermo...',
+    localityLabel: 'Localidad / Barrio',
+    localityPlaceholder: 'ej. Palermo, Miraflores, Condesa, Centro...',
     addressOrRefLabel: 'Punto de encuentro, Dirección o Zona de Cobertura (Opcional)',
-    addressOrRefPlaceholder: 'ej. A convenir con el cliente / Zona Península / En local comercial...',
-    filterLocationPlaceholder: 'Filtrar por ciudad, barrio o balneario...',
+    addressOrRefPlaceholder: 'ej. A convenir con el cliente / Zona céntrica / En local comercial...',
+    filterLocationPlaceholder: 'Filtrar por ciudad, barrio o localidad...',
     
     // Orders
     ordersTitle: 'Panel de Órdenes',
@@ -43,7 +43,7 @@ export const translations = {
     refresh: 'Actualizar',
     clearCache: 'Limpiar Caché',
     asBuyer: 'Como Comprador',
-    asSeller: 'Como Prestador',
+    asSeller: 'Como Vendedor',
     statusFunded: 'Fondeada (En progreso)',
     statusDelivered: 'Entregada (En revisión)',
     statusReleased: 'Completada & Pagada',
@@ -54,7 +54,7 @@ export const translations = {
     submitDelivery: 'Registrar Entrega de Trabajo',
     autoReleaseNotice: 'Si no apruebas ni abres una disputa, el vendedor podrá cobrar a partir del {date}.',
     autoReleaseNoticeNoDate: 'Si no apruebas ni abres una disputa en 5 días desde la entrega, el vendedor podrá cobrar.',
-    sellerWorkingNotice: 'El prestador está trabajando. Si no entrega antes del {date}, podrás reclamar el reembolso íntegro.',
+    sellerWorkingNotice: 'El vendedor está trabajando. Si no entrega antes del {date}, podrás reclamar el reembolso íntegro.',
     claimRefund: 'Reclamar reembolso',
     refundNotYet: 'Disponible cuando venza el plazo de entrega',
     sellerDeliveredNotice: 'Entrega registrada. Si el comprador no la aprueba ni abre una disputa, podrás cobrar a partir del {date}.',
@@ -69,7 +69,7 @@ export const translations = {
     noOrdersBuyer: 'Aún no has contratado servicios',
     noOrdersSeller: 'Aún no has recibido órdenes',
     noOrdersBuyerDesc: 'Explora el catálogo de servicios y contrata con la seguridad de smart contracts en Base, pagando en stablecoins.',
-    noOrdersSellerDesc: 'Publica tus habilidades en el catálogo internacional y comienza a recibir pagos asegurados en escrow.',
+    noOrdersSellerDesc: 'Publica tus habilidades en el catálogo internacional y comienza a recibir pagos protegidos en escrow.',
     
     // Disputes in Order
     disputeTitleOpen: 'Disputa en Curso — Fondos Congelados en Escrow',
@@ -84,7 +84,7 @@ export const translations = {
     
     // Dispute Modal
     modalDisputeTitle: 'Abrir Disputa de Orden',
-    modalDisputeDesc: 'Al abrir una disputa se congela la liberación automática en el contrato. El árbitro revisará la información de ambas partes y decidirá cómo repartir los fondos entre comprador y vendedor.',
+    modalDisputeDesc: 'Al abrir una disputa se congela la opción de cobro por vencimiento en el contrato. El árbitro revisará la información de ambas partes y decidirá cómo repartir los fondos entre comprador y vendedor.',
     modalDisputeReasonLabel: 'Motivo detallado del reclamo',
     modalDisputeReasonPlaceholder: 'Explica detalladamente por qué el trabajo no cumple con lo acordado (ej. fallos de compilación, requerimientos no incluidos, entregable erróneo)...',
     modalDisputeEvidenceLabel: 'Enlace a pruebas / evidencia (URL pública, GitHub, Google Drive, etc.)',
@@ -98,7 +98,7 @@ export const translations = {
     serviceRated: 'Calificado',
     receivedReview: 'Calificación recibida',
     modalReviewTitle: 'Calificar Servicio',
-    modalReviewDesc: 'Tu reseña se registrará en el perfil público del prestador y ayudará a otros compradores en la comunidad.',
+    modalReviewDesc: 'Tu reseña se registrará en el perfil público del vendedor y ayudará a otros compradores en la comunidad.',
     modalReviewServiceLabel: 'Servicio',
     modalReviewRatingLabel: 'Calificación (1 a 5 estrellas)',
     modalReviewCommentLabel: 'Comentario / Experiencia de Entrega',
@@ -114,7 +114,7 @@ export const translations = {
     
     // Footer
     footerCopyright: 'mercadopleis. Escrow en stablecoins sobre Base.',
-    footerTagline: 'No custodial por diseño. Todo verificable on-chain.',
+    footerTagline: 'Sin custodia por diseño. Todo verificable on-chain.',
     
     // 404
     notFoundTitle: 'Página no encontrada',
@@ -149,11 +149,11 @@ export const translations = {
     locationSectionSubtitle: 'Specify where the service takes place or the service area so nearby clients can find you.',
     countryLabel: 'Country',
     cityLabel: 'City / State / Province',
-    localityLabel: 'Locality / Neighborhood / Beach Resort',
-    localityPlaceholder: 'e.g. Punta del Este, La Barra, Downtown, Brooklyn...',
+    localityLabel: 'Locality / Neighborhood',
+    localityPlaceholder: 'e.g. Brooklyn, Downtown, Soho...',
     addressOrRefLabel: 'Meeting Point, Address or Coverage Area (Optional)',
     addressOrRefPlaceholder: 'e.g. To be agreed with client / Central Area / On-site...',
-    filterLocationPlaceholder: 'Filter by city, neighborhood or resort...',
+    filterLocationPlaceholder: 'Filter by city, neighborhood or locality...',
     
     // Orders
     ordersTitle: 'Orders Dashboard',
@@ -187,22 +187,22 @@ export const translations = {
     noOrdersBuyer: 'You have not hired any services yet',
     noOrdersSeller: 'You have not received any orders yet',
     noOrdersBuyerDesc: 'Explore services and hire with smart contract security on Base, paying in stablecoins.',
-    noOrdersSellerDesc: 'List your skills on the international marketplace and start receiving secured escrow payments.',
+    noOrdersSellerDesc: 'List your skills on the international marketplace and start receiving escrow-protected payments.',
     
     // Disputes in Order
     disputeTitleOpen: 'Dispute in Progress — Funds Frozen in Escrow',
-    disputeTitleResolved: 'Dispute Resolved by the Arbiter',
+    disputeTitleResolved: 'Dispute Resolved by the Arbitrator',
     disputeBadgeOpen: 'UNDER REVIEW',
     disputeBadgeResolved: 'RESOLVED',
     disputeReasonLabel: 'Claim Reason',
     disputeEvidenceLabel: 'Submitted Evidence',
-    disputeUnderReviewNotice: 'The arbiter is reviewing the information from both parties. The USDC stays locked in the escrow contract on {network} until the resolution.',
+    disputeUnderReviewNotice: 'The arbitrator is reviewing the information from both parties. The USDC stays locked in the escrow contract on {network} until the resolution.',
     disputeResolvedNotice: 'Resolution executed',
     disputeArbitratorNotes: 'Resolution findings & notes',
     
     // Dispute Modal
     modalDisputeTitle: 'Open Dispute for Order',
-    modalDisputeDesc: 'Opening a dispute freezes the automatic release in the contract. The arbiter will review the information from both parties and decide how to split the funds between buyer and seller.',
+    modalDisputeDesc: 'Opening a dispute freezes the timeout payout in the contract. The arbitrator will review the information from both parties and decide how to split the funds between buyer and seller.',
     modalDisputeReasonLabel: 'Detailed Claim Reason',
     modalDisputeReasonPlaceholder: 'Explain in detail why the deliverable does not meet requirements (e.g. compilation errors, missing requirements, incorrect file)...',
     modalDisputeEvidenceLabel: 'Evidence / Proof link (Public URL, GitHub, Google Drive, etc.)',
@@ -305,7 +305,7 @@ export const translations = {
     noOrdersBuyer: 'Você ainda não contratou serviços',
     noOrdersSeller: 'Você ainda não recebeu pedidos',
     noOrdersBuyerDesc: 'Explore o catálogo de serviços e contrate com a segurança de smart contracts na Base, pagando em stablecoins.',
-    noOrdersSellerDesc: 'Publique suas habilidades no catálogo internacional e comece a receber pagamentos garantidos em escrow.',
+    noOrdersSellerDesc: 'Publique suas habilidades no catálogo internacional e comece a receber pagamentos protegidos em escrow.',
 
     // Disputes in Order
     disputeTitleOpen: 'Disputa em Andamento — Fundos Congelados no Escrow',
@@ -320,7 +320,7 @@ export const translations = {
 
     // Dispute Modal
     modalDisputeTitle: 'Abrir Disputa do Pedido',
-    modalDisputeDesc: 'Ao abrir uma disputa, a liberação automática no contrato é congelada. O árbitro vai revisar as informações das duas partes e decidir como dividir os fundos entre comprador e vendedor.',
+    modalDisputeDesc: 'Ao abrir uma disputa, bloqueia-se o recebimento por prazo vencido no contrato. O árbitro vai revisar as informações das duas partes e decidir como dividir os fundos entre comprador e vendedor.',
     modalDisputeReasonLabel: 'Motivo detalhado da reclamação',
     modalDisputeReasonPlaceholder: 'Explique em detalhe por que o trabalho não cumpre o combinado (ex. falhas de compilação, requisitos não incluídos, entregável errado)...',
     modalDisputeEvidenceLabel: 'Link para provas / evidências (URL pública, GitHub, Google Drive etc.)',

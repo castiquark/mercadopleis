@@ -322,7 +322,7 @@ export default function OrdersDashboardPage() {
       setOrders((prev) =>
         prev.map((o) => (o.id === order.id ? { ...o, status: 'RELEASED' } : o))
       );
-      setActionNotice(L(`¡Orden #${order.contractOrderId} aprobada! Fondos liberados al prestador.`, `Order #${order.contractOrderId} approved. Funds released to the seller.`, `Pedido #${order.contractOrderId} aprovado! Fundos liberados para o vendedor.`));
+      setActionNotice(L(`¡Orden #${order.contractOrderId} aprobada! Fondos liberados al vendedor.`, `Order #${order.contractOrderId} approved. Funds released to the seller.`, `Pedido #${order.contractOrderId} aprovado! Fundos liberados para o vendedor.`));
     } catch (err: any) {
       if (isUserRejection(err)) {
         setActionNotice(L('Operación cancelada en tu wallet.', 'Operation cancelled in your wallet.', 'Operação cancelada na sua carteira.'));
@@ -395,7 +395,7 @@ export default function OrdersDashboardPage() {
         )
       );
 
-      setActionNotice(L(`Disputa abierta para la orden #${activeDisputeModalOrder.contractOrderId}. Los fondos quedan congelados en el escrow hasta que decida el árbitro.`, `Dispute opened for order #${activeDisputeModalOrder.contractOrderId}. The funds stay frozen in escrow until the arbiter decides.`, `Disputa aberta para o pedido #${activeDisputeModalOrder.contractOrderId}. Os fundos ficam congelados no escrow até a decisão do árbitro.`));
+      setActionNotice(L(`Disputa abierta para la orden #${activeDisputeModalOrder.contractOrderId}. Los fondos quedan congelados en el escrow hasta que decida el árbitro.`, `Dispute opened for order #${activeDisputeModalOrder.contractOrderId}. The funds stay frozen in escrow until the arbitrator decides.`, `Disputa aberta para o pedido #${activeDisputeModalOrder.contractOrderId}. Os fundos ficam congelados no escrow até a decisão do árbitro.`));
       setActiveDisputeModalOrder(null);
     } catch (err: any) {
       if (isUserRejection(err)) {
@@ -818,7 +818,7 @@ export default function OrdersDashboardPage() {
                     <div className="mt-3 rounded-lg border border-accent/30 bg-accent/10 p-3 text-accent">
                       <p className="font-bold">
                         {t('disputeResolvedNotice')}:{' '}
-                        {L(`${order.dispute.sellerAwardUsdc} USDC asignados al prestador / ${order.dispute.buyerRefundUsdc} USDC reembolsados al comprador.`, `${order.dispute.sellerAwardUsdc} USDC awarded to the seller / ${order.dispute.buyerRefundUsdc} USDC refunded to the buyer.`, `${order.dispute.sellerAwardUsdc} USDC para o vendedor / ${order.dispute.buyerRefundUsdc} USDC reembolsados ao comprador.`)}
+                        {L(`${order.dispute.sellerAwardUsdc} USDC asignados al vendedor / ${order.dispute.buyerRefundUsdc} USDC reembolsados al comprador.`, `${order.dispute.sellerAwardUsdc} USDC awarded to the seller / ${order.dispute.buyerRefundUsdc} USDC refunded to the buyer.`, `${order.dispute.sellerAwardUsdc} USDC para o vendedor / ${order.dispute.buyerRefundUsdc} USDC reembolsados ao comprador.`)}
                       </p>
                       {order.dispute.resolutionNotes && (
                         <p className="mt-1.5 text-xs text-slate-300">
@@ -1181,7 +1181,7 @@ export default function OrdersDashboardPage() {
                       </div>
 
                       <p className="text-[11px] text-slate-400">
-                        {L('Archivo privado: solo el comprador, tú y el árbitro podrán descargarlo.', 'Private file: only the buyer, you and the arbiter can download it.', 'Arquivo privado: só o comprador, você e o árbitro podem baixá-lo.')}
+                        {L('Archivo privado: solo el comprador, tú y el árbitro podrán descargarlo.', 'Private file: only the buyer, you and the arbitrator can download it.', 'Arquivo privado: só o comprador, você e o árbitro podem baixá-lo.')}
                       </p>
                     </div>
                   )}

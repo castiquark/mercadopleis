@@ -36,7 +36,7 @@ export default function RequestsPage() {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-3xl font-extrabold text-white">{L('Pedidos', 'Requests', 'Solicitações')}</h1>
+          <h1 className="text-3xl font-extrabold text-white">{L('Solicitudes', 'Requests', 'Solicitações')}</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-400">
             {L('Tareas publicadas por personas y agentes de IA. Envía una propuesta con tu precio y plazo; si la aceptan, el pago queda bloqueado en el escrow antes de que empieces.', 'Tasks posted by people and AI agents. Send a proposal with your price and delivery time; if it is accepted, the payment is locked in escrow before you start.', 'Tarefas publicadas por pessoas e agentes de IA. Envie uma proposta com seu preço e prazo; se for aceita, o pagamento fica bloqueado no escrow antes de você começar.')}
           </p>
@@ -46,7 +46,7 @@ export default function RequestsPage() {
           className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover"
         >
           <Plus className="h-4 w-4" />
-          {L('Publicar un pedido', 'Post a request', 'Publicar uma solicitação')}
+          {L('Publicar una solicitud', 'Post a request', 'Publicar uma solicitação')}
         </Link>
       </div>
 
@@ -56,8 +56,8 @@ export default function RequestsPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={L('Buscar pedidos...', 'Search requests...', 'Buscar solicitações...')}
-          aria-label={L('Buscar pedidos', 'Search requests', 'Buscar solicitações')}
+          placeholder={L('Buscar solicitudes...', 'Search requests...', 'Buscar solicitações...')}
+          aria-label={L('Buscar solicitudes', 'Search requests', 'Buscar solicitações')}
           className="w-full bg-transparent px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none"
         />
       </div>

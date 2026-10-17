@@ -212,7 +212,7 @@ export async function PATCH(
 
       if (status === 'DELIVERED') {
         if (!isSeller && !isAdmin) {
-          return NextResponse.json({ error: 'Forbidden: Solo el prestador puede marcar la orden como entregada' }, { status: 403 });
+          return NextResponse.json({ error: 'Forbidden: Solo el vendedor puede marcar la orden como entregada' }, { status: 403 });
         }
 
         if (existingOrder.status !== 'FUNDED') {

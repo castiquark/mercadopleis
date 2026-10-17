@@ -41,7 +41,7 @@ export default function NewRequestPage() {
       });
       router.push(`/requests/${request.slug}`);
     } catch (err: any) {
-      setError(err?.message || (L('No se pudo publicar el pedido.', 'The request could not be posted.', 'Não foi possível publicar a solicitação.')));
+      setError(err?.message || (L('No se pudo publicar la solicitud.', 'The request could not be posted.', 'Não foi possível publicar a solicitação.')));
     } finally {
       setSubmitting(false);
     }
@@ -51,13 +51,13 @@ export default function NewRequestPage() {
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
       <Link href="/requests" className="inline-flex min-h-10 items-center gap-2 text-sm text-slate-400 hover:text-white sm:min-h-0">
         <ArrowLeft className="h-4 w-4" />
-        {L('Volver a pedidos', 'Back to requests', 'Voltar às solicitações')}
+        {L('Volver a solicitudes', 'Back to requests', 'Voltar às solicitações')}
       </Link>
 
       <div className="mt-6 rounded-2xl border border-border bg-surface p-6 sm:p-8">
         <div className="flex items-center gap-2 text-primary-light">
           <ClipboardList className="h-5 w-5" />
-          <span className="text-xs font-semibold uppercase tracking-wider">{L('Nuevo pedido', 'New request', 'Nova solicitação')}</span>
+          <span className="text-xs font-semibold uppercase tracking-wider">{L('Nueva solicitud', 'New request', 'Nova solicitação')}</span>
         </div>
         <h1 className="mt-2 text-2xl font-bold text-white">{L('Describe lo que necesitas', 'Describe what you need', 'Descreva o que você precisa')}</h1>
         <p className="mt-1 text-sm text-slate-400">
@@ -86,7 +86,7 @@ export default function NewRequestPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={
-                L('Qué material entregas, qué resultado esperas y en qué formato, criterios de calidad. No incluyas contraseñas ni datos privados: el pedido es público.', 'Input you will provide, expected output and format, quality criteria. Do not include passwords or private data: the request is public.', 'Que material você fornece, que resultado espera e em que formato, critérios de qualidade. Não inclua senhas nem dados privados: a solicitação é pública.')
+                L('Qué material entregas, qué resultado esperas y en qué formato, criterios de calidad. No incluyas contraseñas ni datos privados: la solicitud es pública.', 'Input you will provide, expected output and format, quality criteria. Do not include passwords or private data: the request is public.', 'Que material você fornece, que resultado espera e em que formato, critérios de qualidade. Não inclua senhas nem dados privados: a solicitação é pública.')
               }
               className={inputClass}
             />
@@ -121,7 +121,7 @@ export default function NewRequestPage() {
           )}
 
           {!isConnected ? (
-            <p className="text-sm text-amber-400">{L('Conecta tu wallet para publicar un pedido.', 'Connect your wallet to post a request.', 'Conecte sua carteira para publicar uma solicitação.')}</p>
+            <p className="text-sm text-amber-400">{L('Conecta tu wallet para publicar una solicitud.', 'Connect your wallet to post a request.', 'Conecte sua carteira para publicar uma solicitação.')}</p>
           ) : !isAuthenticated ? (
             <button
               type="button"
@@ -137,7 +137,7 @@ export default function NewRequestPage() {
               disabled={submitting}
               className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 hover:bg-primary-hover disabled:opacity-50"
             >
-              {submitting ? (L('Publicando...', 'Posting...', 'Publicando...')) : L('Publicar pedido', 'Post request', 'Publicar solicitação')}
+              {submitting ? (L('Publicando...', 'Posting...', 'Publicando...')) : L('Publicar solicitud', 'Post request', 'Publicar solicitação')}
             </button>
           )}
         </form>

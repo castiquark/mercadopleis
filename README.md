@@ -131,17 +131,17 @@ const txHash = await walletClient.writeContract({
 1. **Conservation of Value**:
    $$\text{sellerPayout} + \text{platformFee} = \text{grossAmount}$$
    $$\text{buyerRefund} + \text{sellerPayout} + \text{platformFee} = \text{grossAmount} \quad \text{(Dispute)}$$
-2. **Review Window**: 5 days (120 hours / 432,000 seconds) mandatory inspection period upon seller delivery before auto-release can occur.
-3. **Timeout Refund Guarantee**: 100% refund guarantee for buyers if the seller fails to submit a delivery hash before the agreed deadline.
+2. **Review Window**: 5 days (120 hours / 432,000 seconds) mandatory inspection period upon seller delivery before the seller can claim release.
+3. **Timeout Refund**: 100% refund claimable by the buyer if the seller fails to submit a delivery hash before the agreed deadline.
 4. **Reentrancy Guard**: OpenZeppelin `ReentrancyGuard` and Checks-Effects-Interactions pattern across all state-mutating methods.
 
 ### Governance & Administrative Controls
 
 The contract inherits OpenZeppelin's `Ownable2Step` and `Pausable` for safe protocol maintenance:
-- **Protocol Fee**: exactly **3.0%** (`FEE_BPS = 300`), a constant in the contract. It is charged on the amount paid to the seller when the escrow ends (approval, auto-release or arbitrated payout), so on a normal order it is 3% of the total. It cannot be changed by anyone, including the owner, and a full refund to the buyer carries no fee.
+- **Protocol Fee**: exactly **3.0%** (`FEE_BPS = 300`), a constant in the contract. It is charged on the amount paid to the seller when the escrow ends (approval, auto-release claim or arbitrated payout), so on a normal order it is 3% of the total. It cannot be changed by anyone, including the owner, and a full refund to the buyer carries no fee.
 - **Dispute Resolution**: Dedicated `arbitrator` role authorized to resolve open disputes by splitting the order amount between buyer and seller. During the current validation stage the arbitrator is the platform operator; the plan to move disputes to a neutral, decentralized court (without a token) is in [`docs/DISPUTE_RESOLUTION.md`](./docs/DISPUTE_RESOLUTION.md).
 - **Emergency Pause**: the owner can pause the contract. While paused, users cannot create orders, record deliveries, approve, claim releases or refunds, or open disputes, and deadlines keep running; the arbitrator can still resolve disputes that are already open. The owner cannot move escrowed funds.
-- **Verifiable Reputation**: Client reviews are indexed and tied to confirmed on-chain escrow orders, guaranteeing authentic feedback.
+- **Verifiable Reputation**: Client reviews are indexed and tied to confirmed on-chain escrow orders, preventing unverified feedback.
 
 See [`SECURITY.md`](./SECURITY.md) for vulnerability disclosure policies and [`ROADMAP.md`](./ROADMAP.md) for the public roadmap.
 

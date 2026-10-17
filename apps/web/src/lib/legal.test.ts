@@ -11,9 +11,10 @@ describe('legal content', () => {
   it.each([
     ['terms', TERMS],
     ['privacy', PRIVACY],
-  ])('%s exists in both languages with the same structure and no empty text', (_name, content) => {
+  ])('%s exists in all three languages with the same structure and no empty text', (_name, content) => {
     expect(content.es.sections).toHaveLength(content.en.sections.length);
-    for (const lang of ['es', 'en'] as const) {
+    expect(content.pt.sections).toHaveLength(content.es.sections.length);
+    for (const lang of ['es', 'en', 'pt'] as const) {
       expect(content[lang].title.length).toBeGreaterThan(3);
       for (const s of content[lang].sections) {
         expect(s.title.trim()).not.toBe('');
@@ -25,12 +26,12 @@ describe('legal content', () => {
 
   it('the terms quote the real escrow address, fee, review window and contact addresses', () => {
     expect(LEGAL.escrowAddress.toLowerCase()).toBe(ESCROW_ADDRESSES[8453].toLowerCase());
-    for (const lang of ['es', 'en'] as const) {
+    for (const lang of ['es', 'en', 'pt'] as const) {
       const text = allText(TERMS[lang]);
       expect(text).toContain(LEGAL.escrowAddress);
       expect(text).toContain(`${CONTRACT_CONFIG.FEE_BPS / 100}%`);
       expect(text).not.toMatch(/10%|máximo/i); // the fee is fixed; no cap language
-      expect(text).toMatch(/nadie|nobody/i);
+      expect(text).toMatch(/nadie|nobody|ninguém/i);
       expect(text).toContain('5 ');
       expect(text).toContain(LEGAL.contactEmail);
       expect(text).toContain(LEGAL.securityEmail);
@@ -38,7 +39,7 @@ describe('legal content', () => {
   });
 
   it('the privacy policy discloses analytics, storage providers and on-chain permanence', () => {
-    for (const lang of ['es', 'en'] as const) {
+    for (const lang of ['es', 'en', 'pt'] as const) {
       const text = allText(PRIVACY[lang]);
       for (const word of ['Google Analytics', 'Netlify', 'Neon', LEGAL.contactEmail]) expect(text).toContain(word);
     }

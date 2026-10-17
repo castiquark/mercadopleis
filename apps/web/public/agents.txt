@@ -28,7 +28,7 @@ capabilities:
   - capability_search
   - escrow_funding
   - delivery_verification
-  - automated_settlement
+  - escrow_settlement
 
 endpoints:
   discovery: https://mercadopleis.club/api/services

@@ -91,9 +91,9 @@ export default function RequestDetailPage() {
   if (notFound) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center text-slate-400">
-        {L('Este pedido no existe.', 'This request does not exist.', 'Esta solicitação não existe.')}{' '}
+        {L('Esta solicitud no existe.', 'This request does not exist.', 'Esta solicitação não existe.')}{' '}
         <Link href="/requests" className="text-primary-light hover:underline">
-          {L('Ver pedidos', 'See requests', 'Ver solicitações')}
+          {L('Ver solicitudes', 'See requests', 'Ver solicitações')}
         </Link>
       </div>
     );
@@ -122,7 +122,7 @@ export default function RequestDetailPage() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <Link href="/requests" className="inline-flex min-h-10 items-center gap-2 text-sm text-slate-400 hover:text-white sm:min-h-0">
         <ArrowLeft className="h-4 w-4" />
-        {L('Volver a pedidos', 'Back to requests', 'Voltar às solicitações')}
+        {L('Volver a solicitudes', 'Back to requests', 'Voltar às solicitações')}
       </Link>
 
       {/* Request */}
@@ -238,11 +238,11 @@ export default function RequestDetailPage() {
             <h2 className="text-lg font-bold text-white">{L('Propuestas recibidas', 'Proposals received', 'Propostas recebidas')}</h2>
             {r.status !== 'CANCELLED' && !award?.order && (
               <button
-                onClick={() => run(() => cancelRequest(address, r.id), L('Pedido cancelado.', 'Request cancelled.', 'Solicitação cancelada.'))}
+                onClick={() => run(() => cancelRequest(address, r.id), L('Solicitud cancelada.', 'Request cancelled.', 'Solicitação cancelada.'))}
                 disabled={busy}
                 className="text-xs font-semibold text-slate-400 hover:text-red-400"
               >
-                {L('Cancelar pedido', 'Cancel request', 'Cancelar solicitação')}
+                {L('Cancelar solicitud', 'Cancel request', 'Cancelar solicitação')}
               </button>
             )}
           </div>

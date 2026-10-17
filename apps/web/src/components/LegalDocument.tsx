@@ -7,13 +7,12 @@ import { useLanguage } from '@/lib/languageContext';
 import type { LegalDocumentContent } from '@/lib/legalContent';
 
 interface LegalDocumentProps {
-  content: Record<'es' | 'en', LegalDocumentContent>;
+  content: Record<'es' | 'en' | 'pt', LegalDocumentContent>;
 }
 
 export function LegalDocument({ content }: LegalDocumentProps) {
   const { language, L } = useLanguage();
-  // Legal texts exist in Spanish and English; Portuguese readers get the Spanish version with a notice.
-  const doc = content[language === 'en' ? 'en' : 'es'];
+  const doc = content[language] || content.es;
 
   return (
     <article className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -27,11 +26,6 @@ export function LegalDocument({ content }: LegalDocumentProps) {
 
       <h1 className="mt-6 text-3xl font-extrabold text-white">{doc.title}</h1>
       <p className="mt-1 text-xs text-slate-500">{doc.updatedLabel}</p>
-      {language === 'pt' && (
-        <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
-          Este documento ainda não tem versão em português. Abaixo está a versão em espanhol, que é a que vale.
-        </p>
-      )}
       <p className="mt-6 text-sm leading-relaxed text-slate-300">{doc.intro}</p>
 
       {doc.sections.map((section) => (

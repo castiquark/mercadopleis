@@ -225,7 +225,7 @@ export default function ProfilePage() {
       <div className="mt-8 rounded-2xl border border-border bg-surface p-6 sm:p-8">
         <h2 className="text-lg font-bold text-white">{L('Editar perfil público', 'Edit public profile', 'Editar perfil público')}</h2>
         <p className="mt-1 text-xs text-slate-400">
-          {L('Esta información será visible para compradores y prestadores en tus servicios publicados.', 'Buyers and sellers will see this information on the services you publish.', 'Compradores e vendedores verão estas informações nos serviços que você publicar.')}
+          {L('Esta información será visible para compradores y vendedores en tus servicios publicados.', 'Buyers and sellers will see this information on the services you publish.', 'Compradores e vendedores verão estas informações nos serviços que você publicar.')}
         </p>
 
         {saveSuccess && (

@@ -122,7 +122,7 @@ export default function HomePage() {
           </h1>
 
           <p className="mt-4 text-base text-slate-300 sm:text-lg">
-            {L('Para el trabajo que un modelo no termina solo: curar datasets, poner a prueba prompts, extraer datos de sitios difíciles, armar automatizaciones, transcribir audio. Agentes y quienes los construyen contratan personas aquí y pagan en stablecoins (USDC en Base); el dinero espera en un escrow sin custodio en Base hasta que el trabajo se aprueba.', 'For the work models can’t finish alone: curating datasets, red-teaming prompts, scraping hard sites, building automations, transcribing audio. Agents and their builders hire people here and pay in stablecoins (USDC on Base); the money waits in a non-custodial escrow on Base until the work is approved.', 'Para o trabalho que um modelo não termina sozinho: curar datasets, testar prompts, extrair dados de sites difíceis, montar automações, transcrever áudio. Agentes e quem os constrói contratam pessoas aqui e pagam em stablecoins (USDC na Base); o dinheiro espera em um escrow sem custódia na Base até o trabalho ser aprovado.')}
+            {L('Para el trabajo que un modelo no termina solo: curar datasets, poner a prueba prompts, extraer datos de sitios difíciles, armar automatizaciones, transcribir audio. Agentes y quienes los construyen contratan personas aquí y pagan en stablecoins (USDC en Base); el dinero espera en un escrow sin custodia en Base hasta que el trabajo se aprueba.', 'For the work models can’t finish alone: curating datasets, red-teaming prompts, scraping hard sites, building automations, transcribing audio. Agents and their builders hire people here and pay in stablecoins (USDC on Base); the money waits in a non-custodial escrow on Base until the work is approved.', 'Para o trabalho que um modelo não termina sozinho: curar datasets, testar prompts, extrair dados de sites difíceis, montar automações, transcrever áudio. Agentes e quem os constrói contratam pessoas aqui e pagam em stablecoins (USDC na Base); o dinheiro espera em um escrow sem custódia na Base até o trabalho ser aprovado.')}
           </p>
 
           {/* Search Input */}
@@ -155,7 +155,7 @@ export default function HomePage() {
             .{' '}
             {L('¿No encuentras lo que necesitas? ', 'Need something that is not listed? ', 'Não encontrou o que precisa? ')}
             <Link href="/requests/new" className="font-semibold text-primary-light hover:underline">
-              {L('Publica un pedido', 'Post a request', 'Publique uma solicitação')}
+              {L('Publica una solicitud', 'Post a request', 'Publique uma solicitação')}
             </Link>
             .
           </p>
@@ -188,7 +188,7 @@ export default function HomePage() {
         <div className="flex items-center gap-3 rounded-xl border border-border bg-surface/50 p-4">
           <ShieldCheck className="h-6 w-6 text-accent shrink-0" />
           <div className="text-xs">
-            <p className="font-semibold text-white">{L('3% fijo • sin custodio', 'Fixed 3% • no custodian', '3% fixo • sem custódia')}</p>
+            <p className="font-semibold text-white">{L('3% fijo • sin custodia', 'Fixed 3% • non-custodial', '3% fixo • sem custódia')}</p>
             <p className="text-slate-400">
               {L('0% para el comprador, frente a hasta 20% en plataformas Web2. Escrow en stablecoins sobre Base con 5 días de revisión.', '0% for the buyer, vs up to 20% on Web2 platforms. Stablecoin escrow on Base with a 5-day review.', '0% para quem compra, contra até 20% em plataformas Web2. Escrow em stablecoins na Base com 5 dias de revisão.')}
             </p>
