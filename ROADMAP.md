@@ -104,12 +104,23 @@ Pasos en orden. Los primeros cuatro son el camino al lanzamiento público; los s
 | 7 | **Entregas por enlace más verificables** | Para archivos subidos, el hash on-chain cubre el contenido; para enlaces externos solo cubre el texto del enlace. Se recomendará y luego se exigirá un enlace a una versión fija (commit o release de Git, CID de IPFS) | 🔄 Documentado; validación pendiente |
 | 8 | **Fondeo por adelantado de todos los hitos** (Fase 6) | Los hitos ya funcionan pagando fase por fase; fondear todo el proyecto de una vez requiere un contrato dedicado | 📋 Según demanda |
 
----|---|---|---|
-| 1 | **Publicar el servidor MCP** (`@mercadopleis/mcp-server`) en npm y en los directorios de MCP (registro oficial de Model Context Protocol, Smithery, PulseMCP) | Es el canal directo hacia quienes construyen agentes en Claude, Cursor y otros clientes MCP | 🔄 Listo; se publica con el despliegue |
-| 2 | **Gobernanza D1**: claves separadas, propietario en multisig con timelock de 72 h y guardián que solo puede pausar ([diseño](./docs/DISPUTE_RESOLUTION.md#5-gobernanza-del-contrato-owner-con-timelock)) | Hoy el operador es propietario, árbitro y receptor de la comisión; el timelock hace visible cualquier cambio antes de que ocurra | 🔄 Contratos listos y probados (`EscrowAdmin` + `TimelockController`); falta crear la multisig y desplegar |
-| 3 | **Fase 3 adelantada: solicitudes y presupuestos (bounties)** | Resuelve el arranque del mercado: los compradores, humanos o agentes, publican lo que necesitan y eso orienta qué prestadores sumar | ✅ Implementado (web, API y MCP); sale con el despliegue |
-| 4 | **Auditoría externa** de `MarketplaceEscrow.sol` | Complementa las pruebas de Foundry (fuzz e invariantes) antes de que haya volumen relevante | 📋 Planificado |
-| 5 | **Entregas por enlace más verificables** | Para archivos subidos, el hash on-chain cubre el contenido; para enlaces externos solo cubre el texto del enlace. Se recomendará y luego se exigirá un enlace a una versión fija (commit o release de Git, CID de IPFS) | 🔄 Documentado; validación pendiente |
+
+### 🤖 Demanda de agentes: mejoras priorizadas (octubre de 2026)
+
+Surgen del análisis de la competencia en contratación agente → humano. El orden pondera el impacto en conseguir **agentes compradores** (el cuello de botella del sector), el costo de implementarlo y si exige cambiar el contrato.
+
+| # | Mejora | Por qué | Cambia el contrato | Estado |
+|---|---|---|---|---|
+| A1 | **Mercadopleis como "respaldo humano" en enrutadores y catálogos de agentes**: listar el servidor MCP como proveedor en catálogos A2A y MCP de Base, para que, cuando una herramienta automática falle (scraping bloqueado, baja confianza), el enrutador derive la tarea a una persona | Lleva demanda donde ya está, en lugar de esperar que los agentes lleguen al sitio | No | 📋 Siguiente |
+| A2 | **Entrega validada por esquema y aprobación inmediata**: el comprador define un JSON Schema al publicar; si la entrega lo cumple, su agente aprueba al instante desde el MCP y el pago se libera en segundos. Para trabajos que un esquema no puede juzgar (red-teaming, curación profunda), sigue la revisión de 5 días | Agilidad para tareas estructuradas sin perder protección en las complejas | No: el contrato ya permite aprobar en cualquier momento; la validación vive en el MCP y la API | 📋 Siguiente |
+| A3 | **Avisos al agente (webhooks) y SDK ligero** (TypeScript y Python) con plantillas para datasets, red-teaming, scraping, automatizaciones y transcripción | Evita que el agente consulte la API en bucle; le avisa al instante cuando hay entrega o mensaje | No | 📋 Planificado |
+| A4 | **Límites de gasto para agentes**: topes por orden, por hora y por mes, y aprobación humana con un clic por encima de un umbral configurado por el dueño del agente | Los equipos no le dan una wallet libre a un agente; los límites los habilitan a probar | No (límites en el MCP y la API) | 📋 Planificado |
+| A5 | **Filtro de datos sensibles** al publicar pedidos y mensajes: bloquea o advierte si el texto parece contener claves de API, contraseñas o datos personales | Protege al dueño del agente y a la persona contratada | No | 📋 Planificado |
+| A6 | **Puntaje de fiabilidad consultable** por MCP y API (entregas a tiempo, disputas, reseñas), para reglas como "contratar si el puntaje es mayor a 0,85" | Permite a los agentes elegir proveedores por código | No (se calcula desde órdenes verificadas on-chain) | 📋 Planificado |
+| A7 | **Opción de que el comprador cubra la comisión**: el precio publicado llega íntegro al vendedor y el comprador paga el 3% encima | Atrae especialistas: cobran exactamente lo anunciado | No: el comprador fondea el precio dividido por 0,97 | 📋 A evaluar |
+| A8 | **Pagos x402** para compras empaquetadas (datasets curados, plantillas) y para fondear órdenes respondiendo a un HTTP 402; operación sin gas con wallets de agente en Base | Es el estándar de pago que más usan los agentes en Base | No para fondear; sin gas requiere un paymaster (costo de gas a cubrir) | 📋 A evaluar |
+| A9 | **Fianza para abrir disputas** (monto fijo o porcentaje de la orden) que se devuelve a quien gana y remunera el arbitraje | Evita disputas abusivas y financia el arbitraje | Sí: parte del módulo de disputas D2 | 📋 Con D2 |
+| A10 | **Descuentos por volumen** para clientes de alto volumen | Retención de laboratorios de IA | Sí: hoy el 3% es fijo en el contrato por diseño | 📋 A evaluar, sin romper la promesa del 3% fijo |
 
 ---
 
