@@ -11,6 +11,7 @@ import { MarketplaceEscrowAbi, ESCROW_ADDRESSES, calculateOrderAmounts } from '@
 import { CONTRACT_CONFIG, isAdminWallet } from '@mercadopleis/types';
 import { fetchDisputes, resolveDisputeApi } from '@/lib/api';
 import { useAuth } from '@/lib/authContext';
+import { useLanguage } from '@/lib/languageContext';
 import { BUILDER_DATA_SUFFIX } from '@/lib/builderCode';
 import {
   Gavel,
@@ -45,6 +46,8 @@ interface DisputeItem {
 export default function AdminDisputesPage() {
   const { address, isConnected, chainId, status } = useAccount();
   const { user, isAdmin, isLoading: isAuthLoading, signIn } = useAuth();
+  const { language } = useLanguage();
+  const L = (es: string, en: string) => (language === 'en' ? en : es);
   const [mounted, setMounted] = useState(false);
   const [disputesList, setDisputesList] = useState<DisputeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -118,7 +121,7 @@ export default function AdminDisputesPage() {
     if (!selectedDispute) return;
     try {
       setIsProcessing(true);
-      setNotification(`Ejecutando fallo arbitral para Orden #${selectedDispute.contractOrderId}...`);
+      setNotification(L(`Enviando la resolución de la orden #${selectedDispute.contractOrderId}...`, `Sending the resolution for order #${selectedDispute.contractOrderId}...`));
 
       const sellerRaw = parseUnits(sellerGross.toString(), 6);
       const buyerRaw = parseUnits(buyerRefund.toString(), 6);
@@ -134,7 +137,7 @@ export default function AdminDisputesPage() {
           args: [BigInt(selectedDispute.contractOrderId), sellerRaw, buyerRaw],
         });
       } else {
-        throw new Error('Conecta tu wallet para enviar esta transacción on-chain.');
+        throw new Error(L('Conecta tu wallet para enviar la transacción.', 'Connect your wallet to send the transaction.'));
       }
 
       // Backend API resolution
@@ -163,11 +166,11 @@ export default function AdminDisputesPage() {
         )
       );
 
-      setNotification(`¡Fallo arbitral emitido con éxito! ${sellerGross} USDC al prestador, ${buyerRefund} USDC reembolsados.`);
+      setNotification(L(`Disputa resuelta: ${sellerGross} USDC para el vendedor y ${buyerRefund} USDC de reembolso al comprador.`, `Dispute resolved: ${sellerGross} USDC to the seller and ${buyerRefund} USDC refunded to the buyer.`));
       setSelectedDispute(null);
     } catch (err: any) {
       console.error(err);
-      setNotification(`Error: ${err?.shortMessage || err?.message || 'Error al ejecutar resolución'}`);
+      setNotification(`Error: ${err?.shortMessage || err?.message || L('No se pudo ejecutar la resolución', 'The resolution could not be executed')}`);
     } finally {
       setIsProcessing(false);
     }
@@ -198,11 +201,11 @@ export default function AdminDisputesPage() {
         <div>
           <div className="flex items-center gap-2 text-primary-light">
             <Scale className="h-5 w-5" />
-            <span className="text-xs font-semibold uppercase tracking-wider">Módulo de Gobernanza</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">{L('Administración', 'Administration')}</span>
           </div>
-          <h1 className="mt-1 text-3xl font-extrabold text-white">Panel de Arbitraje y Disputas</h1>
+          <h1 className="mt-1 text-3xl font-extrabold text-white">{L('Disputas', 'Disputes')}</h1>
           <p className="mt-1 text-sm text-slate-400">
-            Resolución justa y proporcional de conflictos entre compradores y prestadores en {isSepolia ? 'Base Sepolia' : 'Base Mainnet'}.
+            {L('Disputas entre compradores y vendedores en', 'Disputes between buyers and sellers on')} {isSepolia ? 'Base Sepolia' : 'Base Mainnet'}.
           </p>
         </div>
 
@@ -212,13 +215,13 @@ export default function AdminDisputesPage() {
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-surface-elevated hover:text-white"
           >
             <RefreshCw className="h-4 w-4 text-primary-light" />
-            <span>Actualizar</span>
+            <span>{L('Actualizar', 'Refresh')}</span>
           </button>
           <Link
             href="/orders"
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-surface-elevated"
           >
-            <span>Ver Órdenes</span>
+            <span>{L('Ver órdenes', 'View orders')}</span>
             <ArrowRight className="h-4 w-4 text-primary-light" />
           </Link>
         </div>
@@ -230,8 +233,8 @@ export default function AdminDisputesPage() {
           <div className="flex items-center gap-3">
             <Sparkles className="h-5 w-5 text-primary-light shrink-0" />
             <div>
-              <div className="text-sm font-bold text-white">Sesión SIWE de Administrador Pendiente</div>
-              <div className="text-xs text-slate-300">Firma el mensaje criptográfico para activar permisos administrativos en el backend.</div>
+              <div className="text-sm font-bold text-white">{L('Inicia sesión como administrador', 'Sign in as administrator')}</div>
+              <div className="text-xs text-slate-300">{L('Firma el mensaje con tu wallet para cargar y registrar disputas.', 'Sign the message with your wallet to load and record disputes.')}</div>
             </div>
           </div>
           <button
@@ -240,7 +243,7 @@ export default function AdminDisputesPage() {
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary-hover disabled:opacity-50 transition"
           >
             <LogIn className="h-3.5 w-3.5" />
-            <span>{isAuthLoading ? 'Firmando...' : 'Iniciar Sesión Admin'}</span>
+            <span>{isAuthLoading ? L('Firmando...', 'Signing...') : L('Iniciar sesión', 'Sign in')}</span>
           </button>
         </div>
       )}
@@ -262,9 +265,9 @@ export default function AdminDisputesPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-slate-400">Tu Estado:</span>
+            <span className="text-slate-400">{L('Tu rol:', 'Your role:')}</span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-1 font-bold text-accent">
-              <Gavel className="h-3.5 w-3.5" /> Árbitro Autorizado On-Chain
+              <Gavel className="h-3.5 w-3.5" /> {L('Árbitro', 'Arbitrator')}
             </span>
           </div>
         </div>
@@ -278,7 +281,7 @@ export default function AdminDisputesPage() {
             onClick={() => setNotification(null)}
             className="text-xs font-semibold text-slate-400 hover:text-white"
           >
-            Cerrar
+            {L('Cerrar', 'Close')}
           </button>
         </div>
       )}
@@ -287,15 +290,15 @@ export default function AdminDisputesPage() {
       {isLoading ? (
         <div className="mt-12 flex flex-col items-center justify-center py-16 text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="mt-4 text-sm text-slate-400">Cargando disputas desde la base de datos y contratos...</p>
+          <p className="mt-4 text-sm text-slate-400">{L('Cargando disputas...', 'Loading disputes...')}</p>
         </div>
       ) : disputesList.length === 0 ? (
         /* Empty state */
         <div className="mt-8 rounded-2xl border border-border/80 bg-surface/60 p-12 text-center">
           <ShieldCheck className="mx-auto h-12 w-12 text-accent/80" />
-          <h3 className="mt-4 text-base font-bold text-white">Sin Disputas Activas</h3>
+          <h3 className="mt-4 text-base font-bold text-white">{L('No hay disputas', 'No disputes')}</h3>
           <p className="mt-2 text-xs text-slate-400 max-w-sm mx-auto">
-            No existen disputas abiertas en la plataforma en este momento. Todos los contratos se encuentran en estado normal.
+            {L('No hay disputas abiertas en este momento.', 'There are no open disputes right now.')}
           </p>
         </div>
       ) : (
@@ -310,16 +313,16 @@ export default function AdminDisputesPage() {
                 <div className="max-w-2xl">
                   <div className="flex items-center gap-3">
                     <span className="rounded bg-surface-elevated px-2 py-0.5 text-xs font-mono text-slate-300">
-                      Smart Contract ID #{dispute.contractOrderId}
+                      {L('Orden', 'Order')} #{dispute.contractOrderId}
                     </span>
 
                     {dispute.status === 'OPEN' ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-medium text-red-400">
-                        <AlertTriangle className="h-3 w-3" /> Disputa Abierta
+                        <AlertTriangle className="h-3 w-3" /> {L('Abierta', 'Open')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
-                        <CheckCircle2 className="h-3 w-3" /> Resuelta
+                        <CheckCircle2 className="h-3 w-3" /> {L('Resuelta', 'Resolved')}
                       </span>
                     )}
                   </div>
@@ -328,13 +331,13 @@ export default function AdminDisputesPage() {
 
                   {/* Reason description */}
                   <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 p-3.5 text-xs text-red-200">
-                    <strong className="block text-red-400 mb-1">Motivo del reclamo:</strong>
+                    <strong className="block text-red-400 mb-1">{L('Motivo:', 'Reason:')}</strong>
                     {dispute.reason}
                   </div>
 
                   {dispute.evidenceUrl && (
                     <div className="mt-2 text-xs text-slate-400">
-                      <span>Pruebas aportadas: </span>
+                      <span>{L('Pruebas:', 'Evidence:')} </span>
                       <a
                         href={dispute.evidenceUrl}
                         target="_blank"
@@ -349,8 +352,8 @@ export default function AdminDisputesPage() {
 
                   {/* Wallets involved */}
                   <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-400">
-                    <span>Comprador: <code className="text-slate-300">{dispute.buyerAddress.slice(0, 10)}...</code></span>
-                    <span>Prestador: <code className="text-slate-300">{dispute.sellerAddress.slice(0, 10)}...</code></span>
+                    <span>{L('Comprador', 'Buyer')}: <code className="text-slate-300">{dispute.buyerAddress.slice(0, 10)}...</code></span>
+                    <span>{L('Vendedor', 'Seller')}: <code className="text-slate-300">{dispute.sellerAddress.slice(0, 10)}...</code></span>
                   </div>
                 </div>
 
@@ -359,11 +362,11 @@ export default function AdminDisputesPage() {
                   <div>
                     <div className="flex items-baseline gap-1 lg:justify-end">
                       <span className="text-2xl font-extrabold text-white">{dispute.grossAmountUsdc}</span>
-                      <span className="text-xs font-semibold text-usdc">USDC en Escrow</span>
+                      <span className="text-xs font-semibold text-usdc">{L('USDC en escrow', 'USDC in escrow')}</span>
                     </div>
                     {dispute.status === 'RESOLVED' && (
                       <div className="mt-2 text-xs text-accent lg:text-right">
-                        <p>Fallo: {dispute.sellerAwardUsdc} USDC prestador / {dispute.buyerRefundUsdc} USDC reembolso</p>
+                        <p>{L('Resolución', 'Resolution')}: {dispute.sellerAwardUsdc} USDC {L('vendedor', 'seller')} / {dispute.buyerRefundUsdc} USDC {L('reembolso', 'refund')}</p>
                       </div>
                     )}
                   </div>
@@ -376,7 +379,7 @@ export default function AdminDisputesPage() {
                       }}
                       className="mt-4 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/20 transition hover:bg-primary-hover active:scale-95"
                     >
-                      Evaluar y Emitir Fallo
+                      {L('Resolver', 'Resolve')}
                     </button>
                   )}
                 </div>
@@ -393,25 +396,25 @@ export default function AdminDisputesPage() {
             <div className="flex items-center justify-between border-b border-border/80 pb-4">
               <div className="flex items-center gap-2 text-primary-light">
                 <Gavel className="h-5 w-5" />
-                <h3 className="text-lg font-bold text-white">Emitir Fallo Arbitral</h3>
+                <h3 className="text-lg font-bold text-white">{L('Resolver disputa', 'Resolve dispute')}</h3>
               </div>
               <button
                 onClick={() => setSelectedDispute(null)}
                 className="text-xs text-slate-400 hover:text-white"
               >
-                Cancelar
+                {L('Cancelar', 'Cancel')}
               </button>
             </div>
 
             <div className="mt-4 text-xs text-slate-300 space-y-1">
-              <p><strong>Orden:</strong> #{selectedDispute.contractOrderId} - {selectedDispute.serviceTitle}</p>
-              <p><strong>Monto total en disputa:</strong> <span className="font-bold text-white">{totalAmount} USDC</span></p>
+              <p><strong>{L('Orden', 'Order')}:</strong> #{selectedDispute.contractOrderId} - {selectedDispute.serviceTitle}</p>
+              <p><strong>{L('Monto en disputa', 'Amount in dispute')}:</strong> <span className="font-bold text-white">{totalAmount} USDC</span></p>
             </div>
 
             {/* Presets */}
             <div className="mt-5">
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                División del Fondo
+                {L('Reparto de los fondos', 'Split of the funds')}
               </label>
               <div className="mt-2 grid grid-cols-3 gap-2">
                 <button
@@ -423,7 +426,7 @@ export default function AdminDisputesPage() {
                       : 'border-border text-slate-400 hover:bg-surface-elevated'
                   }`}
                 >
-                  100% Prestador
+                  {L('100% vendedor', '100% seller')}
                 </button>
                 <button
                   type="button"
@@ -434,7 +437,7 @@ export default function AdminDisputesPage() {
                       : 'border-border text-slate-400 hover:bg-surface-elevated'
                   }`}
                 >
-                  50% / 50% Mitad
+                  50% / 50%
                 </button>
                 <button
                   type="button"
@@ -445,7 +448,7 @@ export default function AdminDisputesPage() {
                       : 'border-border text-slate-400 hover:bg-surface-elevated'
                   }`}
                 >
-                  100% Reembolso
+                  {L('100% reembolso', '100% refund')}
                 </button>
               </div>
             </div>
@@ -453,7 +456,7 @@ export default function AdminDisputesPage() {
             {/* Custom slider */}
             <div className="mt-5">
               <div className="flex justify-between text-xs text-slate-300">
-                <span>Porcentaje para el prestador:</span>
+                <span>{L('Porcentaje para el vendedor:', 'Share for the seller:')}</span>
                 <span className="font-bold text-white">{sellerSplitPct}%</span>
               </div>
               <input
@@ -470,19 +473,19 @@ export default function AdminDisputesPage() {
             {/* Mathematical distribution breakdown */}
             <div className="mt-5 space-y-2 rounded-xl border border-border/80 bg-background/50 p-4 text-xs">
               <div className="flex justify-between text-slate-300">
-                <span>Adjudicación al Prestador (Bruto):</span>
+                <span>{L('Para el vendedor (bruto):', 'To the seller (gross):')}</span>
                 <span className="font-semibold text-white">{sellerGross} USDC</span>
               </div>
               <div className="flex justify-between text-slate-400">
-                <span>Comisión de plataforma (3% sobre pago al prestador):</span>
+                <span>{L('Comisión (3% sobre la parte del vendedor):', 'Fee (3% of the seller part):')}</span>
                 <span>-{platformFeeUsdc} USDC</span>
               </div>
               <div className="flex justify-between border-t border-border/60 pt-1 text-slate-300">
-                <span>Neto que recibirá el prestador en wallet:</span>
+                <span>{L('Neto para el vendedor:', 'Net to the seller:')}</span>
                 <span className="font-bold text-accent">{sellerNetPayout} USDC</span>
               </div>
               <div className="flex justify-between border-t border-border/60 pt-1 text-slate-300">
-                <span>Reembolso directo al comprador (0% comisión):</span>
+                <span>{L('Reembolso al comprador (sin comisión):', 'Refund to the buyer (no fee):')}</span>
                 <span className="font-bold text-amber-400">{buyerRefund} USDC</span>
               </div>
             </div>
@@ -490,11 +493,11 @@ export default function AdminDisputesPage() {
             {/* Arbitrator notes */}
             <div className="mt-4">
               <label className="block text-xs font-semibold text-slate-400">
-                Fundamentación del fallo arbitral
+                {L('Motivo de la resolución', 'Reason for the resolution')}
               </label>
               <textarea
                 rows={2}
-                placeholder="Explica brevemente los motivos de la decisión para constancia en la plataforma..."
+                placeholder={L('Explica brevemente la decisión; quedará registrada en la plataforma.', 'Briefly explain the decision; it is recorded on the platform.')}
                 value={resolutionNotes}
                 onChange={(e) => setResolutionNotes(e.target.value)}
                 className="mt-1.5 w-full rounded-xl border border-border bg-background p-3 text-xs text-white placeholder-slate-500 focus:border-primary focus:outline-none"
@@ -508,7 +511,7 @@ export default function AdminDisputesPage() {
                 onClick={() => setSelectedDispute(null)}
                 className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-slate-400 hover:text-white"
               >
-                Volver
+                {L('Volver', 'Back')}
               </button>
               <button
                 type="button"
@@ -516,7 +519,7 @@ export default function AdminDisputesPage() {
                 disabled={isProcessing}
                 className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover active:scale-95 disabled:opacity-50"
               >
-                {isProcessing ? 'Firmando en Smart Contract...' : 'Ejecutar Fallo en Escrow'}
+                {isProcessing ? L('Confirma en tu wallet...', 'Confirm in your wallet...') : L('Ejecutar resolución', 'Execute resolution')}
               </button>
             </div>
           </div>

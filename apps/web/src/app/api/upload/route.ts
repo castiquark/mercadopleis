@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: 'No se envió ningún archivo' }, { status: 400 });
+      return NextResponse.json({ error: 'No file was sent' }, { status: 400 });
     }
 
     if (file.size > MAX_FILE_SIZE) {

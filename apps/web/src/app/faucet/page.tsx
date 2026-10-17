@@ -222,7 +222,7 @@ export default function FaucetPage() {
               {en ? 'Test USDC token' : 'Token USDC de prueba'}
             </span>
             <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">
-              Verified BaseScan
+              {en ? 'Verified on BaseScan' : 'Verificado en BaseScan'}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between font-mono text-xs text-slate-300">
@@ -253,7 +253,7 @@ export default function FaucetPage() {
               {en ? 'Escrow contract (Sepolia)' : 'Contrato de escrow (Sepolia)'}
             </span>
             <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">
-              Verified BaseScan
+              {en ? 'Verified on BaseScan' : 'Verificado en BaseScan'}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between font-mono text-xs text-slate-300">

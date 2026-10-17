@@ -180,7 +180,7 @@ export async function PATCH(
     const isAdmin = authUser.role === 'ADMIN';
 
     if (!isBuyer && !isSeller && !isAdmin) {
-      return NextResponse.json({ error: 'Forbidden: No tienes autorización para modificar esta orden' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden: only the buyer, the seller or an admin can update this order' }, { status: 403 });
     }
 
     const resolvedDeliveryUrl = deliverableUrl ?? deliveryUrl;
@@ -223,7 +223,7 @@ export async function PATCH(
         }
 
         if (!existingOrder.contractOrderId) {
-          return NextResponse.json({ error: 'La orden carece de contractOrderId on-chain' }, { status: 400 });
+          return NextResponse.json({ error: 'The order has no on-chain contractOrderId' }, { status: 400 });
         }
 
         const deliveryTx = txHash ?? body.txHashDelivery;
@@ -271,7 +271,7 @@ export async function PATCH(
         }
 
         if (!existingOrder.contractOrderId) {
-          return NextResponse.json({ error: 'La orden carece de contractOrderId on-chain' }, { status: 400 });
+          return NextResponse.json({ error: 'The order has no on-chain contractOrderId' }, { status: 400 });
         }
 
         const releaseTx = txHashRelease ?? txHash;

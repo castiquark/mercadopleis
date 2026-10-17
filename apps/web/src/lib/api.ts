@@ -94,10 +94,19 @@ export async function verifySignature(address: string, signature: string, messag
   return data;
 }
 
+/** Picks the message in the language chosen on the site (falls back to the browser language). */
+const msg = (en: string, es: string) => {
+  try {
+    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('mercadopleis_lang') : null;
+    if (saved) return saved === 'en' ? en : es;
+  } catch {
+    // storage unavailable
+  }
+  return typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('en') ? en : es;
+};
+
 const signInRequired = () =>
-  typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('en')
-    ? 'Sign the session with your wallet (button in the top bar) and try again.'
-    : 'Firma la sesión con tu wallet (botón en la barra superior) e inténtalo de nuevo.';
+  msg('Sign the session with your wallet (button in the top bar) and try again.', 'Firma la sesión con tu wallet (botón en la barra superior) e inténtalo de nuevo.');
 
 /**
  * Create a new service in PostgreSQL
@@ -314,7 +323,7 @@ export async function submitReview(reviewData: {
 }) {
   const token = getAuthToken();
   if (!token) {
-    throw new Error('Debes iniciar sesión con tu wallet vía SIWE para calificar el servicio');
+    throw new Error(signInRequired());
   }
 
   const headers: Record<string, string> = {
@@ -361,7 +370,7 @@ export async function fetchServiceReviews(serviceId: string) {
  */
 export async function uploadDeliverable(file: File): Promise<{ url: string; hash: string; filename: string; size: number }> {
   const token = getAuthToken();
-  if (!token) throw new Error('Inicia sesión con tu wallet (SIWE) para subir archivos.');
+  if (!token) throw new Error(signInRequired());
 
   const formData = new FormData();
   formData.append('file', file);
@@ -373,7 +382,7 @@ export async function uploadDeliverable(file: File): Promise<{ url: string; hash
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) {
-    throw new Error(data.error || 'Error al subir el archivo');
+    throw new Error(data.error || msg('The file could not be uploaded.', 'No se pudo subir el archivo.'));
   }
   return { url: data.url, hash: data.hash, filename: data.filename, size: data.size };
 }
@@ -381,14 +390,14 @@ export async function uploadDeliverable(file: File): Promise<{ url: string; hash
 /** Resolves where to fetch an order's deliverable: a short-lived signed URL for uploads, or the external link. */
 export async function getDeliverableAccess(orderId: string): Promise<{ type: 'storage' | 'external'; url: string }> {
   const token = getAuthToken();
-  if (!token) throw new Error('Inicia sesión con tu wallet (SIWE) para ver el entregable.');
+  if (!token) throw new Error(signInRequired());
 
   const res = await fetch(`${API_URL}/orders/${orderId}/deliverable`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'No se pudo obtener el entregable');
+  if (!res.ok) throw new Error(data.error || msg('The deliverable could not be retrieved.', 'No se pudo obtener el entregable.'));
   return { type: data.type, url: data.url };
 }
 

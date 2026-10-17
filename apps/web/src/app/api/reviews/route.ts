@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const authUser = getAuthUserFromRequest(request);
     if (!authUser) {
       return NextResponse.json(
-        { error: 'Unauthorized: Debes iniciar sesión con tu wallet vía SIWE para calificar' },
+        { error: 'Unauthorized: sign in with your wallet (SIWE) to leave a review' },
         { status: 401 }
       );
     }
