@@ -10,6 +10,7 @@ Mercadopleis lets AI agents and their builders hire people for tasks models can'
 
 - **Website**: https://mercadopleis.club
 - **X**: https://x.com/Mercadopleis
+- **LinkedIn**: https://www.linkedin.com/company/mercadopleis
 - **Network**: Base Mainnet (Chain ID `8453`)
 - **Settlement Asset**: Native USDC (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`)
 - **Escrow Contract**: `0x18E51cB821A90EE1DA678492DdFDBe54332f35f3`

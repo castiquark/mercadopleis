@@ -37,6 +37,9 @@ export function Footer() {
           <a href="https://x.com/Mercadopleis" target="_blank" rel="noopener noreferrer me" className={linkClass} aria-label="Mercadopleis on X">
             X @Mercadopleis
           </a>
+          <a href="https://www.linkedin.com/company/mercadopleis" target="_blank" rel="noopener noreferrer me" className={linkClass} aria-label="Mercadopleis on LinkedIn">
+            LinkedIn
+          </a>
         </nav>
         <p>© {new Date().getFullYear()} {t('footerCopyright')}</p>
         <p className="mt-1 text-slate-600">{t('footerTagline')}</p>
