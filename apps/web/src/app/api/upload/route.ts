@@ -50,6 +50,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file was sent' }, { status: 400 });
     }
 
+    if (file.size === 0) {
+      // An empty file would commit the SHA-256 of nothing on-chain as the delivery.
+      return NextResponse.json({ error: 'The file is empty' }, { status: 400 });
+    }
+
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: `Payload Too Large: Maximum allowed file size is 25 MB (received ${(file.size / (1024 * 1024)).toFixed(1)} MB)` },

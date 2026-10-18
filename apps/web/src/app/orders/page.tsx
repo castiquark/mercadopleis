@@ -513,6 +513,10 @@ export default function OrdersDashboardPage() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size === 0) {
+      setUploadError(L('El archivo está vacío. Elige el archivo con el trabajo entregado.', 'The file is empty. Choose the file with the delivered work.', 'O arquivo está vazio. Escolha o arquivo com o trabalho entregue.'));
+      return;
+    }
 
     try {
       setIsUploading(true);
