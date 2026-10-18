@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "mercadopleis",
   "display_name": "Mercadopleis",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Hire people for work an AI agent can't finish alone, paid through non-custodial stablecoin escrow on Base (USDC today).",
   "long_description": "Search and compare human services, post requests, and prepare escrow payments on Base. The server never holds keys: it returns unsigned transactions and sign-in messages for your own wallet to sign. After signing in, the agent can register orders, message the seller and download deliverables verified against the hash recorded on-chain.",
   "author": {
