@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
 import { useAccount, useSignMessage } from 'wagmi';
-import { getNonce, verifySignature, getAuthToken, clearAuthToken } from './api';
+import { getNonce, verifySignature, getAuthToken, clearAuthToken, setActiveAuthAddress } from './api';
 
 import { isAdminWallet } from '@mercadopleis/types';
 import { isUserRejection } from './web3Errors';
@@ -47,6 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+
+  // Set during render (not in an effect) so that pages calling the API on mount already use this wallet's session.
+  setActiveAuthAddress(isConnected ? address : null);
 
   const fetchUserProfile = useCallback(async (authToken: string, currentAddress?: string | null) => {
     try {

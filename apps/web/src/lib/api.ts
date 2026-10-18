@@ -3,21 +3,26 @@ import type { NotifyEvent } from './notify/messages';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
+// The wallet currently connected (set by AuthProvider). Every API call uses that wallet's own session: with two
+// wallets in one browser, the most recent sign-in must never be sent on behalf of the other one.
+let activeAuthAddress: string | null = null;
+export function setActiveAuthAddress(address?: string | null) {
+  activeAuthAddress = address ? address.toLowerCase() : null;
+}
+
 export function getAuthToken(address?: string | null): string | null {
   if (typeof window === 'undefined') return null;
-  if (address) {
-    const specific = localStorage.getItem(`mercadopleis_jwt_${address.toLowerCase()}`);
-    if (specific) return specific;
-  }
-  return localStorage.getItem('mercadopleis_jwt');
+  const wallet = (address ?? activeAuthAddress)?.toLowerCase();
+  if (wallet) return localStorage.getItem(`mercadopleis_jwt_${wallet}`);
+  // No wallet known yet: no session rather than whichever wallet signed in last.
+  return null;
 }
 
 export function setAuthToken(token: string, address?: string | null) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('mercadopleis_jwt', token);
-  if (address) {
-    localStorage.setItem(`mercadopleis_jwt_${address.toLowerCase()}`, token);
-  }
+  if (typeof window === 'undefined' || !address) return;
+  localStorage.setItem(`mercadopleis_jwt_${address.toLowerCase()}`, token);
+  // Drop the old browser-wide session key: sessions are per wallet now.
+  localStorage.removeItem('mercadopleis_jwt');
 }
 
 export function clearAuthToken(address?: string | null) {

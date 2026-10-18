@@ -9,6 +9,7 @@ import { createPublicClient, http, parseEventLogs } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
+import { readEscrowOrder } from '@/lib/escrowState';
 
 async function verifyOnChainDelivery(
   txHash: `0x${string}`,
@@ -202,10 +203,10 @@ export async function PATCH(
     let autoReleaseDeadline: number | null = existingOrder.autoReleaseDeadline;
 
     if (status !== undefined && status !== existingOrder.status) {
-      if (status !== 'DELIVERED' && status !== 'RELEASED') {
+      if (status !== 'DELIVERED' && status !== 'RELEASED' && status !== 'REFUNDED') {
         return NextResponse.json(
           {
-            error: `Forbidden status modification: '${status}' cannot be set directly via PATCH /api/orders. Escrow states (FUNDED, DISPUTED, REFUNDED, RESOLVED) are strictly derived from on-chain smart contract events.`,
+            error: `Forbidden status modification: '${status}' cannot be set directly via PATCH /api/orders. Escrow states (FUNDED, DISPUTED, RESOLVED) are strictly derived from on-chain smart contract events.`,
           },
           { status: 400 }
         );
@@ -251,6 +252,20 @@ export async function PATCH(
         );
 
         if (autoReleaseDeadline === null) {
+          // No receipt for that hash (a smart account or relayer may have landed it under another one): trust the
+          // contract state instead, which records the seller and the delivery hash.
+          const onChain = await readEscrowOrder(targetChainId, existingOrder.contractOrderId);
+          if (
+            onChain &&
+            ['Delivered', 'Released', 'Disputed', 'Resolved'].includes(onChain.status) &&
+            onChain.seller.toLowerCase() === existingOrder.seller.walletAddress.toLowerCase() &&
+            onChain.deliveryHash.toLowerCase() === resolvedDeliveryHash.toLowerCase()
+          ) {
+            autoReleaseDeadline = onChain.autoReleaseTime;
+          }
+        }
+
+        if (autoReleaseDeadline === null) {
           return NextResponse.json(
             { error: `Transaction verification failed: DeliverySubmitted event not confirmed on chain ${targetChainId} for this order` },
             { status: 400 }
@@ -283,12 +298,19 @@ export async function PATCH(
           );
         }
 
-        const isValidOnChain = await verifyOnChainRelease(
+        let isValidOnChain = await verifyOnChainRelease(
           releaseTx as `0x${string}`,
           existingOrder.contractOrderId,
           parseFloat(existingOrder.grossAmountUsdc),
           targetChainId
         );
+        if (!isValidOnChain) {
+          // Same fallback as deliveries: the contract says whether the escrow paid out this order.
+          const onChain = await readEscrowOrder(targetChainId, existingOrder.contractOrderId);
+          isValidOnChain =
+            onChain?.status === 'Released' &&
+            onChain.amount === BigInt(Math.round(parseFloat(existingOrder.grossAmountUsdc) * 1_000_000));
+        }
 
         if (!isValidOnChain) {
           return NextResponse.json(
@@ -298,6 +320,28 @@ export async function PATCH(
         }
 
         targetStatus = 'RELEASED';
+      }
+
+      if (status === 'REFUNDED') {
+        // A timeout refund is claimed by the buyer directly on the contract; the app records it once the contract
+        // confirms it, so it does not depend on the indexer catching up.
+        if (existingOrder.status !== 'FUNDED') {
+          return NextResponse.json(
+            { error: `Cannot record a refund for an order in status '${existingOrder.status}'` },
+            { status: 400 }
+          );
+        }
+        if (!existingOrder.contractOrderId) {
+          return NextResponse.json({ error: 'The order has no on-chain contractOrderId' }, { status: 400 });
+        }
+        const onChain = await readEscrowOrder(targetChainId, existingOrder.contractOrderId);
+        if (onChain?.status !== 'Refunded') {
+          return NextResponse.json(
+            { error: `The escrow on chain ${targetChainId} does not show this order as refunded` },
+            { status: 400 }
+          );
+        }
+        targetStatus = 'REFUNDED';
       }
     }
 
@@ -321,6 +365,7 @@ export async function PATCH(
     if (targetStatus !== existingOrder.status) {
       if (targetStatus === 'DELIVERED') await notifyOrder(updatedOrder, 'order_delivered', ['buyer']);
       if (targetStatus === 'RELEASED') await notifyOrder(updatedOrder, 'order_released', ['seller']);
+      if (targetStatus === 'REFUNDED') await notifyOrder(updatedOrder, 'order_refunded', ['seller']);
     }
 
     return NextResponse.json({ order: updatedOrder });

@@ -5,11 +5,12 @@ export const dynamic = 'force-dynamic';
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import NotFound from '@/app/not-found';
-import { useAccount, useWriteContract } from 'wagmi';
+import { usePublicClient, useAccount, useWriteContract } from 'wagmi';
 import { parseUnits } from 'viem';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES, calculateOrderAmounts } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG, isAdminWallet } from '@mercadopleis/types';
 import { fetchDisputes, resolveDisputeApi } from '@/lib/api';
+import { confirmTx } from '@/lib/txConfirm';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/lib/languageContext';
 import { BUILDER_DATA_SUFFIX } from '@/lib/builderCode';
@@ -45,6 +46,7 @@ interface DisputeItem {
 
 export default function AdminDisputesPage() {
   const { address, isConnected, chainId, status } = useAccount();
+  const publicClient = usePublicClient();
   const { user, isAdmin, isLoading: isAuthLoading, signIn } = useAuth();
   const { language } = useLanguage();
   const L = (es: string, en: string, pt?: string) => (language === 'pt' ? (pt ?? es) : language === 'en' ? en : es);
@@ -136,6 +138,7 @@ export default function AdminDisputesPage() {
           functionName: 'resolveDispute',
           args: [BigInt(selectedDispute.contractOrderId), sellerRaw, buyerRaw],
         });
+        resolveTxHash = await confirmTx(publicClient, resolveTxHash);
       } else {
         throw new Error(L('Conecta tu wallet para enviar la transacción.', 'Connect your wallet to send the transaction.', 'Conecte sua carteira para enviar a transação.'));
       }

@@ -150,7 +150,8 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
           createOrder({
             serviceId: service.id,
             contractOrderId: realContractOrderId,
-            txHashFunding: fundTx,
+            // The hash that actually landed (a smart account or relayer may report a different one).
+            txHashFunding: receipt.transactionHash,
             buyerWallet: address,
             chainId: activeChainId,
           })
@@ -161,7 +162,7 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
           serviceId: service.id,
           serviceTitle: service.title,
           contractOrderId: realContractOrderId,
-          txHashFunding: fundTx,
+          txHashFunding: receipt.transactionHash,
           chainId: activeChainId,
           buyerWallet: address || '',
           sellerWallet,

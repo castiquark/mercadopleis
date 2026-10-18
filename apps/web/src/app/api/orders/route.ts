@@ -9,6 +9,7 @@ import { createPublicClient, http, parseEventLogs, parseUnits } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { currentEscrowKey } from '@/lib/networks';
+import { readEscrowOrder } from '@/lib/escrowState';
 
 interface VerifiedFunding {
   isValid: boolean;
@@ -136,7 +137,24 @@ export async function POST(request: NextRequest) {
     const targetChainId = Number(chainId) === 84532 ? 84532 : 8453;
 
     // Verify on-chain funding event strictly on targetChainId
-    const verification = await verifyOnChainFunding(txHashFunding as `0x${string}`, targetChainId);
+    let verification = await verifyOnChainFunding(txHashFunding as `0x${string}`, targetChainId);
+    if (!verification.isValid && Number.isInteger(Number(contractOrderId))) {
+      // No receipt for that hash (smart account or relayer): read the order from the contract instead. The checks
+      // below (buyer, seller, amount) apply to it exactly as to the OrderFunded event.
+      const onChain = await readEscrowOrder(targetChainId, Number(contractOrderId));
+      if (onChain) {
+        verification = {
+          isValid: true,
+          chainId: targetChainId,
+          orderId: Number(contractOrderId),
+          buyer: onChain.buyer,
+          seller: onChain.seller,
+          token: onChain.token,
+          amount: onChain.amount,
+          deadline: onChain.deadline,
+        };
+      }
+    }
     if (!verification.isValid) {
       return NextResponse.json({ error: verification.error || 'On-chain funding verification failed' }, { status: 400 });
     }

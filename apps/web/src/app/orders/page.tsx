@@ -8,6 +8,7 @@ import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/lib/languageContext';
 import { fetchMyOrders, updateOrder, submitReview, openDisputeApi, uploadDeliverable, syncChain, createOrder } from '@/lib/api';
+import { confirmTx } from '@/lib/txConfirm';
 import { clearPendingOrders, loadPendingOrders, removePendingOrder, type PendingOrder } from '@/lib/pendingOrders';
 import {
   ShieldCheck,
@@ -308,6 +309,7 @@ export default function OrdersDashboardPage() {
           functionName: 'approveDelivery',
           args: [BigInt(order.contractOrderId)],
         });
+        txHash = await confirmTx(publicClient, txHash);
       } else {
         throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
       }
@@ -363,6 +365,7 @@ export default function OrdersDashboardPage() {
           functionName: 'openDispute',
           args: [BigInt(activeDisputeModalOrder.contractOrderId)],
         });
+        disputeTxHash = await confirmTx(publicClient, disputeTxHash);
       } else {
         throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
       }
@@ -429,9 +432,14 @@ export default function OrdersDashboardPage() {
         throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
       }
 
-      // Refunds are recorded from the OrderRefunded event by the indexer.
-      await publicClient?.waitForTransactionReceipt({ hash: refundTx });
-      await syncChain(activeChainId);
+      // The API records the refund once the contract shows it; the indexer stays as a backup.
+      await confirmTx(publicClient, refundTx);
+      try {
+        await updateOrder(order.id, { status: 'REFUNDED' });
+      } catch (err) {
+        console.warn('Backend sync note:', err);
+        await syncChain(activeChainId);
+      }
 
       setOrders((prev) =>
         prev.map((o) => (o.id === order.id ? { ...o, status: 'REFUNDED' } : o))
@@ -468,9 +476,9 @@ export default function OrdersDashboardPage() {
         args: [BigInt(order.contractOrderId)],
       });
 
-      await publicClient?.waitForTransactionReceipt({ hash: txHash });
+      const landedTx = await confirmTx(publicClient, txHash);
       try {
-        await updateOrder(order.id, { status: 'RELEASED', txHashRelease: txHash });
+        await updateOrder(order.id, { status: 'RELEASED', txHashRelease: landedTx });
       } catch (err) {
         console.warn('Backend sync note:', err);
         await syncChain(activeChainId);
@@ -562,6 +570,7 @@ export default function OrdersDashboardPage() {
           functionName: 'submitDelivery',
           args: [BigInt(activeDeliveryModalOrder.contractOrderId), finalHash as `0x${string}`],
         });
+        txHash = await confirmTx(publicClient, txHash);
       } else {
         throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
       }

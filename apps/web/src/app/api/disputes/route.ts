@@ -3,6 +3,7 @@ import { db, disputes, orders } from '@mercadopleis/database';
 import { eq, desc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { notifyOrder, counterpart } from '@/lib/notify';
+import { readEscrowOrder } from '@/lib/escrowState';
 import { LIMITS, isSafeHttpUrl } from '@/lib/validation';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { createPublicClient, http, parseEventLogs } from 'viem';
@@ -157,12 +158,17 @@ export async function POST(request: NextRequest) {
     }
 
     const targetChainId = order.chainId || 8453;
-    const isValidOnChain = await verifyOnChainDisputeOpen(
+    let isValidOnChain = await verifyOnChainDisputeOpen(
       disputeTx as `0x${string}`,
       order.contractOrderId,
       authUser.walletAddress,
       targetChainId
     );
+    if (!isValidOnChain && order.contractOrderId) {
+      // No receipt for that hash (smart account or relayer): the contract shows whether the order is in dispute.
+      // The caller was already checked to be the buyer or the seller of this order.
+      isValidOnChain = (await readEscrowOrder(targetChainId, order.contractOrderId))?.status === 'Disputed';
+    }
 
     if (!isValidOnChain) {
       return NextResponse.json(
