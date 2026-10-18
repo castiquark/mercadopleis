@@ -18,13 +18,13 @@ mercadopleis/
 │   └── script/                 # Deploy scripts for Base Sepolia & Base Mainnet
 ├── packages/
 │   ├── contracts-abi/          # Exported TypeScript ABIs and contract address registry
-│   ├── database/               # Drizzle ORM schema, relations, and Neon client
+│   ├── database/               # Drizzle ORM schema, relations, Neon client and SQL migrations (drizzle/manual)
+│   ├── mcp-server/             # @mercadopleis/mcp-server: MCP tools for buyer and seller agents
 │   └── types/                  # Shared TypeScript domain types and categories
+├── apps/web/public/            # llms.txt, llms-full.txt and agents.txt, served at the site root
+├── docs/                       # Dispute resolution design, notifications
 ├── scripts/                    # Database seeding and utility scripts
-├── .env.example                # Template for local environment variables
-├── llms.txt                    # Curated index for LLM agents
-├── llms-full.txt               # Full technical integration guide
-└── agents.txt                  # Machine-readable agent capabilities manifest
+└── .env.example                # Template for local environment variables
 ```
 
 ---
@@ -48,6 +48,7 @@ Copy `.env.example` to `apps/web/.env.local`:
 ```bash
 cp .env.example apps/web/.env.local
 ```
+Then create the database schema by applying the SQL files in `packages/database/drizzle/manual` in order (0001, 0002, ...).
 
 ### 4. Running the Development Server
 ```bash

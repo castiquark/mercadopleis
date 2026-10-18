@@ -16,7 +16,7 @@ Notifications never include message contents or deliverables, only what happened
 | Dispute resolved | Buyer and seller | `POST /api/disputes/[id]/resolve`, indexer (`DisputeResolved`) |
 | New message | The other party (at most one every 10 minutes per order) | `POST /api/orders/[id]/messages` |
 | New proposal | Whoever posted the request | `POST /api/requests/[id]/proposals` |
-| Proposal accepted | The seller | `POST /api/requests/[id]/proposals/[proposalId]` |
+| Proposal accepted | The seller | `PATCH /api/requests/[id]/proposals/[proposalId]` |
 
 Each notification has a key (for example `order_delivered:<orderId>:buyer`) stored in `notification_log`, so an event seen by both the API and the on-chain indexer is sent once. The indexer only notifies on a real status change, so re-scanning old blocks does not announce past events. Orders on Base Sepolia are marked "(testnet)".
 
