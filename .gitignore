@@ -95,3 +95,4 @@ packages/mcp-server/mcp-publisher.exe
 
 # Testnet lifecycle state (throwaway test keys)
 packages/mcp-server/testnet-lifecycle-*.json
+PLAN_ESCALADO.md
