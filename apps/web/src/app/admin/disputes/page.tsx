@@ -218,6 +218,12 @@ export default function AdminDisputesPage() {
             <span>{L('Actualizar', 'Refresh', 'Atualizar')}</span>
           </button>
           <Link
+            href="/admin/founding-sellers"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-surface-elevated"
+          >
+            <span>Founding Sellers</span>
+          </Link>
+          <Link
             href="/orders"
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-surface-elevated"
           >

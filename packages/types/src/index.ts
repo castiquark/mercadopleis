@@ -136,6 +136,8 @@ export interface User {
   avatarUrl?: string | null;
   country?: string | null;
   role: UserRole;
+  /** 1–25 for the first sellers ("Founding Seller #001"); null otherwise. */
+  foundingSellerNumber?: number | null;
   createdAt: string;
   updatedAt: string;
 }

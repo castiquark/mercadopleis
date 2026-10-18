@@ -16,6 +16,7 @@ interface AuthUser {
   bio?: string | null;
   country?: string | null;
   avatarUrl?: string | null;
+  foundingSellerNumber?: number | null;
 }
 
 interface AuthContextType {

@@ -19,6 +19,9 @@ export function Footer() {
           <Link href="/services/new" className={linkClass}>
             {t('postService')}
           </Link>
+          <Link href="/stats" className={linkClass}>
+            {L('Operación 100', 'Operation 100', 'Operação 100')}
+          </Link>
           <Link href="/terms" className={linkClass}>
             {L('Términos', 'Terms', 'Termos')}
           </Link>

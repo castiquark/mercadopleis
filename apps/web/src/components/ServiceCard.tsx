@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Service, MARKETPLACE_CATEGORIES, categoryLabel as categoryLabel_ } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
+import { FoundingBadge } from './FoundingBadge';
 import { Clock, Shield, Star, MapPin } from 'lucide-react';
 
 interface ServiceCardProps {
@@ -44,6 +45,7 @@ export function ServiceCard({ service, onBook }: ServiceCardProps) {
                 {L('Híbrido', 'Hybrid', 'Híbrido')}
               </span>
             )}
+            <FoundingBadge n={service.seller?.foundingSellerNumber} />
           </div>
           <div className="flex items-center gap-1 text-xs font-medium text-amber-400 shrink-0">
             <Star className="h-3.5 w-3.5 fill-current" />

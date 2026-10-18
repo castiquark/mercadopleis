@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, services } from '@mercadopleis/database';
-import { eq, desc, and, gte, lte, ilike, or } from 'drizzle-orm';
+import { eq, desc, and, gte, lte, ilike, or, sql } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { validateServiceInput } from '@/lib/validation';
 import { enforceRateLimit } from '@/lib/rateLimit';
@@ -125,7 +125,8 @@ export async function GET(request: NextRequest) {
 
     const queriedServices = await db.query.services.findMany({
       where: and(...conditions),
-      orderBy: [desc(services.createdAt)],
+      // Founding Sellers first (false sorts before true), then newest first.
+      orderBy: [sql`(SELECT u.founding_seller_number IS NULL FROM users u WHERE u.id = ${services.sellerId})`, desc(services.createdAt)],
       limit,
       offset,
       with: {
@@ -136,6 +137,7 @@ export async function GET(request: NextRequest) {
             displayName: true,
             username: true,
             avatarUrl: true,
+            foundingSellerNumber: true,
           },
         },
       },

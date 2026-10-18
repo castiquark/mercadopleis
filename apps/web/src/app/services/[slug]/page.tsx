@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Service, MARKETPLACE_CATEGORIES, categoryLabel as categoryLabel_ } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
+import { FoundingBadge } from '@/components/FoundingBadge';
 import { CheckoutModal } from '@/components/CheckoutModal';
 import {
   ArrowLeft,
@@ -161,6 +162,7 @@ export default function ServiceDetailPage() {
                     <span className="font-bold text-white">
                       {service.seller?.displayName || service.seller?.username || `${service.seller?.walletAddress?.slice(0, 6)}...${service.seller?.walletAddress?.slice(-4)}` || (L('Vendedor Verificado', 'Verified Seller', 'Vendedor Verificado'))}
                     </span>
+                    <FoundingBadge n={service.seller?.foundingSellerNumber} />
                   </div>
                   <p className="text-xs text-slate-400">
                     {service.country || 'Global'} • {L('Miembro Registrado', 'Registered Member', 'Membro Registrado')}

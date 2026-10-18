@@ -36,6 +36,7 @@ export async function GET(
             avatarUrl: true,
             country: true,
             role: true,
+            foundingSellerNumber: true,
             createdAt: true,
             updatedAt: true,
           },

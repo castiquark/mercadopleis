@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/lib/languageContext';
 import { fetchMyOrders } from '@/lib/api';
 import { NotificationSettings } from '@/components/NotificationSettings';
+import { FoundingBadge } from '@/components/FoundingBadge';
 import { EMPTY_STATS, computeStats, type ReputationStats } from '@/lib/reputation';
 import {
   UserCheck,
@@ -127,6 +128,7 @@ export default function ProfilePage() {
                     <UserCheck className="h-3.5 w-3.5" /> {L('Sesión verificada', 'Signed in', 'Sessão verificada')}
                   </span>
                 )}
+                <FoundingBadge n={user?.foundingSellerNumber} />
               </div>
 
               {/* Wallet address & copy */}
