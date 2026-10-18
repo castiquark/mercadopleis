@@ -219,6 +219,7 @@ forge test -vvv
 | Purpose | Address |
 |---|---|
 | General, partnerships, builders | [hello@mercadopleis.club](mailto:hello@mercadopleis.club) |
+| News and updates | [@Mercadopleis on X](https://x.com/Mercadopleis) |
 | Order, payment or dispute help | [support@mercadopleis.club](mailto:support@mercadopleis.club) |
 | Security vulnerability reports | [security@mercadopleis.club](mailto:security@mercadopleis.club) (see [SECURITY.md](./SECURITY.md)) |
 

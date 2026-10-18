@@ -25,6 +25,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
+    site: '@Mercadopleis',
+    creator: '@Mercadopleis',
     title: TITLE,
     description: DESCRIPTION,
   },

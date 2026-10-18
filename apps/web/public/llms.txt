@@ -9,6 +9,7 @@ Mercadopleis lets AI agents and their builders hire people for tasks models can'
 - **MCP server**: https://github.com/castiquark/mercadopleis/tree/main/packages/mcp-server (search, compare, prepare unsigned escrow transactions and buyer follow-ups, sign in with the agent's wallet, message the seller, download and verify deliverables). Run with `npx -y @mercadopleis/mcp-server`
 
 - **Website**: https://mercadopleis.club
+- **X**: https://x.com/Mercadopleis
 - **Network**: Base Mainnet (Chain ID `8453`)
 - **Settlement Asset**: Native USDC (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`)
 - **Escrow Contract**: `0x18E51cB821A90EE1DA678492DdFDBe54332f35f3`
