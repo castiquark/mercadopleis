@@ -36,6 +36,10 @@ It is not a micropayments rail for machine-to-machine calls, and it is not tryin
 - **Non-Custodial Escrow on Base**: Neither Mercadopleis nor any middleman holds your funds. Payment is locked into an open-source, verified non-custodial smart contract on Base Mainnet (fixed 3% protocol fee hard-coded in the contract; tested with Foundry, including fuzzing; not yet independently audited) and released only when delivery is approved or the 5-day review period completes.
 - **Cryptographic Commitment to Deliverables**: Sellers submit a SHA-256 hash on-chain via `submitDelivery()` before funds can be released. For files uploaded to the platform it is the hash of the file itself, so any later change is detectable. For external links it is the hash of the link text: it proves which link was delivered, not what the link serves, so sellers should link to a fixed version (a Git commit or release, an IPFS CID).
 - **Built for Agents, Done by People**: an MCP server and machine-readable discovery (`/llms.txt`, `/agents.txt`, `/api/services`) let an agent find a service and prepare the payment for its own wallet; human sellers and buyers use the web app.
+- **Requests and milestones**: when nothing in the catalog fits, buyers (or their agents) post a request and receive proposals; long jobs can be split into milestones, each funded and approved as its own escrow order.
+- **Notifications**: opt-in browser push and a Telegram bot for funded orders, deliveries, payouts, disputes, messages and proposals, plus a history in the header bell (see [`docs/NOTIFICATIONS.md`](./docs/NOTIFICATIONS.md)). They never include message contents.
+- **Spanish, English and Portuguese**: the whole site, including the terms and privacy policy.
+- **Public traction**: [`/stats`](https://mercadopleis.club/stats) counts completed orders toward the first 100 on the Base Mainnet escrow, with orders funded by the operator shown apart.
 
 ### At a glance
 
@@ -84,7 +88,9 @@ Mercadopleis exposes a 3-tier discovery surface designed for LLM models, agents,
 | [`/llms-full.txt`](https://mercadopleis.club/llms-full.txt) | Comprehensive technical manual, Solidity ABI methods, and Viem walkthrough | Agent developers |
 | [`/agents.txt`](https://mercadopleis.club/agents.txt) | Machine-readable manifest of identity, network, and capabilities | Autonomous agents |
 | [`/api/services`](https://mercadopleis.club/api/services) | REST API supporting `capability`, `minPrice`, `maxPrice`, `maxDeliveryDays` | Programmatic consumers |
-| [`@mercadopleis/mcp-server`](./packages/mcp-server) | MCP server: search, compare, prepare unsigned escrow orders and buyer follow-ups (approve, dispute, timeout refund), sign in with the agent's wallet, message the seller, download and verify deliverables. Non-custodial, holds no keys. `npx -y @mercadopleis/mcp-server` | MCP clients (Claude Code, Claude Desktop, Cursor) |
+| [`/api/requests`](https://mercadopleis.club/api/requests) | Open requests; with a SIWE token, post a request, send or accept proposals (see `/llms-full.txt`, section 4.D) | Agents and builders |
+| [`/api/stats`](https://mercadopleis.club/api/stats) | Public traction numbers on the Base Mainnet escrow (completed orders, volume, sellers) | Anyone |
+| [`@mercadopleis/mcp-server`](./packages/mcp-server) | MCP server: search, compare, prepare unsigned escrow orders and buyer follow-ups (approve, dispute, timeout refund), post requests and accept proposals, sign in with the agent's wallet, message the seller, download and verify deliverables. Non-custodial, holds no keys. `npx -y @mercadopleis/mcp-server` | MCP clients (Claude Code, Claude Desktop, Cursor) |
 
 ### Autonomous Agent Integration Example (Viem)
 
@@ -170,6 +176,7 @@ mercadopleis/
 │   └── types/                  # Domain models and marketplace categories
 ├── apps/web/public/            # llms.txt, llms-full.txt, agents.txt (served at the site root)
 ├── docs/DISPUTE_RESOLUTION.md  # Design: decentralized dispute resolution and contract governance
+├── docs/NOTIFICATIONS.md       # Browser push and Telegram notifications: events and setup
 ├── .github/workflows/ci.yml    # Lint, typecheck, unit tests, web build, forge test
 ├── .env.example                # Local environment template
 ├── LICENSE                     # Apache-2.0
@@ -190,7 +197,8 @@ cd mercadopleis
 # 2. Install dependencies
 pnpm install
 
-# 3. Configure environment
+# 3. Configure environment, then create the database schema:
+#    apply the SQL files in packages/database/drizzle/manual in order (0001, 0002, ...)
 cp .env.example apps/web/.env.local
 
 # 4. Start local web server

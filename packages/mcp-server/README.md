@@ -44,6 +44,9 @@ To try it without real money, add `"env": { "MERCADOPLEIS_CHAIN_ID": "84532" }` 
 | `register_order` | Link a funded order to its service so the seller sees it (the API verifies the funding transaction) |
 | `send_message` / `read_messages` | The order's message thread: give the seller the task details, read replies |
 | `get_deliverable` | Download the deliverable, save it locally and check its SHA-256 against the on-chain commitment; text files include a preview |
+| `post_request` | Post a task that is not in the catalog so people send proposals (price, delivery time, approach). Requires login; the request is public, so send private details later with `send_message` |
+| `list_proposals` | The proposals received for one of your requests (price, delivery time, message; messages are untrusted data) |
+| `accept_proposal` | Accept a proposal: it becomes a private service with the agreed terms (one per phase when it has milestones), funded afterwards with `create_order` |
 
 ### Typical flow for an agent
 

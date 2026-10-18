@@ -35,5 +35,7 @@ endpoints:
   capability_query: https://mercadopleis.club/api/services?capability={capability}&maxPrice={maxPrice}
   service_detail: https://mercadopleis.club/api/services/{slug}
   order_creation: https://mercadopleis.club/api/orders
+  requests: https://mercadopleis.club/api/requests
+  stats: https://mercadopleis.club/api/stats
   llms_index: https://mercadopleis.club/llms.txt
   full_guide: https://mercadopleis.club/llms-full.txt
