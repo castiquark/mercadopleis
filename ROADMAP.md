@@ -96,13 +96,21 @@ Pasos en orden. Los primeros cuatro son el camino al lanzamiento público; los s
 | # | Prioridad | Por qué | Estado |
 |---|---|---|---|
 | 1 | **Red real y red de prueba sin confusión**: selector de red visible en la cabecera, Base Mainnet por defecto, aviso claro de "modo prueba" en Base Sepolia y la red indicada en cada paso del pago | Hoy la web usa la red en la que esté la wallet, sin forma de cambiarla desde el sitio; el catálogo es el mismo en ambas redes, así que alguien en Sepolia ve los servicios reales y paga con USDC de prueba | ✅ En producción (17 de octubre de 2026) |
-| 2 | **Publicar el servidor MCP** (`@mercadopleis/mcp-server`) en npm y en los directorios de MCP (registro oficial de Model Context Protocol, Smithery, PulseMCP) | Es el canal directo hacia quienes construyen agentes en Claude, Cursor y otros clientes MCP | ✅ Publicado en npm (`npx @mercadopleis/mcp-server`) y en el registro oficial de MCP (`io.github.castiquark/mercadopleis`); faltan Smithery y PulseMCP |
+| 2 | **Publicar el servidor MCP** (`@mercadopleis/mcp-server`) en npm y en los directorios de MCP (registro oficial de Model Context Protocol, Smithery, PulseMCP) | Es el canal directo hacia quienes construyen agentes en Claude, Cursor y otros clientes MCP | ✅ Publicado en npm (`npx @mercadopleis/mcp-server`), en el registro oficial de MCP (`io.github.castiquark/mercadopleis`) y en Smithery (`mercadopleis/mercadopleis`); PulseMCP no acepta altas por ahora |
 | 3 | **Validación final antes de difundir**: una primera orden real en Base Mainnet con un monto pequeño, revisión completa en celular (conectar, iniciar sesión, pagar, entregar, cobrar) y RPC dedicado para el indexador de Mainnet | Confirma con dinero real y en los dispositivos que más se usan lo que ya se probó en Sepolia | 🔄 RPC dedicado configurado; faltan la orden real y la revisión en celular |
 | 4 | **Lanzamiento y difusión**: video de demostración, presentación en el ecosistema de Base y en comunidades de agentes, primeras solicitudes publicadas como ejemplo | Llevar a los primeros compradores (agentes y personas) y vendedores | 📋 Tras los pasos 1–3 |
 | 5 | **Gobernanza D1**: claves separadas, propietario en multisig con timelock de 72 h y guardián que solo puede pausar ([diseño](./docs/DISPUTE_RESOLUTION.md#5-gobernanza-del-contrato-owner-con-timelock)) | Hoy el operador es propietario, árbitro y receptor de la comisión; el timelock hace visible cualquier cambio antes de que ocurra | 🔄 Contratos listos y probados (`EscrowAdmin` + `TimelockController`); se activa cuando haya volumen real o la primera disputa entre terceros |
 | 6 | **Auditoría externa** de `MarketplaceEscrow.sol` | Complementa las pruebas de Foundry (fuzz e invariantes) y las revisiones independientes antes de que haya volumen relevante | 📋 Planificado |
 | 7 | **Entregas por enlace más verificables** | Para archivos subidos, el hash on-chain cubre el contenido; para enlaces externos solo cubre el texto del enlace. Se recomendará y luego se exigirá un enlace a una versión fija (commit o release de Git, CID de IPFS) | 🔄 Documentado; validación pendiente |
 | 8 | **Fondeo por adelantado de todos los hitos** (Fase 6) | Los hitos ya funcionan pagando fase por fase; fondear todo el proyecto de una vez requiere un contrato dedicado | 📋 Según demanda |
+| 9 | **Avisos por navegador y Telegram** ([detalle](./docs/NOTIFICATIONS.md)): orden fondeada, entrega, pago, reembolso, disputas, mensajes y propuestas, en ES, EN y PT, sin el contenido de los mensajes; historial de avisos en la campanita | Las personas se enteran sin tener el sitio abierto; los pasos con plazo (revisión de 5 días, entrega) dejan de depender de que alguien entre a mirar | ✅ En producción (18 de octubre de 2026); historial en la campanita listo, pendiente de despliegue |
+
+### 🌱 Tracción inicial: las primeras 100 órdenes
+
+| # | Mejora | Por qué | Estado |
+|---|---|---|---|
+| T1 | **Founding Sellers**: insignia numerada ("Founding Seller #001") en el perfil y en los servicios de los primeros 25 vendedores, con prioridad en el catálogo | Reconoce a quienes apuestan primero y hace visible que hay personas reales detrás del catálogo. La comisión del contrato sigue siendo un 3% fijo: cualquier beneficio económico se da por fuera del contrato y se anuncia como tal | 🔄 En desarrollo |
+| T2 | **Contador público "Operación 100"** (`/stats`): servicios activos, órdenes completadas y volumen en Base Mainnet, verificables con los eventos del contrato; las órdenes financiadas por el operador se cuentan aparte | Mostrar tracción real y comprobable, en lugar de cifras de registro | 🔄 En desarrollo |
 
 
 ### 🤖 Demanda de agentes: mejoras priorizadas (octubre de 2026)
@@ -122,6 +130,7 @@ Surgen del análisis de la competencia en contratación agente → humano. El or
 | A9 | **Fianza para abrir disputas** (monto fijo o porcentaje de la orden) que se devuelve a quien gana y remunera el arbitraje | Evita disputas abusivas y financia el arbitraje | Sí: parte del módulo de disputas D2 | 📋 Con D2 |
 | A10 | **Descuentos por volumen** para clientes de alto volumen | Retención de laboratorios de IA | Sí: hoy el 3% es fijo en el contrato por diseño | 📋 A evaluar, sin romper la promesa del 3% fijo |
 | A11 | **Guía para cobrar en moneda local**: cómo convertir USDC a pesos, reales u otras monedas con servicios de terceros, sin integrar pasarelas | Baja la barrera de entrada para especialistas de Latinoamérica y otras regiones | No | 📋 Planificado |
+| A12 | **Descubrimiento estándar para agentes**: `skill.md` y agent card A2A (`/.well-known/agent-card.json`) además de `llms.txt` y el MCP | Otros catálogos de agentes en Base ya los publican; permite que un agente encuentre y use Mercadopleis sin intervención humana | No | 📋 Siguiente |
 
 ---
 
