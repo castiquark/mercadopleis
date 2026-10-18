@@ -110,8 +110,8 @@ Pasos en orden. Los primeros cuatro son el camino al lanzamiento público; los s
 
 | # | Mejora | Por qué | Estado |
 |---|---|---|---|
-| T1 | **Founding Sellers**: insignia numerada ("Founding Seller #001") en el perfil y en los servicios de los primeros 25 vendedores, con prioridad en el catálogo; el operador la asigna desde `/admin/founding-sellers` | Reconoce a quienes apuestan primero y hace visible que hay personas reales detrás del catálogo. La comisión del contrato sigue siendo un 3% fijo: cualquier beneficio económico se da por fuera del contrato y se anuncia como tal | ✅ Listo, pendiente de despliegue |
-| T2 | **Contador público "Operación 100"** (`/stats`): servicios activos, órdenes completadas y volumen en Base Mainnet, verificables con los eventos del contrato; las órdenes financiadas por el operador se cuentan aparte | Mostrar tracción real y comprobable, en lugar de cifras de registro | ✅ Listo, pendiente de despliegue |
+| T1 | **Founding Sellers**: insignia numerada ("Founding Seller #001") en el perfil y en los servicios de los primeros 25 vendedores, con prioridad en el catálogo; el operador la asigna desde `/admin/founding-sellers` | Reconoce a quienes apuestan primero y hace visible que hay personas reales detrás del catálogo. La comisión del contrato sigue siendo un 3% fijo: cualquier beneficio económico se da por fuera del contrato y se anuncia como tal | ✅ En producción |
+| T2 | **Contador público "Operación 100"** (`/stats`): servicios activos, órdenes completadas y volumen en Base Mainnet, verificables con los eventos del contrato; las órdenes financiadas por el operador se cuentan aparte | Mostrar tracción real y comprobable, en lugar de cifras de registro | ✅ En producción |
 
 
 ### 🤖 Demanda de agentes: mejoras priorizadas (octubre de 2026)
@@ -123,15 +123,31 @@ Surgen del análisis de la competencia en contratación agente → humano. El or
 | A1 | **Mercadopleis como "respaldo humano" en enrutadores y catálogos de agentes**: listar el servidor MCP como proveedor en catálogos A2A y MCP de Base, para que, cuando una herramienta automática falle (scraping bloqueado, baja confianza), el enrutador derive la tarea a una persona | Lleva demanda donde ya está, en lugar de esperar que los agentes lleguen al sitio. Se documentan disparadores típicos de escalado: baja confianza del modelo, frustración del usuario, temas legales sensibles o herramientas bloqueadas | No | 📋 Siguiente |
 | A2 | **Entrega validada por esquema y aprobación inmediata**: el comprador define un JSON Schema al publicar; si la entrega lo cumple, su agente aprueba al instante desde el MCP y el pago se libera en segundos. Para trabajos que un esquema no puede juzgar (red-teaming, curación profunda), sigue la revisión de 5 días | Agilidad para tareas estructuradas sin perder protección en las complejas | No: el contrato ya permite aprobar en cualquier momento; la validación vive en el MCP y la API | 📋 Siguiente |
 | A3 | **Avisos al agente (webhooks) y SDK ligero** (TypeScript y Python) con plantillas para datasets, red-teaming, scraping, automatizaciones y transcripción | Evita que el agente consulte la API en bucle; le avisa al instante cuando hay entrega o mensaje | No | 📋 Planificado |
-| A4 | **Límites de gasto para agentes**: topes por orden, por hora y por mes, y aprobación humana con un clic por encima de un umbral configurado por el dueño del agente | Los equipos no le dan una wallet libre a un agente; los límites los habilitan a probar | No (límites en el MCP y la API) | 📋 Planificado |
+| A4 | **Límites de gasto para agentes**: topes por orden, por hora y por mes, y aprobación humana con un clic por encima de un umbral configurado por el dueño del agente | Los equipos no le dan una wallet libre a un agente; los límites los habilitan a probar | No (límites en el MCP y la API) | ⏭️ Siguiente, después del lanzamiento |
 | A5 | **Filtro de datos sensibles** al publicar pedidos y mensajes: bloquea o advierte si el texto parece contener claves de API, contraseñas o datos personales | Protege al dueño del agente y a la persona contratada | No | 📋 Planificado |
-| A6 | **Puntaje de fiabilidad consultable** por MCP y API (entregas a tiempo, disputas, reseñas), para reglas como "contratar si el puntaje es mayor a 0,85" | Permite a los agentes elegir proveedores por código | No (se calcula desde órdenes verificadas on-chain) | 📋 Planificado |
+| A6 | **Puntaje de fiabilidad consultable** por MCP y API (entregas a tiempo, disputas, reseñas), para reglas como "contratar si el puntaje es mayor a 0,85" | Permite a los agentes elegir proveedores por código | No (se calcula desde órdenes verificadas on-chain) | ⏭️ Siguiente, después del lanzamiento |
 | A7 | **Opción de que el comprador cubra la comisión**: el precio publicado llega íntegro al vendedor y el comprador paga el 3% encima | Atrae especialistas: cobran exactamente lo anunciado | No: el comprador fondea el precio dividido por 0,97 | 📋 A evaluar |
 | A8 | **Pagos x402** para compras empaquetadas (datasets curados, plantillas) y para fondear órdenes respondiendo a un HTTP 402; operación sin gas con wallets de agente en Base | Es el estándar de pago que más usan los agentes en Base | No para fondear; sin gas requiere un paymaster (costo de gas a cubrir) | 📋 A evaluar |
 | A9 | **Fianza para abrir disputas** (monto fijo o porcentaje de la orden) que se devuelve a quien gana y remunera el arbitraje | Evita disputas abusivas y financia el arbitraje | Sí: parte del módulo de disputas D2 | 📋 Con D2 |
 | A10 | **Descuentos por volumen** para clientes de alto volumen | Retención de laboratorios de IA | Sí: hoy el 3% es fijo en el contrato por diseño | 📋 A evaluar, sin romper la promesa del 3% fijo |
 | A11 | **Guía para cobrar en moneda local**: cómo convertir USDC a pesos, reales u otras monedas con servicios de terceros, sin integrar pasarelas | Baja la barrera de entrada para especialistas de Latinoamérica y otras regiones | No | 📋 Planificado |
 | A12 | **Descubrimiento estándar para agentes**: `skill.md` y agent card A2A (`/.well-known/agent-card.json`) además de `llms.txt` y el MCP | Otros catálogos de agentes en Base ya los publican; permite que un agente encuentre y use Mercadopleis sin intervención humana | No | 📋 Siguiente |
+
+
+### 🎯 Después del lanzamiento (desde el 20 de octubre de 2026)
+
+**Métrica principal:** órdenes completadas en el escrow de Base Mainnet por compradores que no sean el operador. **Meta a 30 días:** 10 órdenes y al menos un comprador que vuelva a contratar. Métricas secundarias: solicitudes publicadas, propuestas recibidas, órdenes fondeadas y compradores que repiten.
+
+Próximo trabajo técnico, en este orden y solo si no frena la distribución:
+
+| # | Tarea | Por qué | Estado |
+|---|---|---|---|
+| L1 | **Desplegar el rechazo de entregables vacíos** (ya en `main`) | Hoy, en producción, una entrega vacía registra on-chain el SHA-256 de un archivo vacío | ⏭️ En el próximo deploy |
+| L2 | **Reputación en el MCP** (A6): órdenes completadas, puntuación y entregas a tiempo en `search_services` y `compare_services` | Un agente no puede elegir proveedores por reputación: `compare_services` hoy no la incluye | ⏭️ Siguiente |
+| L3 | **Límites de gasto para agentes** (A4) | Sin topes, un equipo no le da una wallet a un agente | ⏭️ Siguiente |
+| L4 | **Evaluar la migración del SDK de MCP de v1 a v2** (`@modelcontextprotocol/sdk` 1.x → `@modelcontextprotocol/server` 2.x) | La 1.x sigue mantenida; migrar solo con pruebas completas de las 16 herramientas | 📋 A evaluar |
+
+**Fuera de alcance hasta tener demanda real:** otras cadenas (Solana, Polygon, Arbitrum), token propio, gobernanza o DAO, Mini App y Farcaster, Kleros, contratos nuevos y reputación en NFT. La pregunta que hay que responder primero es si un desconocido le paga a otro desconocido por una tarea humana que nace, directa o indirectamente, de una IA.
 
 ---
 
