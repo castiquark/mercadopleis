@@ -1,4 +1,5 @@
 import { CreateServiceInput, ServiceDeliveryType } from '@mercadopleis/types';
+import type { NotifyEvent } from './notify/messages';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -511,6 +512,18 @@ export interface ActivitySummary {
     contractOrderId?: number | null;
     chainId?: number;
   }[];
+  /** Latest notifications received (newest first); `event` renders with notifyText() in the reader's language. */
+  notifications?: { id: string; event: NotifyEvent; createdAt: string; read: boolean }[];
+  unreadNotifications?: number;
+}
+
+/** Marks every notification as read (the bell was opened). */
+export async function markNotificationsRead(token: string): Promise<void> {
+  try {
+    await fetch(`${API_URL}/me/notifications/read`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+  } catch {
+    // Not critical: they stay unread until the next try.
+  }
 }
 
 /** What needs the signed-in user's attention (header menu). Returns null when signed out or on errors. */

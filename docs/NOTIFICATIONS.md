@@ -20,11 +20,13 @@ Notifications never include message contents or deliverables, only what happened
 
 Each notification has a key (for example `order_delivered:<orderId>:buyer`) stored in `notification_log`, so an event seen by both the API and the on-chain indexer is sent once. The indexer only notifies on a real status change, so re-scanning old blocks does not announce past events. Orders on Base Sepolia are marked "(testnet)".
 
+Every notification is also stored per recipient in `notifications` and listed under "Recent notifications" in the header bell, whether or not the person enabled push or Telegram. It stores the event, not the text, so it renders in the reader's current language. Opening the bell marks them as read; rows older than 90 days are pruned.
+
 Code: `apps/web/src/lib/notify/` (texts in `messages.ts`, channels in `webpush.ts` and `telegram.ts`, bot commands in `bot.ts`).
 
 ## Setup
 
-1. **Database.** Apply `packages/database/drizzle/manual/0007_notifications.sql` before deploying the code.
+1. **Database.** Apply `packages/database/drizzle/manual/0007_notifications.sql` and `0008_notification_history.sql` before deploying the code.
 
 2. **Browser notifications.** Generate a key pair once and keep the private key secret:
 

@@ -1,6 +1,7 @@
-// Sends a notification to some users through every channel they enabled (browser push, Telegram).
+// Records a notification in each user's history (header bell) and sends it through every channel they enabled
+// (browser push, Telegram).
 // Never throws: a failed notification must not fail the request that triggered it.
-import { db, pushSubscriptions, telegramLinks, notificationLog, services, users } from '@mercadopleis/database';
+import { db, pushSubscriptions, telegramLinks, notificationLog, notifications, services, users } from '@mercadopleis/database';
 import type { InferSelectModel } from 'drizzle-orm';
 import { and, eq, inArray, lt } from 'drizzle-orm';
 import { asLang, notifyText, type NotifyEvent } from './messages';
@@ -17,13 +18,18 @@ const TIMEOUT_MS = 5000;
  */
 export async function notify(userIds: (string | null | undefined)[], event: NotifyEvent, key: string): Promise<void> {
   const ids = [...new Set(userIds.filter((x): x is string => Boolean(x)))];
-  if (!ids.length || (!pushConfigured() && !telegramConfigured())) return;
+  if (!ids.length) return;
   try {
     const fresh = await db.insert(notificationLog).values({ key: key.slice(0, 200) }).onConflictDoNothing().returning();
     if (!fresh.length) return;
+    // History for the header bell, whatever channels the user enabled.
+    await db.insert(notifications).values(ids.map((userId) => ({ userId, event })));
     if (Math.random() < 0.02) {
-      await db.delete(notificationLog).where(lt(notificationLog.createdAt, new Date(Date.now() - 90 * 86400_000)));
+      const cutoff = new Date(Date.now() - 90 * 86400_000);
+      await db.delete(notificationLog).where(lt(notificationLog.createdAt, cutoff));
+      await db.delete(notifications).where(lt(notifications.createdAt, cutoff));
     }
+    if (!pushConfigured() && !telegramConfigured()) return;
 
     const [subs, links]: [InferSelectModel<typeof pushSubscriptions>[], InferSelectModel<typeof telegramLinks>[]] = await Promise.all([
       pushConfigured() ? db.select().from(pushSubscriptions).where(inArray(pushSubscriptions.userId, ids)) : [],

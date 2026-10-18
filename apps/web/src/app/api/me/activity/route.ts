@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 const rowsOf = (res: any): any[] => (Array.isArray(res) ? res : res?.rows ?? []);
 
 // What needs the signed-in user's attention: orders to deliver, review or claim, disputes, unread messages and
-// proposals on their open requests. Polled by the header, so it is a few small indexed queries.
+// proposals on their open requests, plus the latest notifications they received (history in the bell).
+// Polled by the header, so it is a few small indexed queries.
 export async function GET(request: NextRequest) {
   const authUser = getAuthUserFromRequest(request);
   if (!authUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const me = authUser.id;
-    const [orderRes, unreadRes, proposalRes, disputeRes] = await Promise.all([
+    const [orderRes, unreadRes, proposalRes, disputeRes, historyRes, unseenRes] = await Promise.all([
       db.execute(sql`
         SELECT o.id, o.contract_order_id, o.chain_id, o.status, o.auto_release_deadline, o.buyer_id, o.seller_id, s.title
         FROM orders o JOIN services s ON s.id = o.service_id
@@ -52,6 +53,11 @@ export async function GET(request: NextRequest) {
       authUser.role === 'ADMIN'
         ? db.execute(sql`SELECT count(*) AS n FROM disputes WHERE status = 'OPEN'`)
         : Promise.resolve([{ n: 0 }]),
+      db.execute(sql`
+        SELECT id, event, created_at, read_at FROM notifications
+        WHERE user_id = ${me} ORDER BY created_at DESC LIMIT 15
+      `),
+      db.execute(sql`SELECT count(*) AS n FROM notifications WHERE user_id = ${me} AND read_at IS NULL`),
     ]);
 
     const activity = buildActivity(
@@ -62,7 +68,17 @@ export async function GET(request: NextRequest) {
       Number(rowsOf(disputeRes)[0]?.n ?? 0),
       Math.floor(Date.now() / 1000)
     );
-    return NextResponse.json(activity, { headers: { 'Cache-Control': 'no-store' } });
+    const notifications = rowsOf(historyRes).map((r) => ({
+      id: r.id as string,
+      event: r.event,
+      createdAt: new Date(r.created_at).toISOString(),
+      read: r.read_at != null,
+    }));
+    const unreadNotifications = Number(rowsOf(unseenRes)[0]?.n ?? 0);
+    return NextResponse.json(
+      { ...activity, total: activity.total + unreadNotifications, notifications, unreadNotifications },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
   } catch (error) {
     console.error('Activity error:', error);
     return NextResponse.json({ error: 'Could not load activity' }, { status: 500 });

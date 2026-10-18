@@ -6,7 +6,8 @@ import { usePathname } from 'next/navigation';
 import { Bell } from 'lucide-react';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/lib/languageContext';
-import { fetchActivity, type ActivitySummary } from '@/lib/api';
+import { fetchActivity, markNotificationsRead, type ActivitySummary } from '@/lib/api';
+import { notifyText } from '@/lib/notify/messages';
 
 const POLL_MS = 60_000;
 
@@ -22,13 +23,24 @@ const LABELS: Record<Kind, { es: (n: number) => string; en: (n: number) => strin
   admin_disputes: { es: (n) => (n === 1 ? '1 disputa abierta por resolver' : `${n} disputas abiertas por resolver`), en: (n) => (n === 1 ? '1 open dispute to resolve' : `${n} open disputes to resolve`), pt: (n) => (n === 1 ? '1 disputa aberta para resolver' : `${n} disputas abertas para resolver`) },
 };
 
-/** Bell in the header with what needs the signed-in user's attention. Polls while the tab is visible. */
+function timeAgo(iso: string, lang: 'es' | 'en' | 'pt') {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  const rtf = new Intl.RelativeTimeFormat(lang === 'pt' ? 'pt-BR' : lang, { numeric: 'auto' });
+  if (s < 60) return rtf.format(0, 'second');
+  if (s < 3600) return rtf.format(-Math.floor(s / 60), 'minute');
+  if (s < 86400) return rtf.format(-Math.floor(s / 3600), 'hour');
+  return rtf.format(-Math.floor(s / 86400), 'day');
+}
+
+/** Bell in the header with what needs the signed-in user's attention and the latest notifications. Polls while the
+ * tab is visible; opening it marks the notifications as read (the unread ones keep their dot until it closes). */
 export function ActivityMenu() {
   const { token, isAuthenticated } = useAuth();
   const { language, L } = useLanguage();
   const pathname = usePathname();
   const [activity, setActivity] = useState<ActivitySummary | null>(null);
   const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState<Set<string>>(new Set());
   const ref = useRef<HTMLDivElement>(null);
 
   const refresh = useCallback(async () => {
@@ -75,7 +87,16 @@ export function ActivityMenu() {
         type="button"
         onClick={() => {
           setOpen((v) => !v);
-          if (!open) refresh();
+          if (open) return;
+          refresh();
+          const unread = (activity?.notifications ?? []).filter((n) => !n.read).map((n) => n.id);
+          setHighlight(new Set(unread));
+          if (token && (activity?.unreadNotifications ?? 0) > 0) {
+            markNotificationsRead(token);
+            setActivity((a) =>
+              a ? { ...a, total: a.total - (a.unreadNotifications ?? 0), unreadNotifications: 0, notifications: a.notifications?.map((n) => ({ ...n, read: true })) } : a
+            );
+          }
         }}
         aria-label={total > 0 ? `${label}: ${total}` : label}
         aria-expanded={open}
@@ -91,12 +112,12 @@ export function ActivityMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-surface shadow-2xl">
+        <div className="absolute right-0 z-50 mt-2 max-h-[75vh] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-border bg-surface shadow-2xl">
           <div className="border-b border-border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
             {L('Requiere tu atención', 'Needs your attention', 'Precisa da sua atenção')}
           </div>
           {activity && activity.items.length > 0 ? (
-            <ul className="max-h-[60vh] overflow-y-auto">
+            <ul>
               {activity.items.map((item, i) => (
                 <li key={`${item.kind}-${item.href}-${i}`}>
                   <Link
@@ -117,6 +138,35 @@ export function ActivityMenu() {
             </ul>
           ) : (
             <p className="px-4 py-6 text-center text-sm text-slate-400">{L('No tienes nada pendiente.', "You're all caught up.", 'Você não tem nada pendente.')}</p>
+          )}
+          {activity?.notifications && activity.notifications.length > 0 && (
+            <>
+              <div className="border-y border-border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                {L('Avisos recientes', 'Recent notifications', 'Avisos recentes')}
+              </div>
+              <ul>
+                {activity.notifications.map((n) => {
+                  const text = notifyText(n.event, language);
+                  const isNew = highlight.has(n.id);
+                  return (
+                    <li key={n.id}>
+                      <Link
+                        href={text.path}
+                        onClick={() => setOpen(false)}
+                        className="flex gap-2.5 border-b border-border/60 px-4 py-3 text-sm transition last:border-0 hover:bg-surface-elevated"
+                      >
+                        <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${isNew ? 'bg-primary-light' : 'bg-transparent'}`} aria-hidden />
+                        <span className="min-w-0">
+                          <span className={`block ${isNew ? 'font-semibold text-white' : 'font-medium text-slate-200'}`}>{text.title}</span>
+                          <span className="mt-0.5 line-clamp-2 block text-xs text-slate-400">{text.body}</span>
+                          <span className="mt-0.5 block text-[11px] text-slate-500">{timeAgo(n.createdAt, language)}</span>
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )}
         </div>
       )}

@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, varchar, timestamp, bigint } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, varchar, timestamp, bigint, jsonb, index } from 'drizzle-orm/pg-core';
 import { users } from './users';
 
 // Browser push subscriptions (Web Push). One row per browser; a user can have several.
@@ -34,3 +34,17 @@ export const notificationLog = pgTable('notification_log', {
   key: varchar('key', { length: 200 }).primaryKey(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// History of the notifications each user received, shown in the header bell. Stores the event (not the text) so it
+// renders in whatever language the reader uses now. Written for every notification, even without push or Telegram.
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+    event: jsonb('event').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    readAt: timestamp('read_at', { withTimezone: true }),
+  },
+  (table) => [index('notifications_user_created_idx').on(table.userId, table.createdAt)]
+);
