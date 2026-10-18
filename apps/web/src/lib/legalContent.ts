@@ -9,9 +9,9 @@ export const LEGAL = {
   contactEmail: 'hello@mercadopleis.club',
   securityEmail: 'security@mercadopleis.club',
   escrowAddress: ESCROW_ADDRESSES[8453] as string,
-  updatedEs: '3 de octubre de 2026',
-  updatedEn: 'October 3, 2026',
-  updatedPt: '3 de outubro de 2026',
+  updatedEs: '17 de octubre de 2026',
+  updatedEn: 'October 17, 2026',
+  updatedPt: '17 de outubro de 2026',
   /** Set to the governing-law / courts clause once the operator decides it, e.g. { es: '...', en: '...', pt: '...' }. */
   jurisdiction: null as null | { es: string; en: string; pt: string },
 };
@@ -299,6 +299,7 @@ export const PRIVACY: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
           'Perfil: nombre a mostrar, biografía, país y avatar, solo si los completas. Son públicos en tus servicios.',
           'Actividad: servicios que publicas, órdenes (identificadores, montos, estados, hashes y transacciones), reseñas, disputas con su motivo y evidencia, y mensajes dentro de cada orden.',
           'Archivos: los entregables que subes se almacenan de forma privada y solo los descargan el comprador, el vendedor y el árbitro mediante enlaces firmados de corta duración.',
+          'Notificaciones: solo si las activas, guardamos la suscripción de tu navegador (la dirección de su servicio de avisos y sus claves) o el identificador de tu chat de Telegram, junto con el idioma. Los avisos no incluyen el contenido de los mensajes. Puedes desactivarlas cuando quieras desde tu perfil.',
           'Datos técnicos: dirección IP y cabeceras de las solicitudes, usadas para seguridad y para limitar abusos. Los contadores de límite de peticiones se conservan unas horas.',
         ],
       },
@@ -318,7 +319,7 @@ export const PRIVACY: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
       {
         title: '4. Con quién compartimos datos',
         paragraphs: [
-          'Proveedores que nos prestan servicios: Netlify (alojamiento), Neon (base de datos y almacenamiento de archivos), Google (analítica, solo con tu consentimiento), WalletConnect/Reown y RainbowKit (conexión de wallets) y proveedores de nodos RPC de Base, que reciben tu IP cuando tu navegador consulta la blockchain. Algunos operan en Estados Unidos u otros países.',
+          'Proveedores que nos prestan servicios: Netlify (alojamiento), Neon (base de datos y almacenamiento de archivos), Google (analítica, solo con tu consentimiento), WalletConnect/Reown y RainbowKit (conexión de wallets), el servicio de avisos de tu navegador (de Google, Mozilla, Apple o Microsoft) y Telegram, solo si activas esas notificaciones, y proveedores de nodos RPC de Base, que reciben tu IP cuando tu navegador consulta la blockchain. Algunos operan en Estados Unidos u otros países.',
           'No vendemos tus datos.',
         ],
       },
@@ -359,6 +360,7 @@ export const PRIVACY: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
           'Profile: display name, bio, country and avatar, only if you fill them in. They are public on your listings.',
           'Activity: services you publish, orders (identifiers, amounts, statuses, hashes and transactions), reviews, disputes with their reason and evidence, and messages inside each order.',
           'Files: deliverables you upload are stored privately and can only be downloaded by the buyer, the seller and the arbitrator through short-lived signed links.',
+          'Notifications: only if you turn them on, we store your browser subscription (the address of its push service and its keys) or your Telegram chat ID, plus the language. Notifications never include message contents. You can turn them off at any time from your profile.',
           'Technical data: IP address and request headers, used for security and to limit abuse. Rate-limit counters are kept for a few hours.',
         ],
       },
@@ -378,7 +380,7 @@ export const PRIVACY: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
       {
         title: '4. Who we share data with',
         paragraphs: [
-          'Service providers: Netlify (hosting), Neon (database and file storage), Google (analytics, only with your consent), WalletConnect/Reown and RainbowKit (wallet connection) and Base RPC node providers, which receive your IP when your browser queries the blockchain. Some operate in the United States or other countries.',
+          'Service providers: Netlify (hosting), Neon (database and file storage), Google (analytics, only with your consent), WalletConnect/Reown and RainbowKit (wallet connection), the push service of your browser (run by Google, Mozilla, Apple or Microsoft) and Telegram, only if you turn those notifications on, and Base RPC node providers, which receive your IP when your browser queries the blockchain. Some operate in the United States or other countries.',
           'We do not sell your data.',
         ],
       },
@@ -419,6 +421,7 @@ export const PRIVACY: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
           'Perfil: nome de exibição, biografia, país e avatar, caso decida preenchê-los. Essas informações são públicas nos seus serviços.',
           'Atividade: serviços que você publica, pedidos (identificadores, valores, status, hashes e transações), avaliações, disputas com motivo e provas, e mensagens trocadas dentro de cada pedido.',
           'Arquivos: entregáveis enviados são armazenados de forma privada e só podem ser baixados por comprador, vendedor e árbitro por meio de links assinados de curta duração.',
+          'Notificações: somente se você ativá-las, guardamos a assinatura do seu navegador (o endereço do serviço de avisos dele e suas chaves) ou o identificador do seu chat do Telegram, junto com o idioma. Os avisos não incluem o conteúdo das mensagens. Você pode desativá-las quando quiser no seu perfil.',
           'Dados técnicos: endereço IP e cabeçalhos de requisição, utilizados para segurança e controle de abusos. Contadores de limite de requisições são retidos por algumas horas.',
         ],
       },
@@ -438,7 +441,7 @@ export const PRIVACY: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
       {
         title: '4. Com quem compartilhamos dados',
         paragraphs: [
-          'Prestadores de serviços essenciais: Netlify (hospedagem), Neon (banco de dados e armazenamento de arquivos), Google (análise, somente com seu consentimento), WalletConnect/Reown e RainbowKit (conexão de carteiras) e provedores de nós RPC da Base, que recebem seu IP quando o navegador consulta a blockchain. Alguns operam nos Estados Unidos ou em outros países.',
+          'Prestadores de serviços essenciais: Netlify (hospedagem), Neon (banco de dados e armazenamento de arquivos), Google (análise, somente com seu consentimento), WalletConnect/Reown e RainbowKit (conexão de carteiras), o serviço de avisos do seu navegador (do Google, Mozilla, Apple ou Microsoft) e o Telegram, somente se você ativar essas notificações, e provedores de nós RPC da Base, que recebem seu IP quando o navegador consulta a blockchain. Alguns operam nos Estados Unidos ou em outros países.',
           'Não vendemos seus dados pessoais.',
         ],
       },

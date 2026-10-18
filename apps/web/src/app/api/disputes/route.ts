@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, disputes, orders } from '@mercadopleis/database';
 import { eq, desc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { notifyOrder, counterpart } from '@/lib/notify';
 import { LIMITS, isSafeHttpUrl } from '@/lib/validation';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { createPublicClient, http, parseEventLogs } from 'viem';
@@ -193,6 +194,8 @@ export async function POST(request: NextRequest) {
       .update(orders)
       .set({ status: 'DISPUTED', updatedAt: new Date() })
       .where(eq(orders.id, orderId));
+
+    await notifyOrder(order, 'dispute_opened', [counterpart(order, authUser.id), 'admins']);
 
     return NextResponse.json({ dispute: newDispute }, { status: 201 });
   } catch (error: any) {

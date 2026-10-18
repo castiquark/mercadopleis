@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, orders, orderMessages, orderReads } from '@mercadopleis/database';
 import { eq, asc } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { notifyMessage } from '@/lib/notify';
 import { validateMessage } from '@/lib/validation';
 import { enforceRateLimit } from '@/lib/rateLimit';
 
@@ -120,6 +121,8 @@ export async function POST(
         content: content.trim(),
       })
       .returning();
+
+    await notifyMessage(order, authUser.id);
 
     const fullMessage = await db.query.orderMessages.findFirst({
       where: eq(orderMessages.id, newMessage.id),

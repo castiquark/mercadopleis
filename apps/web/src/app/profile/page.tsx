@@ -6,6 +6,7 @@ import { useAccount } from 'wagmi';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/lib/languageContext';
 import { fetchMyOrders } from '@/lib/api';
+import { NotificationSettings } from '@/components/NotificationSettings';
 import { EMPTY_STATS, computeStats, type ReputationStats } from '@/lib/reputation';
 import {
   UserCheck,
@@ -303,6 +304,8 @@ export default function ProfilePage() {
           )}
         </form>
       </div>
+
+      {isAuthenticated && <NotificationSettings token={token} />}
     </div>
   );
 }

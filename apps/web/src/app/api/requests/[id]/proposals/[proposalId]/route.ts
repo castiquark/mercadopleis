@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, requestProposals, requests, services, users } from '@mercadopleis/database';
 import { and, eq, ne } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { notify } from '@/lib/notify';
 import { servicesFromProposal } from '@/lib/requests';
 import { findRequest } from '@/lib/requestsDb';
 
@@ -69,6 +70,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     });
 
     if (!result) return NextResponse.json({ error: 'This request was already awarded' }, { status: 409 });
+
+    await notify([proposal.sellerId], { type: 'proposal_accepted', slug: found.slug, title: found.title }, `proposal_accepted:${proposal.id}`);
 
     return NextResponse.json({
       accepted: true,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, orders, services } from '@mercadopleis/database';
 import { and, eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { notifyOrder } from '@/lib/notify';
 import { calculateOrderAmounts, MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { createPublicClient, http, parseEventLogs, parseUnits } from 'viem';
@@ -216,6 +217,8 @@ export async function POST(request: NextRequest) {
         deadlineTimestamp: verification.deadline,
       })
       .returning();
+
+    await notifyOrder(newOrder, 'order_funded', ['seller']);
 
     return NextResponse.json(
       {

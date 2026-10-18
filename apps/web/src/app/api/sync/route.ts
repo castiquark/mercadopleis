@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createPublicClient, http, parseEventLogs, formatUnits } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { db, orders, disputes, blockchainTransactions, users, services } from '@mercadopleis/database';
+import { notifyOrder, counterpart } from '@/lib/notify';
 import { and, eq, desc } from 'drizzle-orm';
 import { ESCROW_ADDRESSES, ESCROW_DEPLOY_BLOCKS, MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
 
@@ -200,6 +201,7 @@ export async function GET(request: NextRequest) {
             .returning();
 
           existing = createdOrder;
+          await notifyOrder(createdOrder, 'order_funded', ['seller']);
         } catch (orphanErr) {
           console.error(`Failed to reconcile orphaned OrderFunded #${orderId}:`, orphanErr);
         }
@@ -209,6 +211,7 @@ export async function GET(request: NextRequest) {
             .update(orders)
             .set({ status: 'FUNDED', txHashFunding: log.transactionHash, updatedAt: new Date() })
             .where(eq(orders.id, existing.id));
+          await notifyOrder(existing, 'order_funded', ['seller']);
         }
       }
 
@@ -237,6 +240,8 @@ export async function GET(request: NextRequest) {
           .update(orders)
           .set({ status: 'DELIVERED', deliveryHash, autoReleaseDeadline, deliveredAt: new Date(), updatedAt: new Date() })
           .where(eq(orders.id, existing.id));
+        // Notify only on a real transition: re-scans of old blocks must not announce past events.
+        if (existing.status === 'FUNDED') await notifyOrder(existing, 'order_delivered', ['buyer']);
 
         await db.insert(blockchainTransactions).values({
           orderId: existing.id,
@@ -260,6 +265,7 @@ export async function GET(request: NextRequest) {
           .update(orders)
           .set({ status: 'RELEASED', txHashRelease: log.transactionHash, releasedAt: new Date(), updatedAt: new Date() })
           .where(eq(orders.id, existing.id));
+        if (existing.status === 'DELIVERED') await notifyOrder(existing, 'order_released', ['seller']);
 
         await db.insert(blockchainTransactions).values({
           orderId: existing.id,
@@ -283,6 +289,7 @@ export async function GET(request: NextRequest) {
           .update(orders)
           .set({ status: 'REFUNDED', updatedAt: new Date() })
           .where(eq(orders.id, existing.id));
+        if (existing.status === 'FUNDED') await notifyOrder(existing, 'order_refunded', ['seller']);
 
         await db.insert(blockchainTransactions).values({
           orderId: existing.id,
@@ -309,6 +316,10 @@ export async function GET(request: NextRequest) {
           .update(orders)
           .set({ status: 'DISPUTED', updatedAt: new Date() })
           .where(eq(orders.id, existing.id));
+        if (existing.status === 'FUNDED' || existing.status === 'DELIVERED') {
+          const opener = await db.query.users.findFirst({ where: eq(users.walletAddress, openedByWallet), columns: { id: true } });
+          await notifyOrder(existing, 'dispute_opened', [...(opener ? [counterpart(existing, opener.id)] : (['buyer', 'seller'] as const)), 'admins']);
+        }
 
         // Check if dispute row exists
         const existingDispute = await db.query.disputes.findFirst({
@@ -372,6 +383,7 @@ export async function GET(request: NextRequest) {
           .update(orders)
           .set({ status: finalStatus, updatedAt: new Date() })
           .where(eq(orders.id, existing.id));
+        if (existing.status === 'DISPUTED') await notifyOrder(existing, 'dispute_resolved', ['buyer', 'seller']);
 
         await db
           .update(disputes)

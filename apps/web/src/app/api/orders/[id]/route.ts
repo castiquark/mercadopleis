@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, orders } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { notifyOrder } from '@/lib/notify';
 import { isSafeHttpUrl } from '@/lib/validation';
 import { isStorageRefOwnedBy } from '@/lib/storage';
 import { createPublicClient, http, parseEventLogs } from 'viem';
@@ -316,6 +317,11 @@ export async function PATCH(
       })
       .where(eq(orders.id, id))
       .returning();
+
+    if (targetStatus !== existingOrder.status) {
+      if (targetStatus === 'DELIVERED') await notifyOrder(updatedOrder, 'order_delivered', ['buyer']);
+      if (targetStatus === 'RELEASED') await notifyOrder(updatedOrder, 'order_released', ['seller']);
+    }
 
     return NextResponse.json({ order: updatedOrder });
   } catch (err: any) {

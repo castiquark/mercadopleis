@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, requestProposals } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { notify } from '@/lib/notify';
 import { validateProposalInput } from '@/lib/validation';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { findRequest } from '@/lib/requestsDb';
@@ -34,6 +35,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const [saved] = mine
       ? await db.update(requestProposals).set(values).where(eq(requestProposals.id, mine.id)).returning()
       : await db.insert(requestProposals).values({ ...values, requestId: found.id, sellerId: authUser.id }).returning();
+
+    // New proposals only; edits of a pending one do not notify again.
+    if (!mine) await notify([found.buyerId], { type: 'proposal_received', slug: found.slug, title: found.title }, `proposal_received:${saved.id}`);
 
     return NextResponse.json({ proposal: saved }, { status: mine ? 200 : 201 });
   } catch (err) {

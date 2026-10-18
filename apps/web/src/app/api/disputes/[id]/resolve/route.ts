@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, disputes, orders } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
+import { notifyOrder } from '@/lib/notify';
 import { createPublicClient, http, parseEventLogs, formatUnits } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
@@ -154,6 +155,8 @@ export async function POST(
         updatedAt: new Date(),
       })
       .where(eq(orders.id, dispute.orderId));
+
+    await notifyOrder(dispute.order, 'dispute_resolved', ['buyer', 'seller']);
 
     return NextResponse.json({
       dispute: updatedDispute,

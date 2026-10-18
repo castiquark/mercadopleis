@@ -19,6 +19,7 @@ export * from './rateLimits';
 export * from './authNonces';
 export * from './orderReads';
 export * from './requests';
+export * from './notifications';
 
 export const usersRelations = relations(users, ({ many }) => ({
   services: many(services),

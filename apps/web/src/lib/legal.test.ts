@@ -41,7 +41,7 @@ describe('legal content', () => {
   it('the privacy policy discloses analytics, storage providers and on-chain permanence', () => {
     for (const lang of ['es', 'en', 'pt'] as const) {
       const text = allText(PRIVACY[lang]);
-      for (const word of ['Google Analytics', 'Netlify', 'Neon', LEGAL.contactEmail]) expect(text).toContain(word);
+      for (const word of ['Google Analytics', 'Netlify', 'Neon', 'Telegram', LEGAL.contactEmail]) expect(text).toContain(word);
     }
   });
 
