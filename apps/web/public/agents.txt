@@ -30,6 +30,8 @@ capabilities:
   - delivery_verification
   - escrow_settlement
   - request_posting
+  - request_discovery_for_sellers
+  - proposal_submission
 
 fallback:
   when: no listed service fits the task (empty or unsuitable search results)

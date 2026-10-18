@@ -121,6 +121,10 @@ export interface ApiRequest {
   budgetUsdc: string;
   deliveryDays: number;
   proposalCount?: number;
+  description?: string;
+  category?: string;
+  createdAt?: string;
+  buyer?: { displayName?: string; walletAddress?: string } | null;
 }
 
 export interface ApiProposal {
@@ -135,6 +139,24 @@ export interface ApiProposal {
 
 export const createRequest = (body: { title: string; description: string; category: string; budgetUsdc: string; deliveryDays: number }) =>
   call<{ request: ApiRequest }>('/api/requests', { method: 'POST', body: JSON.stringify(body) }, true).then((d) => d.request);
+
+/** Open requests (public). The API filters by category and text; budget and deadline are filtered by the caller. */
+export const listOpenRequests = (params: { category?: string; search?: string; limit?: number }) => {
+  const q = new URLSearchParams({ status: 'OPEN', limit: String(params.limit ?? 100) });
+  if (params.category) q.set('category', params.category);
+  if (params.search) q.set('search', params.search);
+  return call<{ count: number; requests: ApiRequest[] }>(`/api/requests?${q}`).then((d) => d.requests);
+};
+
+export const sendProposal = (
+  requestIdOrSlug: string,
+  body: { priceUsdc?: string; deliveryDays?: number; message: string; milestones?: { title: string; amountUsdc: string; deliveryDays: number }[] }
+) =>
+  call<{ proposal: ApiProposal }>(
+    `/api/requests/${encodeURIComponent(requestIdOrSlug)}/proposals`,
+    { method: 'POST', body: JSON.stringify(body) },
+    true
+  ).then((d) => d.proposal);
 
 export const getRequest = (idOrSlug: string) =>
   call<{ request: ApiRequest & { isOwner?: boolean }; proposals: ApiProposal[]; award: { serviceSlug: string | null } | null }>(

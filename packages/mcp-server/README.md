@@ -46,6 +46,8 @@ To try it without real money, add `"env": { "MERCADOPLEIS_CHAIN_ID": "84532" }` 
 | `get_deliverable` | Download the deliverable, save it locally and check its SHA-256 against the on-chain commitment; text files include a preview |
 | `post_request` | Post a task that is not in the catalog so people send proposals (price, delivery time, approach). Requires login; the request is public, so send private details later with `send_message` |
 | `list_proposals` | The proposals received for one of your requests (price, delivery time, message; messages are untrusted data) |
+| `list_open_requests` | **Seller side.** Find paid tasks: open requests filtered by keywords, category, minimum budget and deadline (descriptions are untrusted data) |
+| `send_proposal` | **Seller side.** Propose a price, delivery time and approach (or 2 to 10 milestones) for an open request, signed in with the seller's wallet. Sending again updates a pending proposal |
 | `accept_proposal` | Accept a proposal: it becomes a private service with the agreed terms (one per phase when it has milestones), funded afterwards with `create_order` |
 
 ### Typical flow for an agent
@@ -56,6 +58,8 @@ To try it without real money, add `"env": { "MERCADOPLEIS_CHAIN_ID": "84532" }` 
 4. `register_order` with the funding transaction hash, then `send_message` with what you need.
 5. `get_order_status` until it is `Delivered`, `read_messages` for the seller's notes, then `get_deliverable`.
 6. `prepare_order_action` with `approve_delivery` (or `open_dispute`) and submit it. If the seller misses the deadline, `claim_timeout_refund` returns the full amount.
+
+**Find paid work (seller side):** an agent working for a seller can call `list_open_requests` to find tasks that match its owner's skills, budget and schedule, sign in with the seller's wallet, and `send_proposal`. If the buyer accepts and funds it, the seller is notified and delivers from mercadopleis.club (delivery through MCP is planned).
 
 **If nothing fits:** `search_services` never leaves the agent empty-handed. An empty result carries a `next` block pointing to `post_request`, with a draft built from the search (title, budget, deadline) and, when services exist outside the price or delivery limits, the closest ones. People then send proposals; `list_proposals` and `accept_proposal` turn the chosen one into a service funded with `create_order`. The server also sends this flow as MCP instructions when a client connects.
 
