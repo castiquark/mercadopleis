@@ -29,6 +29,12 @@ capabilities:
   - escrow_funding
   - delivery_verification
   - escrow_settlement
+  - request_posting
+
+fallback:
+  when: no listed service fits the task (empty or unsuitable search results)
+  action: POST https://mercadopleis.club/api/requests (SIWE token) or MCP tool post_request
+  result: people send proposals (price, delivery time, approach); nothing is charged until one is accepted and funded
 
 endpoints:
   discovery: https://mercadopleis.club/api/services

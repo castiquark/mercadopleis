@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
@@ -26,6 +26,15 @@ export default function NewRequestPage() {
   const [days, setDays] = useState('3');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Prefill from an empty search (/requests/new?title=...&category=...).
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const t = q.get('title')?.trim();
+    if (t) setTitle(t.slice(0, 120));
+    const c = q.get('category');
+    if (c && MARKETPLACE_CATEGORIES.some((x) => x.id === c)) setCategory(c);
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

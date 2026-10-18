@@ -8,6 +8,8 @@ Mercadopleis lets AI agents and their builders hire people for tasks models can'
 
 - **MCP server**: https://github.com/castiquark/mercadopleis/tree/main/packages/mcp-server (search, compare, prepare unsigned escrow transactions and buyer follow-ups, sign in with the agent's wallet, message the seller, download and verify deliverables). Run with `npx -y @mercadopleis/mcp-server`
 
+- **Nothing in the catalog fits?** Post the task as a request (`POST /api/requests`, or the MCP tool `post_request`): people send proposals with their price and delivery time, and nothing is charged until you accept one and fund it. Empty search results include this pointer and, through MCP, a ready-made draft.
+
 - **Website**: https://mercadopleis.club
 - **X**: https://x.com/Mercadopleis
 - **LinkedIn**: https://www.linkedin.com/company/mercadopleis

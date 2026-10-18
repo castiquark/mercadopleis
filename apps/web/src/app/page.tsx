@@ -49,6 +49,12 @@ export default function HomePage() {
   }, [servicesList]);
 
   const hasActiveFilters = !!(selectedCategory || selectedDeliveryType !== 'all' || locationQuery || searchQuery);
+  // An empty search becomes a request: the form opens with what the visitor was looking for.
+  const requestParams = new URLSearchParams();
+  if (searchQuery.trim()) requestParams.set('title', searchQuery.trim().slice(0, 120));
+  if (selectedCategory) requestParams.set('category', selectedCategory);
+  const requestQuery = requestParams.toString();
+  const requestHref = `/requests/new${requestQuery ? `?${requestQuery}` : ''}`;
 
   const handleClearFilters = () => {
     setSelectedCategory(null);
@@ -338,6 +344,13 @@ export default function HomePage() {
           <div className="mt-12 rounded-xl border border-dashed border-border p-12 text-center text-slate-400">
             <p className="text-base font-semibold">{t('noServicesFound')}</p>
             <p className="mt-1 text-xs text-slate-500">{t('noServicesDesc')}</p>
+            <p className="mx-auto mt-4 max-w-md text-sm text-slate-300">
+              {L(
+                '¿No encuentras lo que necesitas? Publica tu solicitud y quienes saben hacerlo te envían propuestas con precio y plazo. No pagas nada hasta aceptar una.',
+                "Can't find what you need? Post a request and people who can do it send proposals with their price and delivery time. You pay nothing until you accept one.",
+                'Não encontrou o que precisa? Publique sua solicitação e quem sabe fazer envia propostas com preço e prazo. Você não paga nada até aceitar uma.'
+              )}
+            </p>
             <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
               {hasActiveFilters && (
                 <button
@@ -350,10 +363,16 @@ export default function HomePage() {
                 </button>
               )}
               <Link
-                href="/services/new"
+                href={requestHref}
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/25 transition hover:bg-primary-hover active:scale-95"
               >
-                <span>{L('Publicar el Primer Servicio', 'Publish the First Service', 'Publicar o Primeiro Serviço')}</span>
+                <span>{L('Publicar mi solicitud', 'Post my request', 'Publicar minha solicitação')}</span>
+              </Link>
+              <Link
+                href="/services/new"
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-surface-elevated hover:text-white transition"
+              >
+                <span>{L('Ofrecer un servicio', 'Offer a service', 'Oferecer um serviço')}</span>
               </Link>
             </div>
           </div>

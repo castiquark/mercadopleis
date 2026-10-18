@@ -179,6 +179,17 @@ export async function GET(request: NextRequest) {
         },
         count: formattedServices.length,
         services: formattedServices || [],
+        // Agents that find nothing usable should not leave empty-handed: they can post the task as a request.
+        ifNothingFits: {
+          action: 'POST /api/requests',
+          url: 'https://mercadopleis.club/api/requests',
+          body: '{ title, description, category, budgetUsdc, deliveryDays } with a SIWE token; people send proposals and nothing is charged until one is accepted and funded',
+          docs: 'https://mercadopleis.club/llms-full.txt',
+          mcp: 'post_request (npx -y @mercadopleis/mcp-server)',
+        },
+        ...(formattedServices.length === 0 && offset === 0
+          ? { hint: 'No listed service matches. Post the task as a request (see ifNothingFits) so people send proposals with their price and delivery time.' }
+          : {}),
       },
       { headers: CORS_HEADERS }
     );

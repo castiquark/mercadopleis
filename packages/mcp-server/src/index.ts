@@ -9,6 +9,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { fetchService, fetchServices, type Service } from './api.js';
+import { SERVER_INSTRUCTIONS, searchNext } from './hints.js';
 import {
   ApiError,
   acceptProposal,
@@ -32,7 +33,7 @@ import { BUILDER_DATA_SUFFIX, CHAIN_ID, ORDER_STATUS, erc20Abi, escrowAbi, getNe
 // package.json sits next to src/ and dist/, so this works both in development and when installed from npm.
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
 
-const server = new McpServer({ name: 'mercadopleis', version });
+const server = new McpServer({ name: 'mercadopleis', version }, { instructions: SERVER_INSTRUCTIONS });
 
 // Titles and descriptions are written by sellers and are not vetted by the marketplace.
 const UNTRUSTED_NOTICE =
@@ -81,7 +82,7 @@ server.registerTool(
   'search_services',
   {
     description:
-      'Search Mercadopleis for people who can do work you cannot finish alone (data curation, red-teaming, scraping, automations, transcription), priced in USD stablecoins (USDC on Base). Filter by capability keywords (e.g. "spanish audio transcription"), price and delivery time.',
+      'Search Mercadopleis for people who can do work you cannot finish alone (data curation, red-teaming, scraping, automations, transcription), priced in USD stablecoins (USDC on Base). Filter by capability keywords (e.g. "spanish audio transcription"), price and delivery time. If nothing fits, post_request lets people come to you with proposals; an empty result includes a ready-made draft.',
     inputSchema: {
       capability: z.string().optional().describe('Capability keywords, e.g. "web-scraping" or "spanish-audio-transcription"'),
       maxPriceUsdc: z.number().positive().optional(),
@@ -92,7 +93,20 @@ server.registerTool(
   },
   async ({ capability, maxPriceUsdc, maxDeliveryDays, category, limit }) => {
     const services = await fetchServices({ capability, maxPrice: maxPriceUsdc, maxDeliveryDays, category, limit });
-    return json({ count: services.length, services: services.map(summarize) });
+    // Nothing within the price or delivery limits: look for services that match the capability outside them.
+    const nearMisses =
+      services.length === 0 && (maxPriceUsdc !== undefined || maxDeliveryDays !== undefined)
+        ? (await fetchServices({ capability, category, limit: 10 })).map((s) => {
+            const x = summarize(s);
+            return { slug: x.slug, title: x.title, priceUsdc: x.priceUsdc, deliveryDays: x.deliveryDays };
+          })
+        : [];
+    const criteria = { capability, category, maxPriceUsdc, maxDeliveryDays };
+    return json({
+      count: services.length,
+      services: services.map(summarize),
+      next: searchNext(criteria, services.length, nearMisses, currentSession() !== null),
+    });
   },
 );
 
@@ -117,7 +131,7 @@ server.registerTool(
   'compare_services',
   {
     description:
-      'Compare candidate services for a capability by price and delivery time, cheapest first. Reputation is not included yet (new marketplace).',
+      'Compare candidate services for a capability by price and delivery time, cheapest first. Reputation is not included yet (new marketplace). If no candidate fits, post_request lets people come to you with proposals.',
     inputSchema: { capability: z.string(), limit: z.number().int().min(1).max(20).default(5) },
   },
   async ({ capability, limit }) => {
@@ -126,7 +140,7 @@ server.registerTool(
       .map(summarize)
       .sort((a, b) => Number(a.priceUsdc) - Number(b.priceUsdc) || a.deliveryDays - b.deliveryDays)
       .slice(0, limit);
-    return json({ capability, candidates: ranked });
+    return json({ capability, candidates: ranked, next: searchNext({ capability }, ranked.length, [], currentSession() !== null) });
   },
 );
 
@@ -532,7 +546,7 @@ server.registerTool(
   'post_request',
   {
     description:
-      'Post a task that is not in the catalog so people can send proposals (price, delivery time, approach). Requires login. The request is public: do not include secrets or private data; send those later with send_message to the chosen seller.',
+      'Post a task that is not in the catalog so people can send proposals (price, delivery time, approach). Use it when search_services finds nothing that fits; its result includes a draft. Requires login. The request is public: do not include secrets or private data; send those later with send_message to the chosen seller.',
     inputSchema: {
       title: z.string().min(1).max(120),
       description: z.string().min(1).max(5000).describe('Input you provide, expected output and format, quality criteria'),
