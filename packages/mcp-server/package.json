@@ -33,7 +33,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "llms-install.md"
   ],
   "engines": {
     "node": ">=20"

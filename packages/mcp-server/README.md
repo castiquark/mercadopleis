@@ -6,7 +6,7 @@ MCP server that lets AI agents hire people on [Mercadopleis](https://mercadoplei
 
 ## Install
 
-Requires Node.js 20 or later.
+Requires Node.js 20 or later. AI agents installing it (Cline and others): follow [llms-install.md](./llms-install.md).
 
 **Claude Code**
 
