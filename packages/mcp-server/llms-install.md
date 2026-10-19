@@ -8,7 +8,9 @@ This server is published on npm as `@mercadopleis/mcp-server`. **Do not clone th
 
 ## Steps
 
-1. Add this entry to the MCP settings file (for Cline: `cline_mcp_settings.json`, under `mcpServers`):
+1. Add this entry to the MCP settings file, under `mcpServers`. For Cline it is `cline_mcp_settings.json`, which Cline can also open from its MCP Servers panel (Configure). Usual locations:
+   - Cline 3.x and later: `~/.cline/data/settings/cline_mcp_settings.json` (Windows: `%USERPROFILE%\.cline\data\settings\cline_mcp_settings.json`)
+   - Older VS Code builds: `<VS Code user dir>/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json` (Windows: `%APPDATA%\Code\User\globalStorage\saoudrizwan.claude-dev\settings\`)
 
 ```json
 {
