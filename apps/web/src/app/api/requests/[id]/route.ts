@@ -2,13 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, requests, services } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
-import { visibleProposals } from '@/lib/requests';
-import { findRequest, phasesOfProposal } from '@/lib/requestsDb';
+import { findRequest, phasesOfProposal, requestDetail } from '@/lib/requestsDb';
 
-/**
- * Request detail. Everyone sees the request and how many proposals it has; the buyer sees every proposal,
- * a seller only their own. After acceptance, the buyer and the chosen seller get the service to fund.
- */
+/** Request detail, as much as the viewer may see (see requestDetail). */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const viewer = getAuthUserFromRequest(request);
   try {
@@ -16,24 +12,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const found = await findRequest(id);
     if (!found) return NextResponse.json({ error: 'Request not found' }, { status: 404 });
 
-    const { proposals, ...rest } = found as any;
-    const visible = visibleProposals(found, proposals, viewer ? { id: viewer.id, role: viewer.role } : null);
-    const awarded = proposals.find((p: any) => p.id === found.awardedProposalId);
-    const canSeeAward = !!viewer && !!awarded && (viewer.id === found.buyerId || viewer.id === awarded.sellerId);
-
-    const phases = canSeeAward ? await phasesOfProposal(awarded.id, found.buyerId) : [];
-
-    return NextResponse.json({
-      request: {
-        ...rest,
-        proposalCount: proposals.length,
-        isOwner: viewer?.id === found.buyerId,
-      },
-      proposals: visible,
-      award: canSeeAward
-        ? { proposalId: awarded.id, serviceSlug: phases[0]?.serviceSlug ?? null, order: phases[0]?.order ?? null, phases }
-        : null,
-    });
+    return NextResponse.json(await requestDetail(found, viewer ? { id: viewer.id, role: viewer.role } : null));
   } catch (err) {
     console.error('Error fetching request:', err);
     return NextResponse.json({ error: 'Failed to fetch request' }, { status: 500 });

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, services } from '@mercadopleis/database';
-import { eq } from 'drizzle-orm';
+import { findPublicService } from '@/lib/servicesDb';
 import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 
 const CORS_HEADERS = {
@@ -22,28 +21,7 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const service = await db.query.services.findFirst({
-      where: eq(services.slug, slug),
-      with: {
-        seller: {
-          columns: {
-            id: true,
-            walletAddress: true,
-            smartAccountAddress: true,
-            displayName: true,
-            username: true,
-            bio: true,
-            avatarUrl: true,
-            country: true,
-            role: true,
-            foundingSellerNumber: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        },
-        // Orders are private (buyers, delivery links, hashes): never include them in this public endpoint.
-      },
-    });
+    const service = await findPublicService(slug);
 
     if (!service) {
       return NextResponse.json({ error: 'Service not found' }, { status: 404, headers: CORS_HEADERS });

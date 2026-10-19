@@ -1,5 +1,6 @@
 import { db, requests } from '@mercadopleis/database';
 import { eq } from 'drizzle-orm';
+import { visibleProposals, type Viewer } from './requests';
 
 export interface RequestProposalRow {
   id: string;
@@ -88,4 +89,29 @@ export async function phasesOfProposal(proposalId: string, buyerId: string): Pro
       order: o ? { contractOrderId: o.contractOrderId, chainId: o.chainId, status: o.status } : null,
     };
   });
+}
+
+/**
+ * The request detail a viewer may see: everyone sees the request and how many proposals it has; the buyer sees
+ * every proposal, a seller only their own. After acceptance, the buyer and the chosen seller get the service to fund.
+ */
+export async function requestDetail(found: RequestRow, viewer: Viewer) {
+  const { proposals, ...rest } = found as any;
+  const visible = visibleProposals(found, proposals, viewer);
+  const awarded = proposals.find((p: any) => p.id === found.awardedProposalId);
+  const canSeeAward = !!viewer && !!awarded && (viewer.id === found.buyerId || viewer.id === awarded.sellerId);
+
+  const phases = canSeeAward ? await phasesOfProposal(awarded.id, found.buyerId) : [];
+
+  return {
+    request: {
+      ...rest,
+      proposalCount: proposals.length,
+      isOwner: viewer?.id === found.buyerId,
+    },
+    proposals: visible,
+    award: canSeeAward
+      ? { proposalId: awarded.id, serviceSlug: phases[0]?.serviceSlug ?? null, order: phases[0]?.order ?? null, phases }
+      : null,
+  };
 }

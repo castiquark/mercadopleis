@@ -15,7 +15,6 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: `${TITLE} | Stablecoin escrow on Base`,
   description: DESCRIPTION,
-  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     url: SITE_URL,
