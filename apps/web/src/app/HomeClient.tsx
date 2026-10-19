@@ -10,33 +10,59 @@ import { Service } from '@mercadopleis/types';
 import { useLanguage } from '@/lib/languageContext';
 import { ShieldCheck, Search, Zap, CheckCircle, MapPin, Globe, X } from 'lucide-react';
 
-const INITIAL_SERVICES: Service[] = [];
+// Waits before each automatic retry when the catalog cannot be loaded (cold start, database waking up).
+const RETRY_DELAYS_MS = [1500, 4000];
 
-export default function HomePage() {
+type CatalogStatus = 'loading' | 'ready' | 'error';
+
+/**
+ * `initialServices` comes from the server render, so crawlers and slow connections see the catalog in the HTML;
+ * null when the server could not read it, and the page then loads it here (with retries) behind a loading state.
+ */
+export default function HomePage({ initialServices = null }: { initialServices?: Service[] | null }) {
   const router = useRouter();
   const { language, t, L } = useLanguage();
-  const [servicesList, setServicesList] = useState<Service[]>(INITIAL_SERVICES);
+  const [servicesList, setServicesList] = useState<Service[]>(initialServices ?? []);
+  const [catalogStatus, setCatalogStatus] = useState<CatalogStatus>(initialServices ? 'ready' : 'loading');
+  const [reloadKey, setReloadKey] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedDeliveryType, setSelectedDeliveryType] = useState<'all' | 'digital' | 'in_person'>('all');
   const [locationQuery, setLocationQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedServiceForBooking, setSelectedServiceForBooking] = useState<Service | null>(null);
 
+  // Refreshes the catalog on load (the server copy can be up to a minute old). A failure never empties the list:
+  // with a server copy it is kept silently; without one, after the retries the page says so and offers a retry.
   useEffect(() => {
+    let cancelled = false;
     async function loadData() {
-      try {
-        const { fetchServices } = await import('@/lib/api');
-        const apiServices = await fetchServices();
-
-        // Only services stored by the API: a listing that failed to save must not look published.
-        const combined: Service[] = Array.isArray(apiServices) ? apiServices : [];
-        setServicesList(combined);
-      } catch (e) {
-        console.error(e);
+      const { fetchServices } = await import('@/lib/api');
+      for (let attempt = 0; ; attempt++) {
+        const apiServices = await fetchServices(); // null when the API failed
+        if (cancelled) return;
+        if (Array.isArray(apiServices)) {
+          setServicesList(apiServices);
+          setCatalogStatus('ready');
+          return;
+        }
+        if (attempt >= RETRY_DELAYS_MS.length) {
+          setCatalogStatus((s) => (s === 'ready' ? s : 'error'));
+          return;
+        }
+        await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+        if (cancelled) return;
       }
     }
     loadData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
+
+  const retryCatalog = () => {
+    setCatalogStatus('loading');
+    setReloadKey((k) => k + 1);
+  };
 
   // Extract distinct localities/cities from the services list for quick filter pills
   const availableLocations = React.useMemo(() => {
@@ -210,9 +236,11 @@ export default function HomePage() {
             <p className="text-sm text-slate-400">{L('Explora ofertas con pago protegido por escrow en stablecoins', 'Explore gigs paid through stablecoin escrow', 'Explore ofertas com pagamento protegido por escrow em stablecoins')}</p>
           </div>
 
-          <span className="text-xs font-medium text-slate-400">
-            {L(`Mostrando ${filteredServices.length} servicios`, `Showing ${filteredServices.length} services`, `Mostrando ${filteredServices.length} serviços`)}
-          </span>
+          {catalogStatus === 'ready' && (
+            <span className="text-xs font-medium text-slate-400">
+              {L(`Mostrando ${filteredServices.length} servicios`, `Showing ${filteredServices.length} services`, `Mostrando ${filteredServices.length} serviços`)}
+            </span>
+          )}
         </div>
 
         {/* Delivery Mode & Location Filter Bar */}
@@ -340,7 +368,44 @@ export default function HomePage() {
           ))}
         </div>
 
-        {filteredServices.length === 0 && (
+        {catalogStatus === 'loading' && (
+          <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-live="polite">
+            <span className="sr-only">{L('Cargando servicios…', 'Loading services…', 'Carregando serviços…')}</span>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-64 animate-pulse rounded-xl border border-border bg-surface p-5" aria-hidden="true">
+                <div className="h-4 w-1/3 rounded bg-slate-700/60" />
+                <div className="mt-4 h-5 w-3/4 rounded bg-slate-700/60" />
+                <div className="mt-3 h-3 w-full rounded bg-slate-700/40" />
+                <div className="mt-2 h-3 w-5/6 rounded bg-slate-700/40" />
+                <div className="mt-16 h-9 w-full rounded-lg bg-slate-700/50" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {catalogStatus === 'error' && (
+          <div className="mt-12 rounded-xl border border-dashed border-amber-500/40 p-12 text-center text-slate-300" role="alert">
+            <p className="text-base font-semibold">
+              {L('No pudimos cargar el catálogo', "We couldn't load the catalog", 'Não conseguimos carregar o catálogo')}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              {L(
+                'Es un problema temporal de conexión, no que falten servicios. Vuelve a intentarlo en unos segundos.',
+                "It's a temporary connection problem, not a lack of services. Try again in a few seconds.",
+                'É um problema temporário de conexão, não falta de serviços. Tente de novo em alguns segundos.'
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={retryCatalog}
+              className="mt-5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90"
+            >
+              {L('Reintentar', 'Try again', 'Tentar de novo')}
+            </button>
+          </div>
+        )}
+
+        {catalogStatus === 'ready' && filteredServices.length === 0 && (
           <div className="mt-12 rounded-xl border border-dashed border-border p-12 text-center text-slate-400">
             <p className="text-base font-semibold">{t('noServicesFound')}</p>
             <p className="mt-1 text-xs text-slate-500">{t('noServicesDesc')}</p>

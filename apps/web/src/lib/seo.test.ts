@@ -4,9 +4,14 @@ import { metaDescription, pageMetadata } from './seo';
 const findPublicService = vi.fn();
 const findRequest = vi.fn();
 let dbDown = false;
-vi.mock('@/lib/servicesDb', () => ({ findPublicService: async (slug: string) => {
+vi.mock('@/lib/servicesDb', () => ({
+  findPublicService: async (slug: string) => {
     if (dbDown) throw new Error('db down');
     return findPublicService(slug);
+  },
+  listPublicServices: async () => {
+    if (dbDown) throw new Error('db down');
+    return [service];
   },
 }));
 vi.mock('@/lib/requestsDb', async () => ({
@@ -19,6 +24,7 @@ vi.mock('next/navigation', () => ({
   },
 }));
 vi.mock('@/app/services/[slug]/ServiceClient', () => ({ default: () => null }));
+vi.mock('@/app/HomeClient', () => ({ default: () => null }));
 vi.mock('@/app/requests/[slug]/RequestClient', () => ({ default: () => null }));
 
 const params = (slug: string) => ({ params: Promise.resolve({ slug }) });
@@ -107,5 +113,19 @@ describe('social images', () => {
     const m = pageMetadata({ title: 'T', description: 'D', path: '/x' });
     expect((m.openGraph as any).images[0].url).toBe('/opengraph-image');
     expect((m.twitter as any).images).toEqual(['/twitter-image']);
+  });
+});
+
+describe('home page (server render)', () => {
+  it('puts the catalog in the HTML, and hands null to the client when the database is down (never an empty list)', async () => {
+    const mod = await import('@/app/page');
+    const el: any = await mod.default();
+    expect(el.props.initialServices.map((x: any) => x.slug)).toEqual(['transcripcion-audio']);
+    expect(mod.revalidate).toBe(60);
+
+    dbDown = true;
+    const down: any = await mod.default();
+    dbDown = false;
+    expect(down.props.initialServices).toBeNull();
   });
 });

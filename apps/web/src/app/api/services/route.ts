@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, services } from '@mercadopleis/database';
-import { eq, desc, and, gte, lte, ilike, or, sql } from 'drizzle-orm';
+import { eq, gte, lte, ilike, or } from 'drizzle-orm';
+import { listPublicServices } from '@/lib/servicesDb';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { validateServiceInput } from '@/lib/validation';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
-import { CONTRACT_CONFIG } from '@mercadopleis/types';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -45,8 +45,8 @@ export async function GET(request: NextRequest) {
       : 0;
 
   try {
-    // Unlisted services (created from accepted request proposals) are payable by slug but never listed.
-    const conditions: any[] = [eq(services.isActive, true), eq(services.isListed, true)];
+    // Filters on top of the listed-and-active base that listPublicServices always applies.
+    const conditions: any[] = [];
 
     if (category && category !== 'all') {
       conditions.push(eq(services.category, category));
@@ -123,43 +123,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const queriedServices = await db.query.services.findMany({
-      where: and(...conditions),
-      // Founding Sellers first (false sorts before true), then newest first.
-      orderBy: [sql`(SELECT u.founding_seller_number IS NULL FROM users u WHERE u.id = ${services.sellerId})`, desc(services.createdAt)],
-      limit,
-      offset,
-      with: {
-        seller: {
-          columns: {
-            id: true,
-            walletAddress: true,
-            displayName: true,
-            username: true,
-            avatarUrl: true,
-            foundingSellerNumber: true,
-          },
-        },
-      },
-    });
-
-    const formattedServices = queriedServices.map((s: any) => ({
-      ...s,
-      price: {
-        amount: s.priceUsdc,
-        currency: 'USDC',
-        tokenAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-        decimals: 6,
-      },
-      settlement: {
-        network: 'Base',
-        chainId: 8453,
-        method: 'smart_contract_escrow',
-        escrowContract: ESCROW_ADDRESSES[8453],
-        feeBps: CONTRACT_CONFIG.FEE_BPS,
-        reviewWindowDays: 5,
-      },
-    }));
+    const formattedServices = await listPublicServices(conditions, limit, offset);
 
     return NextResponse.json(
       {
