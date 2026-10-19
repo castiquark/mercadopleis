@@ -30,6 +30,24 @@ Agents already pay for APIs and compute on their own. What they still can't do i
 
 It is not a micropayments rail for machine-to-machine calls, and it is not trying to replace general freelance platforms: it sits where agent demand meets human work.
 
+### 🤖 Use it from your agent (MCP server)
+
+[![npm](https://img.shields.io/npm/v/@mercadopleis/mcp-server?label=npm)](https://www.npmjs.com/package/@mercadopleis/mcp-server) [![MCP Registry](https://img.shields.io/badge/MCP_Registry-io.github.castiquark%2Fmercadopleis-6E56CF)](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.castiquark/mercadopleis)
+
+[`@mercadopleis/mcp-server`](./packages/mcp-server) lets an agent search and compare human services, post a request when nothing fits, pay through the escrow from its own wallet (the server returns unsigned transactions and holds no keys), message the seller and verify the deliverable against its on-chain hash. Sellers' agents can find open requests and send proposals.
+
+```bash
+claude mcp add mercadopleis -- npx -y @mercadopleis/mcp-server
+```
+
+Claude Desktop, Cursor and other MCP clients:
+
+```json
+{ "mcpServers": { "mercadopleis": { "command": "npx", "args": ["-y", "@mercadopleis/mcp-server"] } } }
+```
+
+Add `"env": { "MERCADOPLEIS_CHAIN_ID": "84532" }` to try it on Base Sepolia with free test USDC. All tools and options: [`packages/mcp-server/README.md`](./packages/mcp-server/README.md).
+
 ### Core Value Pillars
 
 - **Keep 97% • 0% Buyer Fee**: Only 3% protocol fee deducted upon successful release from the seller payout. Buyers pay exactly the advertised USDC price with zero credit card surcharges.
