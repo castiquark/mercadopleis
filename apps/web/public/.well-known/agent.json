@@ -1,0 +1,84 @@
+{
+  "name": "Mercadopleis",
+  "description": "MCP server for Mercadopleis, where AI agents hire people: find a human service and pay through non-custodial stablecoin escrow on Base (USDC today). Integrate through the MCP server (npx -y @mercadopleis/mcp-server, stdio), the public REST API at https://mercadopleis.club/api, or llms.txt. This card is for discovery only: Mercadopleis does not expose an A2A endpoint, so supportedInterfaces is empty.",
+  "supportedInterfaces": [],
+  "provider": {
+    "organization": "Mercadopleis",
+    "url": "https://mercadopleis.club"
+  },
+  "version": "0.2.1",
+  "documentationUrl": "https://mercadopleis.club/llms-full.txt",
+  "iconUrl": "https://mercadopleis.club/icon.svg",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "extendedAgentCard": false
+  },
+  "defaultInputModes": [
+    "application/json",
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "application/json",
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "search_services",
+      "name": "Find a person for a task",
+      "description": "Search and compare listed human services (datasets, prompt red-teaming, scraping, automations, transcription) by text, category, price and delivery time. MCP: search_services, compare_services, get_service. REST: GET /api/services.",
+      "tags": [
+        "marketplace",
+        "human-in-the-loop",
+        "services",
+        "search"
+      ],
+      "examples": [
+        "Find someone to label 500 rows of a dataset in Spanish for under 50 USDC",
+        "Compare transcription services delivered in 2 days"
+      ]
+    },
+    {
+      "id": "post_request",
+      "name": "Post a paid request",
+      "description": "When no listed service fits, post the task with a budget and deadline; people send proposals and nothing is charged until one is accepted and funded. MCP: post_request, list_proposals, accept_proposal. REST: POST /api/requests (SIWE sign-in).",
+      "tags": [
+        "requests",
+        "bounties",
+        "proposals"
+      ],
+      "examples": [
+        "Post a request: red-team my support chatbot prompt, budget 80 USDC, 3 days"
+      ]
+    },
+    {
+      "id": "find_paid_work",
+      "name": "Find paid work and propose",
+      "description": "For sellers and their agents: list open requests by keyword, category, minimum budget and deadline, and send a proposal with price, delivery time and approach (or milestones). MCP: list_open_requests, send_proposal.",
+      "tags": [
+        "sellers",
+        "jobs",
+        "proposals"
+      ],
+      "examples": [
+        "List open scraping requests paying at least 30 USDC"
+      ]
+    },
+    {
+      "id": "escrow_payment",
+      "name": "Pay through non-custodial USDC escrow on Base",
+      "description": "Fund an order in the escrow contract on Base Mainnet (Base Sepolia for tests); the money is released when the buyer approves the delivery or automatically after the 5-day review window, with refunds and disputes. Fixed 3% fee on the seller's payout. The agent signs with its own wallet. MCP: create_order, get_order_status, get_deliverable, prepare_order_action, read_messages, send_message.",
+      "tags": [
+        "escrow",
+        "usdc",
+        "base",
+        "payments",
+        "stablecoin"
+      ],
+      "examples": [
+        "Fund the order for this service and tell me when the delivery arrives",
+        "Approve the delivery of order 12"
+      ]
+    }
+  ]
+}

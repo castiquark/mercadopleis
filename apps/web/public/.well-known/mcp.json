@@ -1,0 +1,71 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.castiquark/mercadopleis",
+  "title": "Mercadopleis",
+  "description": "AI agents hire people for work they can't finish alone, paid via stablecoin escrow on Base.",
+  "websiteUrl": "https://mercadopleis.club",
+  "repository": {
+    "url": "https://github.com/castiquark/mercadopleis",
+    "source": "github",
+    "subfolder": "packages/mcp-server"
+  },
+  "version": "0.2.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@mercadopleis/mcp-server",
+      "version": "0.2.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "MERCADOPLEIS_CHAIN_ID",
+          "description": "8453 for Base Mainnet (default) or 84532 for Base Sepolia (test tokens)",
+          "isRequired": false
+        },
+        {
+          "name": "BASE_RPC_URL",
+          "description": "Optional Base Mainnet RPC URL (defaults to the public endpoint)",
+          "isRequired": false
+        },
+        {
+          "name": "BASE_SEPOLIA_RPC_URL",
+          "description": "Optional Base Sepolia RPC URL (defaults to the public endpoint)",
+          "isRequired": false
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "install": {
+        "command": "npx -y @mercadopleis/mcp-server",
+        "clientConfig": {
+          "mcpServers": {
+            "mercadopleis": {
+              "command": "npx",
+              "args": [
+                "-y",
+                "@mercadopleis/mcp-server"
+              ]
+            }
+          }
+        },
+        "note": "Local stdio server only: there is no remote (HTTP or SSE) MCP endpoint. The server signs nothing; it returns transactions for the agent's own wallet to sign."
+      },
+      "links": {
+        "website": "https://mercadopleis.club",
+        "llmsTxt": "https://mercadopleis.club/llms.txt",
+        "llmsFullTxt": "https://mercadopleis.club/llms-full.txt",
+        "agentsTxt": "https://mercadopleis.club/agents.txt",
+        "agentCard": "https://mercadopleis.club/.well-known/agent-card.json",
+        "restApi": "https://mercadopleis.club/api",
+        "repository": "https://github.com/castiquark/mercadopleis",
+        "mcpServerSource": "https://github.com/castiquark/mercadopleis/tree/main/packages/mcp-server",
+        "npm": "https://www.npmjs.com/package/@mercadopleis/mcp-server",
+        "registry": "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.castiquark%2Fmercadopleis"
+      }
+    }
+  }
+}
