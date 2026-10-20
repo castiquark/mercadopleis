@@ -229,7 +229,7 @@ export default function HomePage({ initialServices = null }: { initialServices?:
       </section>
 
       {/* Catalog & Filter Section */}
-      <section className="mt-12">
+      <section id="services" className="mt-12 scroll-mt-24">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-2xl font-bold text-white">{L('Servicios Disponibles', 'Available Services', 'Serviços Disponíveis')}</h2>
