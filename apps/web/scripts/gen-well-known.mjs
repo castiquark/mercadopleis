@@ -14,6 +14,8 @@ const mcpDir = join(here, '../../../packages/mcp-server');
 const outDir = join(here, '../public/.well-known');
 
 const SITE = 'https://mercadopleis.club';
+// Public news accounts, also in the site footer, llms.txt and agents.txt.
+const NEWS = { x: 'https://x.com/Mercadopleis', linkedin: 'https://www.linkedin.com/company/mercadopleis', telegram: 'https://t.me/mercadopleis' };
 
 export function buildWellKnown() {
   const pkg = JSON.parse(readFileSync(join(mcpDir, 'package.json'), 'utf8'));
@@ -31,6 +33,7 @@ export function buildWellKnown() {
     repository: repoUrl,
     mcpServerSource: `${repoUrl}/tree/main/${server.repository.subfolder}`,
     npm: `https://www.npmjs.com/package/${pkg.name}`,
+    news: NEWS,
     registry: `https://registry.modelcontextprotocol.io/v0/servers?search=${encodeURIComponent(server.name)}`,
   };
 
@@ -54,7 +57,8 @@ export function buildWellKnown() {
     name: 'Mercadopleis',
     description:
       `${pkg.description}. Integrate through the MCP server (${npxCommand}, stdio), the public REST API at ${SITE}/api, or llms.txt. ` +
-      'This card is for discovery only: Mercadopleis does not expose an A2A endpoint, so supportedInterfaces is empty.',
+      'This card is for discovery only: Mercadopleis does not expose an A2A endpoint, so supportedInterfaces is empty. ' +
+      `News: X ${NEWS.x}, LinkedIn ${NEWS.linkedin}, Telegram ${NEWS.telegram}.`,
     supportedInterfaces: [],
     provider: { organization: 'Mercadopleis', url: SITE },
     version: pkg.version,

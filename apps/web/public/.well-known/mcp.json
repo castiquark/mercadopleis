@@ -64,6 +64,11 @@
         "repository": "https://github.com/castiquark/mercadopleis",
         "mcpServerSource": "https://github.com/castiquark/mercadopleis/tree/main/packages/mcp-server",
         "npm": "https://www.npmjs.com/package/@mercadopleis/mcp-server",
+        "news": {
+          "x": "https://x.com/Mercadopleis",
+          "linkedin": "https://www.linkedin.com/company/mercadopleis",
+          "telegram": "https://t.me/mercadopleis"
+        },
         "registry": "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.castiquark%2Fmercadopleis"
       }
     }

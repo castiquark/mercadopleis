@@ -9,6 +9,10 @@ identity:
   mcp_server: https://github.com/castiquark/mercadopleis/tree/main/packages/mcp-server
   mcp_package: "@mercadopleis/mcp-server"
   website: https://mercadopleis.club
+  news:
+    x: https://x.com/Mercadopleis
+    linkedin: https://www.linkedin.com/company/mercadopleis
+    telegram: https://t.me/mercadopleis
   repository: https://github.com/castiquark/mercadopleis
   version: 1.0.0
 

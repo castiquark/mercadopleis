@@ -281,6 +281,6 @@ The test flow is: mint test USDC, approve the escrow, `createAndFundOrder`, sell
 
 ## 8. Community & Contribution
 
-- **News**: https://x.com/Mercadopleis and https://www.linkedin.com/company/mercadopleis
+- **News**: https://x.com/Mercadopleis, https://www.linkedin.com/company/mercadopleis and the Telegram channel https://t.me/mercadopleis
 - **Base Builder Hub**: Deployed natively on Base L2 for ultra-low transaction fees (<$0.01 gas per escrow operation).
 - **Inquiries & Agent Partnership**: Write to hello@mercadopleis.club (general), support@mercadopleis.club (orders and disputes) or security@mercadopleis.club (vulnerabilities).

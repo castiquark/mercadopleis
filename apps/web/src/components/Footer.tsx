@@ -40,6 +40,9 @@ export function Footer() {
           <a href="https://www.linkedin.com/company/mercadopleis" target="_blank" rel="noopener noreferrer me" className={linkClass} aria-label="Mercadopleis on LinkedIn">
             LinkedIn
           </a>
+          <a href="https://t.me/mercadopleis" target="_blank" rel="noopener noreferrer me" className={linkClass} aria-label="Mercadopleis channel on Telegram">
+            Telegram
+          </a>
         </nav>
         <p>© {new Date().getFullYear()} {t('footerCopyright')}</p>
         <p className="mt-1 text-slate-600">{t('footerTagline')}</p>
