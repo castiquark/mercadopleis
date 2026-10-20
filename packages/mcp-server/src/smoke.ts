@@ -22,6 +22,7 @@ assert.deepEqual(tools, [
   'get_delivery',
   'get_order_status',
   'get_service',
+  'list_open_requests',
   'list_proposals',
   'login',
   'post_request',
@@ -31,6 +32,7 @@ assert.deepEqual(tools, [
   'register_order',
   'search_services',
   'send_message',
+  'send_proposal',
 ]);
 
 // Signed-in tools must refuse politely without a session.

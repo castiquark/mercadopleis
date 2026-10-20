@@ -1,6 +1,8 @@
 // Wallet sign-in (SIWE, EIP-4361) and authenticated calls to the Mercadopleis API.
-// The server never sees a private key: it builds the message, the agent's wallet signs it, and the
-// resulting session token stays in this process's memory (it is never returned to the agent).
+// The server never sees a private key: it builds the message, the agent's wallet signs it, and the API returns a
+// session. Over stdio the session stays in this process's memory and is never returned to the agent. Over HTTP the
+// server is stateless, so the session travels with each request as an opaque token (see withSession).
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { API_URL } from './config.js';
 
 export interface SiweParams {
@@ -24,9 +26,46 @@ interface Session {
   token: string;
 }
 
-let session: Session | null = null;
+interface Holder {
+  session: Session | null;
+}
 
-export const currentSession = () => (session ? { address: session.address, userId: session.userId } : null);
+// stdio: one process per agent, one session. HTTP: each request runs with its own holder.
+const processHolder: Holder = { session: null };
+const requestHolder = new AsyncLocalStorage<Holder>();
+const holder = () => requestHolder.getStore() ?? processHolder;
+
+const TOKEN_PREFIX = 'mpl1.';
+
+/** Opaque session token for HTTP clients: the API session plus the wallet it belongs to. */
+export function encodeSessionToken(s: Session): string {
+  return TOKEN_PREFIX + Buffer.from(JSON.stringify({ a: s.address, u: s.userId, t: s.token })).toString('base64url');
+}
+
+export function decodeSessionToken(token: string | null | undefined): Session | null {
+  if (!token?.startsWith(TOKEN_PREFIX)) return null;
+  try {
+    const { a, u, t } = JSON.parse(Buffer.from(token.slice(TOKEN_PREFIX.length), 'base64url').toString('utf8'));
+    return typeof a === 'string' && typeof u === 'string' && typeof t === 'string' ? { address: a, userId: u, token: t } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Runs fn with its own session, taken from a token (HTTP). Calls inside never see another request's session. */
+export function withSession<T>(token: string | null | undefined, fn: () => T): T {
+  return requestHolder.run({ session: decodeSessionToken(token) }, fn);
+}
+
+export const currentSession = () => {
+  const s = holder().session;
+  return s ? { address: s.address, userId: s.userId } : null;
+};
+
+export const currentSessionToken = () => {
+  const s = holder().session;
+  return s ? encodeSessionToken(s) : null;
+};
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -38,13 +77,14 @@ async function call<T>(path: string, init: RequestInit = {}, auth = false): Prom
   const headers: Record<string, string> = { Accept: 'application/json', ...(init.headers as Record<string, string>) };
   if (init.body) headers['Content-Type'] = 'application/json';
   if (auth) {
-    if (!session) throw new ApiError(401, 'Not signed in. Call prepare_login and login with the buyer wallet first.');
-    headers.Authorization = `Bearer ${session.token}`;
+    const s = holder().session;
+    if (!s) throw new ApiError(401, 'Not signed in. Call prepare_login and login with the buyer wallet first.');
+    headers.Authorization = `Bearer ${s.token}`;
   }
   const res = await fetch(new URL(path, API_URL), { ...init, headers });
   const data = (await res.json().catch(() => ({}))) as T & { error?: string };
   if (!res.ok) {
-    if (res.status === 401 && auth) session = null;
+    if (res.status === 401 && auth) holder().session = null;
     throw new ApiError(res.status, data.error || `Mercadopleis API error ${res.status} on ${path}`);
   }
   return data;
@@ -60,7 +100,7 @@ export async function signIn(address: string, message: string, signature: string
     method: 'POST',
     body: JSON.stringify({ address, message, signature }),
   });
-  session = { address: data.user.walletAddress, userId: data.user.id, token: data.token };
+  holder().session = { address: data.user.walletAddress, userId: data.user.id, token: data.token };
   return currentSession()!;
 }
 
