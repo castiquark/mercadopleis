@@ -13,11 +13,11 @@ describe('/.well-known discovery files', () => {
     }
   });
 
-  it('describe the npm stdio server only, with the published version', () => {
+  it('describe the npm stdio package and the remote /mcp endpoint, with the published version', () => {
     const mcp = buildWellKnown()['mcp.json'];
     expect(mcp.version).toBe(mcpPkg.version);
     expect(mcp.packages).toEqual([expect.objectContaining({ registryType: 'npm', identifier: mcpPkg.name, version: mcpPkg.version, transport: { type: 'stdio' } })]);
-    expect(mcp.remotes).toBeUndefined();
+    expect(mcp.remotes).toEqual([{ type: 'streamable-http', url: 'https://mercadopleis.club/mcp' }]);
   });
 
   it('is a valid A2A card that claims no A2A endpoint', () => {

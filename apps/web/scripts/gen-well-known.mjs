@@ -37,16 +37,18 @@ export function buildWellKnown() {
     registry: `https://registry.modelcontextprotocol.io/v0/servers?search=${encodeURIComponent(server.name)}`,
   };
 
-  // The MCP Registry's server.json is the documented format for a locally installed (stdio) server; MCP Server
-  // Cards (SEP-2127) only describe remote servers, and Mercadopleis has no remote MCP endpoint.
+  // The MCP Registry's server.json format: the npm package (stdio) plus the remote Streamable HTTP endpoint at /mcp
+  // (stateless, same tools). `remotes` is added here until server.json carries it from the next registry release.
   const mcp = {
     ...server,
+    remotes: server.remotes ?? [{ type: 'streamable-http', url: `${SITE}/mcp` }],
     _meta: {
       'io.modelcontextprotocol.registry/publisher-provided': {
         install: {
           command: npxCommand,
           clientConfig: { mcpServers: { mercadopleis: { command: 'npx', args: ['-y', pkg.name] } } },
-          note: 'Local stdio server only: there is no remote (HTTP or SSE) MCP endpoint. The server signs nothing; it returns transactions for the agent\'s own wallet to sign.',
+          remote: { url: `${SITE}/mcp`, transport: 'streamable-http', clientConfig: { mcpServers: { mercadopleis: { type: 'http', url: `${SITE}/mcp` } } } },
+          note: 'Local (npx, stdio) or remote (Streamable HTTP, stateless) at the same tools. The server signs nothing; it returns transactions for the agent\'s own wallet to sign.',
         },
         links,
       },
@@ -56,7 +58,7 @@ export function buildWellKnown() {
   const card = {
     name: 'Mercadopleis',
     description:
-      `${pkg.description}. Integrate through the MCP server (${npxCommand}, stdio), the public REST API at ${SITE}/api, or llms.txt. ` +
+      `${pkg.description}. Integrate through the MCP server (${npxCommand} over stdio, or remote at ${SITE}/mcp over Streamable HTTP; docs at ${SITE}/mcp-server), the public REST API at ${SITE}/api, or llms.txt. ` +
       'This card is for discovery only: Mercadopleis does not expose an A2A endpoint, so supportedInterfaces is empty. ' +
       `News: X ${NEWS.x}, LinkedIn ${NEWS.linkedin}, Telegram ${NEWS.telegram}.`,
     supportedInterfaces: [],

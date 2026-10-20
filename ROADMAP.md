@@ -142,12 +142,18 @@ Próximo trabajo técnico, en este orden y solo si no frena la distribución:
 
 | # | Tarea | Por qué | Estado |
 |---|---|---|---|
+| L0 | **Superficie para agentes y SEO**: MCP remoto en `https://mercadopleis.club/mcp` (Streamable HTTP, sin estado) además de `npx`; página `/mcp-server`; archivos `/.well-known` (mcp.json, agent-card.json, agent.json); inglés por defecto con `/es` y `/pt` y hreflang; landings `/agent-to-human-marketplace` y `/for-humans/get-hired-by-ai-agents`; JSON-LD; canal de Telegram enlazado; 404 animada | Los agentes se conectan sin instalar nada y Google ve cada idioma en su propia URL | ✅ Listo, en el próximo deploy |
+| L0b | **Errores claros del escrow**: la web simula cada transacción antes de enviarla y muestra el motivo real (orden ya reembolsada o liberada, wallet incorrecta, plazo no vencido, escrow pausado) | Antes, la wallet mostraba un error de gas engañoso (orden 9 en Sepolia) | ✅ Listo, en el próximo deploy |
 | L1 | **Desplegar el rechazo de entregables vacíos** (ya en `main`) | Hoy, en producción, una entrega vacía registra on-chain el SHA-256 de un archivo vacío | ⏭️ En el próximo deploy |
 | L1b | **Búsqueda sin resultados → solicitud**: la respuesta vacía del MCP trae un borrador de `post_request` (y los servicios más cercanos si el problema es el precio o el plazo); las descripciones de las herramientas y las instrucciones del servidor MCP lo explican; `/api/services` vacío trae `hint` e `ifNothingFits`; `llms.txt`, `llms-full.txt` y `agents.txt` lo documentan; en la web, el estado vacío ofrece "Publicar mi solicitud" con el formulario precargado | Con un catálogo chico muchas búsquedas vuelven vacías: cada una puede convertirse en una solicitud en vez de un comprador que se va | ✅ Listo (MCP 0.2.1), pendiente de despliegue |
 | L1c | **Lado vendedor en el MCP**: `list_open_requests` (buscar trabajos pagos con filtros de palabras, categoría, presupuesto mínimo y plazo) y `send_proposal` (precio, plazo y enfoque, o hitos), con la wallet del vendedor. La entrega por MCP queda para después | Un agente puede buscar trabajo pago para su dueño y postularse, no solo contratar | ✅ Listo (MCP 0.2.1), pendiente de despliegue |
 | L2 | **Reputación en el MCP** (A6): órdenes completadas, puntuación y entregas a tiempo en `search_services` y `compare_services` | Un agente no puede elegir proveedores por reputación: `compare_services` hoy no la incluye | ⏭️ Siguiente |
 | L3 | **Límites de gasto para agentes** (A4) | Sin topes, un equipo no le da una wallet a un agente | ⏭️ Siguiente |
 | L4 | **Evaluar la migración del SDK de MCP de v1 a v2** (`@modelcontextprotocol/sdk` 1.x → `@modelcontextprotocol/server` 2.x) | La 1.x sigue mantenida; migrar solo con pruebas completas de las 16 herramientas | 📋 A evaluar |
+
+### ⛓️ Fase BOT Chain (Bohr): piloto de testnet (desde el 21 de octubre de 2026)
+
+**Fase 1:** despliegue del mismo `MarketplaceEscrow` en BOT Chain (Bohr, chain id 968) con un token de prueba (tUSD), contratos verificados en el explorador y los flujos completos con datos sintéticos: pago y aprobación, reembolso por plazo vencido, disputa, liberación automática a los 5 días y los rechazos esperados. También se prueban las herramientas on-chain del servidor MCP contra esa red. Informe de resultados el 27 de octubre. No hay dinero real ni cambios en Base.
 
 **Fuera de alcance hasta tener demanda real:** otras cadenas (Solana, Polygon, Arbitrum), token propio, gobernanza o DAO, Mini App y Farcaster, Kleros, contratos nuevos y reputación en NFT. La pregunta que hay que responder primero es si un desconocido le paga a otro desconocido por una tarea humana que nace, directa o indirectamente, de una IA.
 

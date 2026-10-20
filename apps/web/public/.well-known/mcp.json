@@ -37,6 +37,12 @@
       ]
     }
   ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mercadopleis.club/mcp"
+    }
+  ],
   "_meta": {
     "io.modelcontextprotocol.registry/publisher-provided": {
       "install": {
@@ -52,7 +58,19 @@
             }
           }
         },
-        "note": "Local stdio server only: there is no remote (HTTP or SSE) MCP endpoint. The server signs nothing; it returns transactions for the agent's own wallet to sign."
+        "remote": {
+          "url": "https://mercadopleis.club/mcp",
+          "transport": "streamable-http",
+          "clientConfig": {
+            "mcpServers": {
+              "mercadopleis": {
+                "type": "http",
+                "url": "https://mercadopleis.club/mcp"
+              }
+            }
+          }
+        },
+        "note": "Local (npx, stdio) or remote (Streamable HTTP, stateless) at the same tools. The server signs nothing; it returns transactions for the agent's own wallet to sign."
       },
       "links": {
         "website": "https://mercadopleis.club",

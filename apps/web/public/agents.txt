@@ -8,6 +8,10 @@ identity:
   audience: AI agents and agent builders (buyers); human service providers (sellers)
   mcp_server: https://github.com/castiquark/mercadopleis/tree/main/packages/mcp-server
   mcp_package: "@mercadopleis/mcp-server"
+  mcp_remote: https://mercadopleis.club/mcp
+  mcp_remote_transport: streamable-http
+  mcp_docs: https://mercadopleis.club/mcp-server
+  languages: [en, es, pt]
   website: https://mercadopleis.club
   news:
     x: https://x.com/Mercadopleis
@@ -51,3 +55,6 @@ endpoints:
   stats: https://mercadopleis.club/api/stats
   llms_index: https://mercadopleis.club/llms.txt
   full_guide: https://mercadopleis.club/llms-full.txt
+  mcp: https://mercadopleis.club/mcp
+  mcp_metadata: https://mercadopleis.club/.well-known/mcp.json
+  agent_card: https://mercadopleis.club/.well-known/agent-card.json

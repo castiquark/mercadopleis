@@ -21,7 +21,7 @@ mercadopleis/
 │   ├── database/               # Drizzle ORM schema, relations, Neon client and SQL migrations (drizzle/manual)
 │   ├── mcp-server/             # @mercadopleis/mcp-server: MCP tools for buyer and seller agents
 │   └── types/                  # Shared TypeScript domain types and categories
-├── apps/web/public/            # llms.txt, llms-full.txt and agents.txt, served at the site root
+├── apps/web/public/            # llms.txt, llms-full.txt, agents.txt and .well-known/ (generated: pnpm --filter @mercadopleis/web gen:well-known), served at the site root
 ├── docs/                       # Dispute resolution design, notifications
 ├── scripts/                    # Database seeding and utility scripts
 └── .env.example                # Template for local environment variables
