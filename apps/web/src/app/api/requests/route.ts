@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, requests } from '@mercadopleis/database';
-import { and, desc, eq, ilike, or } from 'drizzle-orm';
+import { eq, ilike, or } from 'drizzle-orm';
+import { listRequests } from '@/lib/requestsDb';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { validateRequestInput } from '@/lib/validation';
 import { enforceRateLimit } from '@/lib/rateLimit';
@@ -34,18 +35,7 @@ export async function GET(request: NextRequest) {
       conditions.push(or(ilike(requests.title, term), ilike(requests.description, term))!);
     }
 
-    const rows = await db.query.requests.findMany({
-      where: and(...conditions),
-      orderBy: [desc(requests.createdAt)],
-      limit,
-      offset,
-      with: {
-        buyer: { columns: { displayName: true, walletAddress: true } },
-        proposals: { columns: { id: true } },
-      },
-    });
-
-    const list = rows.map(({ proposals, ...r }: any) => ({ ...r, proposalCount: proposals.length }));
+    const list = await listRequests(conditions, limit, offset);
     return NextResponse.json({ count: list.length, requests: list }, { headers: CORS_HEADERS });
   } catch (err) {
     console.error('Error listing requests:', err);

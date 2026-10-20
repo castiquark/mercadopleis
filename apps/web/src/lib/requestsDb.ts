@@ -1,5 +1,5 @@
 import { db, requests } from '@mercadopleis/database';
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, type SQL } from 'drizzle-orm';
 import { visibleProposals, type Viewer } from './requests';
 
 export interface RequestProposalRow {
@@ -114,4 +114,19 @@ export async function requestDetail(found: RequestRow, viewer: Viewer) {
       ? { proposalId: awarded.id, serviceSlug: phases[0]?.serviceSlug ?? null, order: phases[0]?.order ?? null, phases }
       : null,
   };
+}
+
+/** Public list of requests with the given filters, newest first, with the proposal count (never proposal prices). */
+export async function listRequests(conditions: (SQL | undefined)[], limit = 20, offset = 0) {
+  const rows = await db.query.requests.findMany({
+    where: and(...conditions),
+    orderBy: [desc(requests.createdAt)],
+    limit,
+    offset,
+    with: {
+      buyer: { columns: { displayName: true, walletAddress: true } },
+      proposals: { columns: { id: true } },
+    },
+  });
+  return rows.map(({ proposals, ...r }: any) => ({ ...r, proposalCount: proposals.length }));
 }

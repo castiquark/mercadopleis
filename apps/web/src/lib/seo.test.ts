@@ -16,6 +16,10 @@ vi.mock('@/lib/servicesDb', () => ({
 }));
 vi.mock('@/lib/requestsDb', async () => ({
   findRequest: (slug: string) => findRequest(slug),
+  listRequests: async () => {
+    if (dbDown) throw new Error('db down');
+    return [{ slug: 'dataset-jsonl', createdAt: new Date('2026-10-02T00:00:00Z'), proposalCount: 2 }];
+  },
   requestDetail: async (found: any) => ({ request: { ...found, proposals: undefined, proposalCount: found.proposals.length, isOwner: false }, proposals: [], award: null }),
 }));
 vi.mock('next/navigation', () => ({
@@ -24,6 +28,7 @@ vi.mock('next/navigation', () => ({
   },
 }));
 vi.mock('@/app/services/[slug]/ServiceClient', () => ({ default: () => null }));
+vi.mock('@/app/requests/RequestsClient', () => ({ default: () => null }));
 vi.mock('@/app/HomeClient', () => ({ default: () => null }));
 vi.mock('@/app/requests/[slug]/RequestClient', () => ({ default: () => null }));
 
@@ -127,5 +132,18 @@ describe('home page (server render)', () => {
     const down: any = await mod.default();
     dbDown = false;
     expect(down.props.initialServices).toBeNull();
+  });
+});
+
+describe('requests list page (server render)', () => {
+  it('puts the open requests in the HTML, and hands null to the client when the database is down', async () => {
+    const mod = await import('@/app/requests/page');
+    const el: any = await mod.default();
+    expect(el.props.initialRequests).toEqual([{ slug: 'dataset-jsonl', createdAt: '2026-10-02T00:00:00.000Z', proposalCount: 2 }]);
+    expect(mod.revalidate).toBe(60);
+    dbDown = true;
+    const down: any = await mod.default();
+    dbDown = false;
+    expect(down.props.initialRequests).toBeNull();
   });
 });

@@ -8,24 +8,29 @@ import { useLanguage } from '@/lib/languageContext';
 import { CategoryPills } from '@/components/CategoryPills';
 import { fetchRequests, type RequestSummary } from '@/lib/api';
 
-export default function RequestsPage() {
+/**
+ * `initialRequests` are the open requests from the server render (in the HTML for crawlers); null when the server
+ * could not read them. A failed load never shows the raw API error: it keeps the list it has or offers a retry.
+ */
+export default function RequestsPage({ initialRequests = null }: { initialRequests?: RequestSummary[] | null }) {
   const { language, L } = useLanguage();
   const [category, setCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [list, setList] = useState<RequestSummary[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [list, setList] = useState<RequestSummary[] | null>(initialRequests);
+  const [failed, setFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchRequests({ category: category || undefined, search: search.trim() || undefined })
         .then((r) => {
           setList(r);
-          setError(null);
+          setFailed(false);
         })
-        .catch((e) => setError(e.message));
+        .catch(() => setFailed(true));
     }, 250);
     return () => clearTimeout(timer);
-  }, [category, search]);
+  }, [category, search, reloadKey]);
 
   const catLabel = (id: string) => {
     const c = MARKETPLACE_CATEGORIES.find((x) => x.id === id);
@@ -64,7 +69,21 @@ export default function RequestsPage() {
 
       <CategoryPills selectedCategory={category} onSelectCategory={setCategory} />
 
-      {error && <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">{error}</p>}
+      {!failed && !list && (
+        <p className="mt-6 text-center text-sm text-slate-500" role="status">{L('Cargando solicitudes…', 'Loading requests…', 'Carregando solicitações…')}</p>
+      )}
+
+      {failed && !list && (
+        <div className="mt-6 rounded-xl border border-dashed border-amber-500/40 p-8 text-center text-slate-300" role="alert">
+          <p className="font-semibold">{L('No pudimos cargar las solicitudes', "We couldn't load the requests", 'Não conseguimos carregar as solicitações')}</p>
+          <p className="mt-1 text-xs text-slate-400">
+            {L('Es un problema temporal de conexión. Vuelve a intentarlo en unos segundos.', "It's a temporary connection problem. Try again in a few seconds.", 'É um problema temporário de conexão. Tente de novo em alguns segundos.')}
+          </p>
+          <button type="button" onClick={() => setReloadKey((k) => k + 1)} className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90">
+            {L('Reintentar', 'Try again', 'Tentar de novo')}
+          </button>
+        </div>
+      )}
 
       <div className="mt-2 grid grid-cols-1 gap-4 md:grid-cols-2">
         {list?.map((r) => (
