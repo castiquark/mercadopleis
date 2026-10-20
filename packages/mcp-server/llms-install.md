@@ -1,6 +1,8 @@
 # Installing the Mercadopleis MCP server (instructions for AI agents)
 
-This server is published on npm as `@mercadopleis/mcp-server`. **Do not clone the repository, build it or run `pnpm install`:** the repository is a monorepo and none of that is needed. `npx` downloads and runs the published package.
+**Easiest: nothing to install.** If the client accepts remote MCP servers (Streamable HTTP), add `{ "mcpServers": { "mercadopleis": { "type": "http", "url": "https://mercadopleis.club/mcp" } } }` (in Claude Code: `claude mcp add --transport http mercadopleis https://mercadopleis.club/mcp`) and go to "Check that it works". In remote mode, `login` returns a `sessionToken` that the signed-in tools take as an argument.
+
+**Local option:** the server is also published on npm as `@mercadopleis/mcp-server`. **Do not clone the repository, build it or run `pnpm install`:** the repository is a monorepo and none of that is needed. `npx` downloads and runs the published package.
 
 ## Requirements
 
