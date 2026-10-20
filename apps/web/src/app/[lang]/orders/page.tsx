@@ -38,6 +38,7 @@ import {
 import { OrderTimelineAndChat } from '@/components/OrderTimelineAndChat';
 import { DeliverableLink } from '@/components/DeliverableLink';
 import { isUserRejection } from '@/lib/web3Errors';
+import { decodeEscrowError, escrowErrorMessage, onchainStatusName } from '@/lib/escrowErrors';
 import { BUILDER_DATA_SUFFIX } from '@/lib/builderCode';
 
 interface MockOrder {
@@ -113,6 +114,42 @@ export default function OrdersDashboardPage() {
   const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID];
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
+
+  // Simulate every escrow write first: a revert then shows the contract's reason
+  // (e.g. the order was already refunded) instead of the wallet's gas-limit error.
+  const escrowWrite = async (
+    params: { address: `0x${string}`; abi: typeof MarketplaceEscrowAbi; dataSuffix?: `0x${string}`; functionName: string; args: readonly unknown[] },
+    order: MockOrder
+  ): Promise<`0x${string}`> => {
+    if (publicClient) {
+      try {
+        await publicClient.simulateContract({ ...(params as any), account: address });
+      } catch (err) {
+        const decoded = decodeEscrowError(err);
+        if (!decoded) throw err;
+        if (decoded.name === 'InvalidStatus') {
+          try {
+            const onchain = (await publicClient.readContract({
+              address: params.address,
+              abi: MarketplaceEscrowAbi,
+              functionName: 'orders',
+              args: [BigInt(order.contractOrderId)],
+            })) as readonly unknown[];
+            const s = onchainStatusName(onchain[7]);
+            if (s && s !== 'NONE' && s !== 'RESOLVED') {
+              setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: s } : o)));
+              setActiveDeliveryModalOrder(null);
+              setActiveDisputeModalOrder(null);
+            }
+          } catch (readErr) {
+            console.warn('Could not read the on-chain order:', readErr);
+          }
+        }
+        throw new Error(escrowErrorMessage(decoded, L));
+      }
+    }
+    return writeContractAsync(params as any);
+  };
 
   const networkName = (id?: number) => (id === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID ? 'Base Sepolia' : 'Base Mainnet');
   const formatDate = (unixSeconds?: number | null) =>
@@ -302,13 +339,13 @@ export default function OrdersDashboardPage() {
       let txHash: `0x${string}`;
 
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
-        txHash = await writeContractAsync({
+        txHash = await escrowWrite({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
           dataSuffix: BUILDER_DATA_SUFFIX,
           functionName: 'approveDelivery',
           args: [BigInt(order.contractOrderId)],
-        });
+        }, order);
         txHash = await confirmTx(publicClient, txHash);
       } else {
         throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
@@ -358,13 +395,13 @@ export default function OrdersDashboardPage() {
       let disputeTxHash: `0x${string}`;
 
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
-        disputeTxHash = await writeContractAsync({
+        disputeTxHash = await escrowWrite({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
           dataSuffix: BUILDER_DATA_SUFFIX,
           functionName: 'openDispute',
           args: [BigInt(activeDisputeModalOrder.contractOrderId)],
-        });
+        }, activeDisputeModalOrder);
         disputeTxHash = await confirmTx(publicClient, disputeTxHash);
       } else {
         throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
@@ -421,13 +458,13 @@ export default function OrdersDashboardPage() {
 
       let refundTx: `0x${string}`;
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
-        refundTx = await writeContractAsync({
+        refundTx = await escrowWrite({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
           dataSuffix: BUILDER_DATA_SUFFIX,
           functionName: 'claimTimeoutRefund',
           args: [BigInt(order.contractOrderId)],
-        });
+        }, order);
       } else {
         throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
       }
@@ -468,13 +505,13 @@ export default function OrdersDashboardPage() {
       if (!isConnected || !escrowAddress || escrowAddress === '0x0000000000000000000000000000000000000000') {
         throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
       }
-      const txHash = await writeContractAsync({
+      const txHash = await escrowWrite({
         address: escrowAddress,
         abi: MarketplaceEscrowAbi,
         dataSuffix: BUILDER_DATA_SUFFIX,
         functionName: 'claimAutoRelease',
         args: [BigInt(order.contractOrderId)],
-      });
+      }, order);
 
       const landedTx = await confirmTx(publicClient, txHash);
       try {
@@ -567,13 +604,13 @@ export default function OrdersDashboardPage() {
       let txHash: `0x${string}`;
 
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
-        txHash = await writeContractAsync({
+        txHash = await escrowWrite({
           address: escrowAddress,
           abi: MarketplaceEscrowAbi,
           dataSuffix: BUILDER_DATA_SUFFIX,
           functionName: 'submitDelivery',
           args: [BigInt(activeDeliveryModalOrder.contractOrderId), finalHash as `0x${string}`],
-        });
+        }, activeDeliveryModalOrder);
         txHash = await confirmTx(publicClient, txHash);
       } else {
         throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
