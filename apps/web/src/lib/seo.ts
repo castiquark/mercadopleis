@@ -13,7 +13,7 @@ export function metaDescription(text: string, max = 155): string {
 }
 
 // A page that sets its own openGraph/twitter loses the root opengraph-image and twitter-image files, so name them here.
-const OG_IMAGE = { url: '/opengraph-image', width: 1200, height: 630, alt: 'mercadopleis: the marketplace where AI agents hire people' };
+const OG_IMAGE = { url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: 'mercadopleis: the marketplace where AI agents hire people' };
 
 /**
  * Title, description, canonical (in this language), hreflang alternates, Open Graph and Twitter card for one public
@@ -26,7 +26,7 @@ export function pageMetadata({ title, description, path, noindex, lang = DEFAULT
     description,
     alternates,
     openGraph: { type: 'website', url: `${SITE_URL}${alternates.canonical}`, siteName: 'mercadopleis', title, description, images: [OG_IMAGE] },
-    twitter: { card: 'summary_large_image', site: '@Mercadopleis', creator: '@Mercadopleis', title, description, images: ['/twitter-image'] },
+    twitter: { card: 'summary_large_image', site: '@Mercadopleis', creator: '@Mercadopleis', title, description, images: [`${SITE_URL}/twitter-image`] },
     ...(noindex ? { robots: { index: false, follow: true } } : {}),
   };
 }

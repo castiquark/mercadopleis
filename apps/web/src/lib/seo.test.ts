@@ -124,8 +124,8 @@ describe('request page (server render)', () => {
 describe('social images', () => {
   it('keeps the site image on pages with their own Open Graph and Twitter cards', () => {
     const m = pageMetadata({ title: 'T', description: 'D', path: '/x' });
-    expect((m.openGraph as any).images[0].url).toBe('/opengraph-image');
-    expect((m.twitter as any).images).toEqual(['/twitter-image']);
+    expect((m.openGraph as any).images[0].url).toBe('https://mercadopleis.club/opengraph-image');
+    expect((m.twitter as any).images).toEqual(['https://mercadopleis.club/twitter-image']);
   });
 });
 

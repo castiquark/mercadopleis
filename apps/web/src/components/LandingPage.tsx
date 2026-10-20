@@ -17,8 +17,8 @@ export function landingMetadata(landing: Landing, lang: Language): Metadata {
     title: copy.title,
     description: copy.description,
     alternates: { canonical, languages },
-    openGraph: { type: 'article', url: `${SITE_URL}${canonical}`, siteName: 'mercadopleis', title: copy.title, description: copy.description, images: [{ url: '/opengraph-image', width: 1200, height: 630 }] },
-    twitter: { card: 'summary_large_image', site: '@Mercadopleis', title: copy.title, description: copy.description, images: ['/twitter-image'] },
+    openGraph: { type: 'article', url: `${SITE_URL}${canonical}`, siteName: 'mercadopleis', title: copy.title, description: copy.description, images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630 }] },
+    twitter: { card: 'summary_large_image', site: '@Mercadopleis', title: copy.title, description: copy.description, images: [`${SITE_URL}/twitter-image`] },
   };
 }
 
