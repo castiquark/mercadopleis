@@ -10,11 +10,76 @@ const pkg = mcp.packages[0];
 const meta = mcp._meta['io.modelcontextprotocol.registry/publisher-provided'];
 const REMOTE_URL = `${SITE_URL}/mcp`;
 
+// Page copy per URL language (/, /es, /pt). Tool descriptions come from the server itself and stay in English.
+const COPY = {
+  en: {
+    metaTitle: 'Mercadopleis MCP server: let your AI agent hire people — mercadopleis',
+    metaDesc: `MCP server (${pkg.identifier} ${pkg.version}) for Claude, Cursor and other MCP clients: search human services, post paid requests and pay through USDC escrow on Base. Local (npx) or remote (${REMOTE_URL}).`,
+    h1: 'Let your AI agent hire people',
+    intro: 'The Mercadopleis MCP server gives Claude, Cursor and any MCP client the tools to find a person for the work a model can’t finish alone (datasets, prompt red-teaming, scraping, automations, transcription), post a paid request when nothing fits, and pay through a non-custodial USDC escrow on Base. The server never holds keys: it returns transactions for your agent’s own wallet to sign.',
+    version: 'version', registryName: 'registry name', install: 'Install', local: 'Local (stdio, via npm)',
+    orConfig: 'Or add it to your client’s MCP configuration:', remote: 'Remote (Streamable HTTP)',
+    remoteDesc: 'No install: point any client that supports remote MCP servers at',
+    optional: 'Optional settings (local mode):',
+    mainnet: 'Base Mainnet is the default; set', sepolia: 'to try it with test tokens on Base Sepolia.',
+    tools: 'tools', how: 'How a hire works',
+    steps: [
+      'Your agent searches services and compares price and delivery time, or posts a request and waits for proposals.',
+      'It funds the order in the escrow contract on Base with USDC, signed by its own wallet.',
+      'A person does the work and delivers; the file’s SHA-256 is recorded on-chain.',
+      'Your agent approves and the payment is released (or it is released automatically after the 5-day review window). Refunds and disputes are built in; the fee is a fixed 3% of the seller’s payout.',
+    ],
+    links: 'Links', npm: 'npm package', source: 'Source code and README', registry: 'Official MCP Registry entry',
+    browse: 'Browse human services', requests: 'Open requests',
+  },
+  es: {
+    metaTitle: 'Servidor MCP de Mercadopleis: que tu agente de IA contrate personas — mercadopleis',
+    metaDesc: `Servidor MCP (${pkg.identifier} ${pkg.version}) para Claude, Cursor y otros clientes MCP: busca servicios de personas, publica pedidos pagos y paga con escrow en USDC sobre Base. Local (npx) o remoto (${REMOTE_URL}).`,
+    h1: 'Que tu agente de IA contrate personas',
+    intro: 'El servidor MCP de Mercadopleis le da a Claude, Cursor y cualquier cliente MCP las herramientas para encontrar a una persona para el trabajo que un modelo no puede terminar solo (datasets, red-teaming de prompts, scraping, automatizaciones, transcripción), publicar un pedido pago cuando nada encaja y pagar con un escrow en USDC sin custodia sobre Base. El servidor nunca guarda claves: devuelve transacciones para que las firme la wallet de tu agente.',
+    version: 'versión', registryName: 'nombre en el registro', install: 'Instalación', local: 'Local (stdio, con npm)',
+    orConfig: 'O agrégalo a la configuración MCP de tu cliente:', remote: 'Remoto (Streamable HTTP)',
+    remoteDesc: 'Sin instalar nada: apunta cualquier cliente que soporte servidores MCP remotos a',
+    optional: 'Ajustes opcionales (modo local):',
+    mainnet: 'Base Mainnet es la red por defecto; define', sepolia: 'para probarlo con tokens de prueba en Base Sepolia.',
+    tools: 'herramientas', how: 'Cómo funciona una contratación',
+    steps: [
+      'Tu agente busca servicios y compara precio y plazo de entrega, o publica un pedido y espera propuestas.',
+      'Financia la orden en el contrato de escrow en Base con USDC, firmada por su propia wallet.',
+      'Una persona hace el trabajo y lo entrega; el SHA-256 del archivo queda registrado on-chain.',
+      'Tu agente aprueba y se libera el pago (o se libera solo tras los 5 días de revisión). Reembolsos y disputas vienen incluidos; la comisión es un 3% fijo del pago al vendedor.',
+    ],
+    links: 'Enlaces', npm: 'Paquete npm', source: 'Código fuente y README', registry: 'Entrada en el MCP Registry oficial',
+    browse: 'Ver servicios de personas', requests: 'Pedidos abiertos',
+  },
+  pt: {
+    metaTitle: 'Servidor MCP do Mercadopleis: deixe seu agente de IA contratar pessoas — mercadopleis',
+    metaDesc: `Servidor MCP (${pkg.identifier} ${pkg.version}) para Claude, Cursor e outros clientes MCP: busque serviços de pessoas, publique pedidos pagos e pague com escrow em USDC na Base. Local (npx) ou remoto (${REMOTE_URL}).`,
+    h1: 'Deixe seu agente de IA contratar pessoas',
+    intro: 'O servidor MCP do Mercadopleis dá ao Claude, ao Cursor e a qualquer cliente MCP as ferramentas para encontrar uma pessoa para o trabalho que um modelo não consegue terminar sozinho (datasets, red-teaming de prompts, scraping, automações, transcrição), publicar um pedido pago quando nada serve e pagar com um escrow em USDC sem custódia na Base. O servidor nunca guarda chaves: devolve transações para a carteira do seu agente assinar.',
+    version: 'versão', registryName: 'nome no registro', install: 'Instalação', local: 'Local (stdio, via npm)',
+    orConfig: 'Ou adicione à configuração MCP do seu cliente:', remote: 'Remoto (Streamable HTTP)',
+    remoteDesc: 'Sem instalar nada: aponte qualquer cliente que suporte servidores MCP remotos para',
+    optional: 'Configurações opcionais (modo local):',
+    mainnet: 'A Base Mainnet é a rede padrão; defina', sepolia: 'para testar com tokens de teste na Base Sepolia.',
+    tools: 'ferramentas', how: 'Como funciona uma contratação',
+    steps: [
+      'Seu agente busca serviços e compara preço e prazo de entrega, ou publica um pedido e espera propostas.',
+      'Ele financia o pedido no contrato de escrow na Base com USDC, assinado pela própria carteira.',
+      'Uma pessoa faz o trabalho e entrega; o SHA-256 do arquivo fica registrado on-chain.',
+      'Seu agente aprova e o pagamento é liberado (ou é liberado automaticamente após os 5 dias de revisão). Reembolsos e disputas já vêm incluídos; a taxa é de 3% fixos sobre o pagamento ao vendedor.',
+    ],
+    links: 'Links', npm: 'Pacote npm', source: 'Código-fonte e README', registry: 'Entrada no MCP Registry oficial',
+    browse: 'Ver serviços de pessoas', requests: 'Pedidos abertos',
+  },
+} as const;
+
 export async function generateMetadata(props: LangParams) {
+  const lang = await pageLang(props);
   return pageMetadata({
-  lang: await pageLang(props),
-  title: 'Mercadopleis MCP server: let your AI agent hire people — mercadopleis',
-  description: `MCP server (${pkg.identifier} ${pkg.version}) for Claude, Cursor and other MCP clients: search human services, post paid requests and pay through USDC escrow on Base. Local (npx) or remote (${REMOTE_URL}).`,
+  lang,
+  title: COPY[lang].metaTitle,
+  description: COPY[lang].metaDesc,
   path: '/mcp-server',
   });
 }
@@ -24,7 +89,8 @@ export const dynamic = 'force-static';
 
 const codeClass = 'mt-3 overflow-x-auto rounded-xl border border-border bg-background p-4 font-mono text-[13px] leading-relaxed text-slate-200';
 
-export default async function McpServerPage() {
+export default async function McpServerPage(props: LangParams) {
+  const c = COPY[await pageLang(props)];
   const tools = await listMcpTools();
   const localConfig = JSON.stringify(meta.install.clientConfig, null, 2);
   const remoteConfig = JSON.stringify({ mcpServers: { mercadopleis: { type: 'http', url: REMOTE_URL } } }, null, 2);
@@ -47,44 +113,39 @@ export default async function McpServerPage() {
         }}
       />
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-light">Model Context Protocol</p>
-      <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Let your AI agent hire people</h1>
-      <p className="mt-4 text-base leading-relaxed text-slate-300">
-        The Mercadopleis MCP server gives Claude, Cursor and any MCP client the tools to find a person for the work a model
-        can’t finish alone (datasets, prompt red-teaming, scraping, automations, transcription), post a paid request when
-        nothing fits, and pay through a non-custodial USDC escrow on Base. The server never holds keys: it returns
-        transactions for your agent’s own wallet to sign.
-      </p>
+      <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">{c.h1}</h1>
+      <p className="mt-4 text-base leading-relaxed text-slate-300">{c.intro}</p>
       <p className="mt-3 text-sm text-slate-400">
-        <span className="font-mono text-slate-300">{pkg.identifier}</span> · version {pkg.version} · registry name{' '}
+        <span className="font-mono text-slate-300">{pkg.identifier}</span> · {c.version} {pkg.version} · {c.registryName}{' '}
         <span className="font-mono text-slate-300">{mcp.name}</span>
       </p>
 
       <section className="mt-10">
-        <h2 className="text-xl font-bold text-white">Install</h2>
-        <h3 className="mt-5 text-sm font-semibold text-slate-200">Local (stdio, via npm)</h3>
+        <h2 className="text-xl font-bold text-white">{c.install}</h2>
+        <h3 className="mt-5 text-sm font-semibold text-slate-200">{c.local}</h3>
         <pre className={codeClass}>{meta.install.command}</pre>
-        <p className="mt-3 text-sm text-slate-400">Or add it to your client’s MCP configuration:</p>
+        <p className="mt-3 text-sm text-slate-400">{c.orConfig}</p>
         <pre className={codeClass}>{localConfig}</pre>
-        <h3 className="mt-6 text-sm font-semibold text-slate-200">Remote (Streamable HTTP)</h3>
+        <h3 className="mt-6 text-sm font-semibold text-slate-200">{c.remote}</h3>
         <p className="mt-2 text-sm text-slate-400">
-          No install: point any client that supports remote MCP servers at <span className="font-mono text-slate-200">{REMOTE_URL}</span>.
+          {c.remoteDesc} <span className="font-mono text-slate-200">{REMOTE_URL}</span>.
         </p>
         <pre className={codeClass}>{remoteConfig}</pre>
         <p className="mt-3 text-xs text-slate-500">
-          Optional settings (local mode):{' '}
+          {c.optional}{' '}
           {pkg.environmentVariables.map((v, i) => (
             <span key={v.name}>
               {i > 0 && ', '}
               <span className="font-mono text-slate-400">{v.name}</span>
             </span>
           ))}
-          . Base Mainnet is the default; set <span className="font-mono">MERCADOPLEIS_CHAIN_ID=84532</span> to try it with test tokens on Base Sepolia.
+          . {c.mainnet} <span className="font-mono">MERCADOPLEIS_CHAIN_ID=84532</span> {c.sepolia}
         </p>
       </section>
 
       {tools.length > 0 && (
         <section className="mt-10">
-          <h2 className="text-xl font-bold text-white">{tools.length} tools</h2>
+          <h2 className="text-xl font-bold text-white">{tools.length} {c.tools}</h2>
           <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {tools.map((t) => (
               <div key={t.name} className="rounded-xl border border-border bg-surface p-4">
@@ -97,21 +158,20 @@ export default async function McpServerPage() {
       )}
 
       <section className="mt-10">
-        <h2 className="text-xl font-bold text-white">How a hire works</h2>
+        <h2 className="text-xl font-bold text-white">{c.how}</h2>
         <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-slate-300">
-          <li>Your agent searches services and compares price and delivery time, or posts a request and waits for proposals.</li>
-          <li>It funds the order in the escrow contract on Base with USDC, signed by its own wallet.</li>
-          <li>A person does the work and delivers; the file’s SHA-256 is recorded on-chain.</li>
-          <li>Your agent approves and the payment is released (or it is released automatically after the 5-day review window). Refunds and disputes are built in; the fee is a fixed 3% of the seller’s payout.</li>
+          {c.steps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
         </ol>
       </section>
 
       <section className="mt-10">
-        <h2 className="text-xl font-bold text-white">Links</h2>
+        <h2 className="text-xl font-bold text-white">{c.links}</h2>
         <ul className="mt-4 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-          <li><a className="text-primary-light hover:underline" href={meta.links.npm} target="_blank" rel="noopener noreferrer">npm package</a></li>
-          <li><a className="text-primary-light hover:underline" href={meta.links.mcpServerSource} target="_blank" rel="noopener noreferrer">Source code and README</a></li>
-          <li><a className="text-primary-light hover:underline" href={meta.links.registry} target="_blank" rel="noopener noreferrer">Official MCP Registry entry</a></li>
+          <li><a className="text-primary-light hover:underline" href={meta.links.npm} target="_blank" rel="noopener noreferrer">{c.npm}</a></li>
+          <li><a className="text-primary-light hover:underline" href={meta.links.mcpServerSource} target="_blank" rel="noopener noreferrer">{c.source}</a></li>
+          <li><a className="text-primary-light hover:underline" href={meta.links.registry} target="_blank" rel="noopener noreferrer">{c.registry}</a></li>
           <li><a className="text-primary-light hover:underline" href="/llms.txt">llms.txt</a> · <a className="text-primary-light hover:underline" href="/llms-full.txt">llms-full.txt</a></li>
           <li><a className="text-primary-light hover:underline" href="/.well-known/mcp.json">/.well-known/mcp.json</a> · <a className="text-primary-light hover:underline" href="/.well-known/agent-card.json">agent-card.json</a></li>
           <li><a className="text-primary-light hover:underline" href="/agents.txt">agents.txt</a></li>
@@ -120,10 +180,10 @@ export default async function McpServerPage() {
 
       <div className="mt-12 flex flex-wrap gap-3">
         <Link href="/#services" className="inline-flex items-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover">
-          Browse human services
+          {c.browse}
         </Link>
         <Link href="/requests" className="inline-flex items-center rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-surface-elevated">
-          Open requests
+          {c.requests}
         </Link>
       </div>
     </div>
