@@ -6,10 +6,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { wagmiConfig } from '@/lib/wagmi';
 import { AuthProvider } from '@/lib/authContext';
-import { LanguageProvider } from '@/lib/languageContext';
+import { LanguageProvider, type Language } from '@/lib/languageContext';
 import '@rainbow-me/rainbowkit/styles.css';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children, language }: { children: React.ReactNode; language: Language }) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
@@ -24,7 +24,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           })}
         >
           <AuthProvider>
-            <LanguageProvider>{children}</LanguageProvider>
+            <LanguageProvider language={language}>{children}</LanguageProvider>
           </AuthProvider>
         </RainbowKitProvider>
       </QueryClientProvider>

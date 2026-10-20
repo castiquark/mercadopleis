@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocaleLink';
 import { ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/lib/languageContext';
 import type { LegalDocumentContent } from '@/lib/legalContent';

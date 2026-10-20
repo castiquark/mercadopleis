@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { languageAlternates } from '@/lib/i18nRoutes';
 
 const BASE = 'https://mercadopleis.club';
 
@@ -29,5 +30,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   } catch {
     // Database unavailable: still serve the static entries.
   }
-  return entries;
+  // Every page exists in English (root), Spanish (/es) and Portuguese (/pt): list each with its hreflang alternates.
+  return entries.flatMap((e) => {
+    const path = e.url.slice(BASE.length) || '/';
+    const { languages } = languageAlternates(path, 'en');
+    const abs = Object.fromEntries(Object.entries(languages).map(([k, v]) => [k, `${BASE}${v === '/' ? '' : v}`]));
+    return (['en', 'es', 'pt'] as const).map((lang) => ({ ...e, url: abs[lang] || `${BASE}/`, alternates: { languages: abs } }));
+  });
 }

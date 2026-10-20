@@ -27,17 +27,17 @@ vi.mock('next/navigation', () => ({
     throw new Error('NEXT_NOT_FOUND');
   },
 }));
-vi.mock('@/app/services/[slug]/ServiceClient', () => ({ default: () => null }));
-vi.mock('@/app/requests/RequestsClient', () => ({ default: () => null }));
-vi.mock('@/app/HomeClient', () => ({ default: () => null }));
-vi.mock('@/app/requests/[slug]/RequestClient', () => ({ default: () => null }));
+vi.mock('@/app/[lang]/services/[slug]/ServiceClient', () => ({ default: () => null }));
+vi.mock('@/app/[lang]/requests/RequestsClient', () => ({ default: () => null }));
+vi.mock('@/app/[lang]/HomeClient', () => ({ default: () => null }));
+vi.mock('@/app/[lang]/requests/[slug]/RequestClient', () => ({ default: () => null }));
 
 // Pages return a fragment: JSON-LD blocks plus the client component.
 const children = (el: any): any[] => [el.props.children].flat().filter(Boolean);
 const client = (el: any) => children(el).find((c) => c.props && ('initialService' in c.props || 'initialData' in c.props || 'initialServices' in c.props || 'initialRequests' in c.props)) ?? el;
 const jsonLd = (el: any) => children(el).filter((c) => c.props?.data).map((c) => c.props.data);
 
-const params = (slug: string) => ({ params: Promise.resolve({ slug }) });
+const params = (slug: string, lang = 'en') => ({ params: Promise.resolve({ slug, lang }) });
 const service = {
   slug: 'transcripcion-audio',
   title: 'Transcripción de audio',
@@ -73,7 +73,7 @@ describe('service page (server render)', () => {
 
   it('renders the service for crawlers with its own title and canonical', async () => {
     findPublicService.mockResolvedValue(service);
-    const mod = await import('@/app/services/[slug]/page');
+    const mod = await import('@/app/[lang]/services/[slug]/page');
     const meta = await mod.generateMetadata(params(service.slug));
     expect(meta.title).toBe('Transcripción de audio — mercadopleis');
     expect(meta.alternates?.canonical).toBe('/services/transcripcion-audio');
@@ -88,7 +88,7 @@ describe('service page (server render)', () => {
   });
 
   it('keeps unlisted services out of the index, answers 404 for unknown ones, and falls back to the client without a database', async () => {
-    const mod = await import('@/app/services/[slug]/page');
+    const mod = await import('@/app/[lang]/services/[slug]/page');
     findPublicService.mockResolvedValue({ ...service, slug: 'privado', isListed: false });
     expect((await mod.generateMetadata(params('privado'))).robots).toEqual({ index: false, follow: true });
 
@@ -108,7 +108,7 @@ describe('request page (server render)', () => {
   it('renders the public view with a canonical by slug, and noindex when cancelled', async () => {
     const found = { id: 'u1', slug: 'dataset-jsonl', title: 'Dataset en JSONL', description: 'Necesito 500 filas.', budgetUsdc: '40', deliveryDays: 5, status: 'OPEN', proposals: [{ id: 'p1' }] };
     findRequest.mockResolvedValue(found);
-    const mod = await import('@/app/requests/[slug]/page');
+    const mod = await import('@/app/[lang]/requests/[slug]/page');
     const meta = await mod.generateMetadata(params('u1'));
     expect(meta.alternates?.canonical).toBe('/requests/dataset-jsonl');
     expect(meta.robots).toBeUndefined();
@@ -131,7 +131,7 @@ describe('social images', () => {
 
 describe('home page (server render)', () => {
   it('puts the catalog in the HTML, and hands null to the client when the database is down (never an empty list)', async () => {
-    const mod = await import('@/app/page');
+    const mod = await import('@/app/[lang]/page');
     const el: any = await mod.default();
     expect(client(el).props.initialServices.map((x: any) => x.slug)).toEqual(['transcripcion-audio']);
     expect(mod.revalidate).toBe(60);
@@ -146,7 +146,7 @@ describe('home page (server render)', () => {
 
 describe('requests list page (server render)', () => {
   it('puts the open requests in the HTML, and hands null to the client when the database is down', async () => {
-    const mod = await import('@/app/requests/page');
+    const mod = await import('@/app/[lang]/requests/page');
     const el: any = await mod.default();
     expect(el.props.initialRequests).toEqual([{ slug: 'dataset-jsonl', createdAt: '2026-10-02T00:00:00.000Z', proposalCount: 2 }]);
     expect(mod.revalidate).toBe(60);

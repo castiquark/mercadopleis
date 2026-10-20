@@ -1,0 +1,539 @@
+'use client';
+
+export const dynamic = 'force-dynamic';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import Link from '@/components/LocaleLink';
+import NotFound from '@/app/[lang]/not-found';
+import { usePublicClient, useAccount, useWriteContract } from 'wagmi';
+import { parseUnits } from 'viem';
+import { MarketplaceEscrowAbi, ESCROW_ADDRESSES, calculateOrderAmounts } from '@mercadopleis/contracts-abi';
+import { CONTRACT_CONFIG, isAdminWallet } from '@mercadopleis/types';
+import { fetchDisputes, resolveDisputeApi } from '@/lib/api';
+import { confirmTx } from '@/lib/txConfirm';
+import { useAuth } from '@/lib/authContext';
+import { useLanguage } from '@/lib/languageContext';
+import { BUILDER_DATA_SUFFIX } from '@/lib/builderCode';
+import {
+  Gavel,
+  ShieldCheck,
+  CheckCircle2,
+  AlertTriangle,
+  Scale,
+  ArrowRight,
+  RefreshCw,
+  ExternalLink,
+  Loader2,
+  LogIn,
+  Sparkles,
+} from 'lucide-react';
+
+interface DisputeItem {
+  id: string;
+  contractOrderId: number;
+  orderId?: string;
+  serviceTitle: string;
+  grossAmountUsdc: number;
+  reason: string;
+  evidenceUrl?: string;
+  buyerAddress: string;
+  sellerAddress: string;
+  status: 'OPEN' | 'RESOLVED';
+  sellerAwardUsdc?: number;
+  buyerRefundUsdc?: number;
+  createdAt: string;
+}
+
+export default function AdminDisputesPage() {
+  const { address, isConnected, chainId, status } = useAccount();
+  const publicClient = usePublicClient();
+  const { user, isAdmin, isLoading: isAuthLoading, signIn } = useAuth();
+  const { language } = useLanguage();
+  const L = (es: string, en: string, pt?: string) => (language === 'pt' ? (pt ?? es) : language === 'en' ? en : es);
+  const [mounted, setMounted] = useState(false);
+  const [disputesList, setDisputesList] = useState<DisputeItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedDispute, setSelectedDispute] = useState<DisputeItem | null>(null);
+  const [sellerSplitPct, setSellerSplitPct] = useState<number>(50); // percentage to seller (0 to 100)
+  const [resolutionNotes, setResolutionNotes] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const activeChainId = chainId || CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID;
+  const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID];
+  const isSepolia = activeChainId === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
+  const explorerBaseUrl = isSepolia ? 'https://sepolia.basescan.org' : 'https://basescan.org';
+  const { writeContractAsync } = useWriteContract();
+
+  const isArbitrator = !!address && isAdminWallet(address);
+  const isAuthorized = isArbitrator || isAdmin;
+
+  const loadData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const apiDisputes = await fetchDisputes();
+      if (apiDisputes && Array.isArray(apiDisputes)) {
+        const mapped: DisputeItem[] = apiDisputes.map((d: any) => ({
+          id: d.id,
+          contractOrderId: d.order?.contractOrderId || 0,
+          orderId: d.orderId,
+          serviceTitle: d.order?.service?.title || 'Servicio de Marketplace',
+          grossAmountUsdc: parseFloat(d.order?.grossAmountUsdc || '0'),
+          reason: d.reason,
+          evidenceUrl: d.evidenceUrl,
+          buyerAddress: d.order?.buyer?.walletAddress || '0x...',
+          sellerAddress: d.order?.seller?.walletAddress || '0x...',
+          status: d.status,
+          sellerAwardUsdc: d.sellerAwardUsdc ? parseFloat(d.sellerAwardUsdc) : undefined,
+          buyerRefundUsdc: d.buyerRefundUsdc ? parseFloat(d.buyerRefundUsdc) : undefined,
+          createdAt: d.createdAt,
+        }));
+        setDisputesList(mapped);
+      } else {
+        setDisputesList([]);
+      }
+    } catch (e) {
+      console.warn('Disputes fetch note:', e);
+      setDisputesList([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthorized) {
+      loadData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [isAuthorized, loadData]);
+
+  // Compute breakdown for selected dispute
+  const totalAmount = selectedDispute ? selectedDispute.grossAmountUsdc : 0;
+  const sellerGross = Number(((totalAmount * sellerSplitPct) / 100).toFixed(2));
+  const buyerRefund = Number((totalAmount - sellerGross).toFixed(2));
+  // Platform fee 3% applies only to seller gross portion
+  const { platformFeeUsdc, sellerAmountUsdc: sellerNetPayout } = calculateOrderAmounts(sellerGross, 300);
+
+  const handleExecuteResolution = async () => {
+    if (!selectedDispute) return;
+    try {
+      setIsProcessing(true);
+      setNotification(L(`Enviando la resolución de la orden #${selectedDispute.contractOrderId}...`, `Sending the resolution for order #${selectedDispute.contractOrderId}...`, `Enviando a resolução do pedido #${selectedDispute.contractOrderId}...`));
+
+      const sellerRaw = parseUnits(sellerGross.toString(), 6);
+      const buyerRaw = parseUnits(buyerRefund.toString(), 6);
+
+      // On-chain resolution if connected
+      let resolveTxHash: `0x${string}`;
+      if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
+        resolveTxHash = await writeContractAsync({
+          address: escrowAddress,
+          abi: MarketplaceEscrowAbi,
+          dataSuffix: BUILDER_DATA_SUFFIX,
+          functionName: 'resolveDispute',
+          args: [BigInt(selectedDispute.contractOrderId), sellerRaw, buyerRaw],
+        });
+        resolveTxHash = await confirmTx(publicClient, resolveTxHash);
+      } else {
+        throw new Error(L('Conecta tu wallet para enviar la transacción.', 'Connect your wallet to send the transaction.', 'Conecte sua carteira para enviar a transação.'));
+      }
+
+      // Backend API resolution
+      try {
+        await resolveDisputeApi(selectedDispute.id, {
+          sellerAwardUsdc: sellerGross,
+          buyerRefundUsdc: buyerRefund,
+          resolutionNotes,
+          txHash: resolveTxHash,
+        });
+      } catch (err) {
+        console.warn('API resolve note:', err);
+      }
+
+      // Update state
+      setDisputesList((prev) =>
+        prev.map((d) =>
+          d.id === selectedDispute.id
+            ? {
+                ...d,
+                status: 'RESOLVED',
+                sellerAwardUsdc: sellerGross,
+                buyerRefundUsdc: buyerRefund,
+              }
+            : d
+        )
+      );
+
+      setNotification(L(`Disputa resuelta: ${sellerGross} USDC para el vendedor y ${buyerRefund} USDC de reembolso al comprador.`, `Dispute resolved: ${sellerGross} USDC to the seller and ${buyerRefund} USDC refunded to the buyer.`, `Disputa resolvida: ${sellerGross} USDC para o vendedor e ${buyerRefund} USDC de reembolso ao comprador.`));
+      setSelectedDispute(null);
+    } catch (err: any) {
+      console.error(err);
+      setNotification(`Error: ${err?.shortMessage || err?.message || L('No se pudo ejecutar la resolución', 'The resolution could not be executed', 'Não foi possível executar a resolução')}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // While mounting or wagmi is establishing connection, show neutral loader
+  if (!mounted || status === 'connecting' || status === 'reconnecting') {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
+      </div>
+    );
+  }
+
+  // If not authorized (not connected, or connected with a non-admin wallet):
+  // Never reveal an admin screen or 403 message — simply render a clean 404
+  // Rendered directly: throwing notFound() from this client component crashed the page when the wallet
+  // disconnected while it was open.
+  if (!isConnected || !isAuthorized) {
+    return <NotFound />;
+  }
+
+  // State 3: Authorized Administrator view
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <div className="flex items-center gap-2 text-primary-light">
+            <Scale className="h-5 w-5" />
+            <span className="text-xs font-semibold uppercase tracking-wider">{L('Administración', 'Administration', 'Administração')}</span>
+          </div>
+          <h1 className="mt-1 text-3xl font-extrabold text-white">{L('Disputas', 'Disputes', 'Disputas')}</h1>
+          <p className="mt-1 text-sm text-slate-400">
+            {L('Disputas entre compradores y vendedores en', 'Disputes between buyers and sellers on', 'Disputas entre compradores e vendedores na')} {isSepolia ? 'Base Sepolia' : 'Base Mainnet'}.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => loadData()}
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-surface-elevated hover:text-white"
+          >
+            <RefreshCw className="h-4 w-4 text-primary-light" />
+            <span>{L('Actualizar', 'Refresh', 'Atualizar')}</span>
+          </button>
+          <Link
+            href="/admin/founding-sellers"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-surface-elevated"
+          >
+            <span>Founding Sellers</span>
+          </Link>
+          <Link
+            href="/orders"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-surface-elevated"
+          >
+            <span>{L('Ver órdenes', 'View orders', 'Ver pedidos')}</span>
+            <ArrowRight className="h-4 w-4 text-primary-light" />
+          </Link>
+        </div>
+      </div>
+
+      {/* SIWE Authenticate prompt if wallet matches admin but session is not established */}
+      {!user && (
+        <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-primary/40 bg-primary/10 p-5">
+          <div className="flex items-center gap-3">
+            <Sparkles className="h-5 w-5 text-primary-light shrink-0" />
+            <div>
+              <div className="text-sm font-bold text-white">{L('Inicia sesión como administrador', 'Sign in as administrator', 'Entre como administrador')}</div>
+              <div className="text-xs text-slate-300">{L('Firma el mensaje con tu wallet para cargar y registrar disputas.', 'Sign the message with your wallet to load and record disputes.', 'Assine a mensagem com sua carteira para carregar e registrar disputas.')}</div>
+            </div>
+          </div>
+          <button
+            onClick={() => signIn()}
+            disabled={isAuthLoading}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white hover:bg-primary-hover disabled:opacity-50 transition"
+          >
+            <LogIn className="h-3.5 w-3.5" />
+            <span>{isAuthLoading ? L('Firmando...', 'Signing...', 'Assinando...') : L('Iniciar sesión', 'Sign in', 'Iniciar sessão')}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Contract & Role Banner */}
+      <div className="mt-6 rounded-2xl border border-border bg-surface p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between text-xs">
+          <div>
+            <span className="text-slate-400">Smart Contract Escrow ({isSepolia ? 'Base Sepolia' : 'Base Mainnet'}): </span>
+            <a
+              href={`${explorerBaseUrl}/address/${escrowAddress}`}
+              target="_blank"
+              rel="noreferrer"
+              className="font-mono text-primary-light hover:underline inline-flex items-center gap-1"
+            >
+              {escrowAddress}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400">{L('Tu rol:', 'Your role:', 'Seu papel:')}</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-1 font-bold text-accent">
+              <Gavel className="h-3.5 w-3.5" /> {L('Árbitro', 'Arbitrator', 'Árbitro')}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Notification banner */}
+      {notification && (
+        <div className="mt-6 flex items-center justify-between rounded-xl border border-primary/30 bg-primary/10 p-4 text-sm text-primary-light">
+          <span>{notification}</span>
+          <button
+            onClick={() => setNotification(null)}
+            className="text-xs font-semibold text-slate-400 hover:text-white"
+          >
+            {L('Cerrar', 'Close', 'Fechar')}
+          </button>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {isLoading ? (
+        <div className="mt-12 flex flex-col items-center justify-center py-16 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="mt-4 text-sm text-slate-400">{L('Cargando disputas...', 'Loading disputes...', 'Carregando disputas...')}</p>
+        </div>
+      ) : disputesList.length === 0 ? (
+        /* Empty state */
+        <div className="mt-8 rounded-2xl border border-border/80 bg-surface/60 p-12 text-center">
+          <ShieldCheck className="mx-auto h-12 w-12 text-accent/80" />
+          <h3 className="mt-4 text-base font-bold text-white">{L('No hay disputas', 'No disputes', 'Nenhuma disputa')}</h3>
+          <p className="mt-2 text-xs text-slate-400 max-w-sm mx-auto">
+            {L('No hay disputas abiertas en este momento.', 'There are no open disputes right now.', 'Não há disputas abertas neste momento.')}
+          </p>
+        </div>
+      ) : (
+        /* Disputes Grid */
+        <div className="mt-8 space-y-4">
+          {disputesList.map((dispute) => (
+            <div
+              key={dispute.id}
+              className="rounded-2xl border border-border bg-surface p-6 transition hover:border-slate-600"
+            >
+              <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+                <div className="max-w-2xl">
+                  <div className="flex items-center gap-3">
+                    <span className="rounded bg-surface-elevated px-2 py-0.5 text-xs font-mono text-slate-300">
+                      {L('Orden', 'Order', 'Pedido')} #{dispute.contractOrderId}
+                    </span>
+
+                    {dispute.status === 'OPEN' ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-medium text-red-400">
+                        <AlertTriangle className="h-3 w-3" /> {L('Abierta', 'Open', 'Aberta')}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">
+                        <CheckCircle2 className="h-3 w-3" /> {L('Resuelta', 'Resolved', 'Resolvida')}
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="mt-2 text-lg font-bold text-white">{dispute.serviceTitle}</h3>
+
+                  {/* Reason description */}
+                  <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 p-3.5 text-xs text-red-200">
+                    <strong className="block text-red-400 mb-1">{L('Motivo:', 'Reason:', 'Motivo:')}</strong>
+                    {dispute.reason}
+                  </div>
+
+                  {dispute.evidenceUrl && (
+                    <div className="mt-2 text-xs text-slate-400">
+                      <span>{L('Pruebas:', 'Evidence:', 'Provas:')} </span>
+                      <a
+                        href={dispute.evidenceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-primary-light hover:underline inline-flex items-center gap-1"
+                      >
+                        {dispute.evidenceUrl}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Wallets involved */}
+                  <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-400">
+                    <span>{L('Comprador', 'Buyer', 'Comprador')}: <code className="text-slate-300">{dispute.buyerAddress.slice(0, 10)}...</code></span>
+                    <span>{L('Vendedor', 'Seller', 'Vendedor')}: <code className="text-slate-300">{dispute.sellerAddress.slice(0, 10)}...</code></span>
+                  </div>
+                </div>
+
+                {/* Amounts and Actions */}
+                <div className="flex flex-col lg:items-end justify-between self-stretch">
+                  <div>
+                    <div className="flex items-baseline gap-1 lg:justify-end">
+                      <span className="text-2xl font-extrabold text-white">{dispute.grossAmountUsdc}</span>
+                      <span className="text-xs font-semibold text-usdc">{L('USDC en escrow', 'USDC in escrow', 'USDC em escrow')}</span>
+                    </div>
+                    {dispute.status === 'RESOLVED' && (
+                      <div className="mt-2 text-xs text-accent lg:text-right">
+                        <p>{L('Resolución', 'Resolution', 'Resolução')}: {dispute.sellerAwardUsdc} USDC {L('vendedor', 'seller', 'vendedor')} / {dispute.buyerRefundUsdc} USDC {L('reembolso', 'refund', 'reembolso')}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {dispute.status === 'OPEN' && (
+                    <button
+                      onClick={() => {
+                        setSelectedDispute(dispute);
+                        setSellerSplitPct(50);
+                      }}
+                      className="mt-4 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/20 transition hover:bg-primary-hover active:scale-95"
+                    >
+                      {L('Resolver', 'Resolve', 'Resolver')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Resolution Modal */}
+      {selectedDispute && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-xl rounded-2xl border border-border bg-surface p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border/80 pb-4">
+              <div className="flex items-center gap-2 text-primary-light">
+                <Gavel className="h-5 w-5" />
+                <h3 className="text-lg font-bold text-white">{L('Resolver disputa', 'Resolve dispute', 'Resolver disputa')}</h3>
+              </div>
+              <button
+                onClick={() => setSelectedDispute(null)}
+                className="text-xs text-slate-400 hover:text-white"
+              >
+                {L('Cancelar', 'Cancel', 'Cancelar')}
+              </button>
+            </div>
+
+            <div className="mt-4 text-xs text-slate-300 space-y-1">
+              <p><strong>{L('Orden', 'Order', 'Pedido')}:</strong> #{selectedDispute.contractOrderId} - {selectedDispute.serviceTitle}</p>
+              <p><strong>{L('Monto en disputa', 'Amount in dispute', 'Valor em disputa')}:</strong> <span className="font-bold text-white">{totalAmount} USDC</span></p>
+            </div>
+
+            {/* Presets */}
+            <div className="mt-5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                {L('Reparto de los fondos', 'Split of the funds', 'Divisão dos fundos')}
+              </label>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSellerSplitPct(100)}
+                  className={`rounded-xl border p-2 text-xs font-semibold transition ${
+                    sellerSplitPct === 100
+                      ? 'border-accent bg-accent/20 text-accent'
+                      : 'border-border text-slate-400 hover:bg-surface-elevated'
+                  }`}
+                >
+                  {L('100% vendedor', '100% seller', '100% vendedor')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSellerSplitPct(50)}
+                  className={`rounded-xl border p-2 text-xs font-semibold transition ${
+                    sellerSplitPct === 50
+                      ? 'border-primary bg-primary/20 text-primary-light'
+                      : 'border-border text-slate-400 hover:bg-surface-elevated'
+                  }`}
+                >
+                  50% / 50%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSellerSplitPct(0)}
+                  className={`rounded-xl border p-2 text-xs font-semibold transition ${
+                    sellerSplitPct === 0
+                      ? 'border-amber-500 bg-amber-500/20 text-amber-400'
+                      : 'border-border text-slate-400 hover:bg-surface-elevated'
+                  }`}
+                >
+                  {L('100% reembolso', '100% refund', '100% reembolso')}
+                </button>
+              </div>
+            </div>
+
+            {/* Custom slider */}
+            <div className="mt-5">
+              <div className="flex justify-between text-xs text-slate-300">
+                <span>{L('Porcentaje para el vendedor:', 'Share for the seller:', 'Porcentagem para o vendedor:')}</span>
+                <span className="font-bold text-white">{sellerSplitPct}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={sellerSplitPct}
+                onChange={(e) => setSellerSplitPct(parseInt(e.target.value, 10))}
+                className="mt-2 w-full accent-primary cursor-pointer"
+              />
+            </div>
+
+            {/* Mathematical distribution breakdown */}
+            <div className="mt-5 space-y-2 rounded-xl border border-border/80 bg-background/50 p-4 text-xs">
+              <div className="flex justify-between text-slate-300">
+                <span>{L('Para el vendedor (bruto):', 'To the seller (gross):', 'Para o vendedor (bruto):')}</span>
+                <span className="font-semibold text-white">{sellerGross} USDC</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>{L('Comisión (3% sobre la parte del vendedor):', 'Fee (3% of the seller part):', 'Taxa (3% sobre a parte do vendedor):')}</span>
+                <span>-{platformFeeUsdc} USDC</span>
+              </div>
+              <div className="flex justify-between border-t border-border/60 pt-1 text-slate-300">
+                <span>{L('Neto para el vendedor:', 'Net to the seller:', 'Líquido para o vendedor:')}</span>
+                <span className="font-bold text-accent">{sellerNetPayout} USDC</span>
+              </div>
+              <div className="flex justify-between border-t border-border/60 pt-1 text-slate-300">
+                <span>{L('Reembolso al comprador (sin comisión):', 'Refund to the buyer (no fee):', 'Reembolso ao comprador (sem taxa):')}</span>
+                <span className="font-bold text-amber-400">{buyerRefund} USDC</span>
+              </div>
+            </div>
+
+            {/* Arbitrator notes */}
+            <div className="mt-4">
+              <label className="block text-xs font-semibold text-slate-400">
+                {L('Motivo de la resolución', 'Reason for the resolution', 'Motivo da resolução')}
+              </label>
+              <textarea
+                rows={2}
+                placeholder={L('Explica brevemente la decisión; quedará registrada en la plataforma.', 'Briefly explain the decision; it is recorded on the platform.', 'Explique brevemente a decisão; ela ficará registrada na plataforma.')}
+                value={resolutionNotes}
+                onChange={(e) => setResolutionNotes(e.target.value)}
+                className="mt-1.5 w-full rounded-xl border border-border bg-background p-3 text-xs text-white placeholder-slate-500 focus:border-primary focus:outline-none"
+              />
+            </div>
+
+            {/* Confirm button */}
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedDispute(null)}
+                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-slate-400 hover:text-white"
+              >
+                {L('Volver', 'Back', 'Voltar')}
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteResolution}
+                disabled={isProcessing}
+                className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-hover active:scale-95 disabled:opacity-50"
+              >
+                {isProcessing ? L('Confirma en tu wallet...', 'Confirm in your wallet...', 'Confirme na sua carteira...') : L('Ejecutar resolución', 'Execute resolution', 'Executar resolução')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
