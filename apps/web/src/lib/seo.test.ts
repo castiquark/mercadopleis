@@ -32,6 +32,11 @@ vi.mock('@/app/requests/RequestsClient', () => ({ default: () => null }));
 vi.mock('@/app/HomeClient', () => ({ default: () => null }));
 vi.mock('@/app/requests/[slug]/RequestClient', () => ({ default: () => null }));
 
+// Pages return a fragment: JSON-LD blocks plus the client component.
+const children = (el: any): any[] => [el.props.children].flat().filter(Boolean);
+const client = (el: any) => children(el).find((c) => c.props && ('initialService' in c.props || 'initialData' in c.props || 'initialServices' in c.props || 'initialRequests' in c.props)) ?? el;
+const jsonLd = (el: any) => children(el).filter((c) => c.props?.data).map((c) => c.props.data);
+
 const params = (slug: string) => ({ params: Promise.resolve({ slug }) });
 const service = {
   slug: 'transcripcion-audio',
@@ -75,8 +80,11 @@ describe('service page (server render)', () => {
     expect(meta.description).toMatch(/^25\.00 USDC · 3 d · Transcribo/);
     expect(meta.robots).toBeUndefined();
     const el: any = await mod.default(params(service.slug));
-    expect(el.props.initialService.title).toBe(service.title);
-    expect(el.props.initialService.createdAt).toBe('2026-10-01T00:00:00.000Z');
+    expect(client(el).props.initialService.title).toBe(service.title);
+    expect(client(el).props.initialService.createdAt).toBe('2026-10-01T00:00:00.000Z');
+    const [svc, crumbs] = jsonLd(el);
+    expect(svc).toMatchObject({ '@type': 'Service', name: service.title, offers: { price: '25.00', priceCurrency: 'USDC' } });
+    expect(crumbs['@type']).toBe('BreadcrumbList');
   });
 
   it('keeps unlisted services out of the index, answers 404 for unknown ones, and falls back to the client without a database', async () => {
@@ -90,7 +98,7 @@ describe('service page (server render)', () => {
     dbDown = true;
     const el: any = await mod.default(params('sin-base'));
     dbDown = false;
-    expect(el.props.initialService).toBeNull();
+    expect(client(el).props.initialService).toBeNull();
   });
 });
 
@@ -105,8 +113,8 @@ describe('request page (server render)', () => {
     expect(meta.alternates?.canonical).toBe('/requests/dataset-jsonl');
     expect(meta.robots).toBeUndefined();
     const el: any = await mod.default(params('dataset-jsonl'));
-    expect(el.props.initialData.request.title).toBe('Dataset en JSONL');
-    expect(el.props.initialData.proposals).toEqual([]);
+    expect(client(el).props.initialData.request.title).toBe('Dataset en JSONL');
+    expect(client(el).props.initialData.proposals).toEqual([]);
 
     findRequest.mockResolvedValue({ ...found, status: 'CANCELLED' });
     expect((await mod.generateMetadata(params('cancelada'))).robots).toEqual({ index: false, follow: true });
@@ -125,13 +133,14 @@ describe('home page (server render)', () => {
   it('puts the catalog in the HTML, and hands null to the client when the database is down (never an empty list)', async () => {
     const mod = await import('@/app/page');
     const el: any = await mod.default();
-    expect(el.props.initialServices.map((x: any) => x.slug)).toEqual(['transcripcion-audio']);
+    expect(client(el).props.initialServices.map((x: any) => x.slug)).toEqual(['transcripcion-audio']);
     expect(mod.revalidate).toBe(60);
+    expect(jsonLd(el).map((d: any) => d['@type'])).toEqual(['Organization', 'WebSite']);
 
     dbDown = true;
     const down: any = await mod.default();
     dbDown = false;
-    expect(down.props.initialServices).toBeNull();
+    expect(client(down).props.initialServices).toBeNull();
   });
 });
 
@@ -145,5 +154,14 @@ describe('requests list page (server render)', () => {
     const down: any = await mod.default();
     dbDown = false;
     expect(down.props.initialRequests).toBeNull();
+  });
+});
+
+describe('JsonLd', () => {
+  it('escapes "<" so seller text cannot close the script tag', async () => {
+    const { JsonLd } = await import('./jsonLd');
+    const el: any = JsonLd({ data: { name: '</script><script>alert(1)</script>' } });
+    expect(el.props.dangerouslySetInnerHTML.__html).not.toContain('<');
+    expect(JSON.parse(el.props.dangerouslySetInnerHTML.__html).name).toBe('</script><script>alert(1)</script>');
   });
 });

@@ -25,8 +25,8 @@ export function pageMetadata({ title, description, path, noindex }: { title: str
   };
 }
 
-/** For private pages (orders, profile, admin) and forms: crawlable so Google sees the tag, but kept out of the index. */
-export const NOINDEX: Metadata = { robots: { index: false, follow: false } };
+/** For private pages (orders, profile, admin) and forms: crawlable so Google sees the tag, kept out of the index, links still followed. */
+export const NOINDEX: Metadata = { robots: { index: false, follow: true } };
 
 /** Plain JSON copy (dates become ISO strings), the same shape the API returns to client components. */
 export const toJson = <T>(value: T): T => JSON.parse(JSON.stringify(value));

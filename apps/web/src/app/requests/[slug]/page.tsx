@@ -5,6 +5,7 @@ import RequestClient from './RequestClient';
 import type { RequestDetail } from '@/lib/api';
 import { findRequest, requestDetail } from '@/lib/requestsDb';
 import { metaDescription, pageMetadata, toJson } from '@/lib/seo';
+import { breadcrumbLd, JsonLd } from '@/lib/jsonLd';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -36,5 +37,10 @@ export default async function RequestPage({ params }: Props) {
   if (found === undefined) notFound();
   // The public view only (no proposals, no award): the client reloads it with the viewer's session.
   const initialData = found ? (toJson(await requestDetail(found, null)) as unknown as RequestDetail) : null;
-  return <RequestClient initialData={initialData} />;
+  return (
+    <>
+      {found && <JsonLd data={breadcrumbLd([{ name: 'Mercadopleis', path: '/' }, { name: 'Requests', path: '/requests' }, { name: found.title, path: `/requests/${found.slug}` }])} />}
+      <RequestClient initialData={initialData} />
+    </>
+  );
 }

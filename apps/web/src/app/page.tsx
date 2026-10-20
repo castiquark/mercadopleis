@@ -3,6 +3,7 @@ import type { Service } from '@mercadopleis/types';
 import HomeClient from './HomeClient';
 import { listPublicServices } from '@/lib/servicesDb';
 import { toJson } from '@/lib/seo';
+import { JsonLd, organizationLd, websiteLd } from '@/lib/jsonLd';
 
 // Title, description and social cards come from the root layout; only the canonical is set here,
 // so that pages without their own canonical do not point at the home page.
@@ -23,5 +24,11 @@ async function initialServices(): Promise<Service[] | null> {
 }
 
 export default async function HomePage() {
-  return <HomeClient initialServices={await initialServices()} />;
+  return (
+    <>
+      <JsonLd data={organizationLd()} />
+      <JsonLd data={websiteLd()} />
+      <HomeClient initialServices={await initialServices()} />
+    </>
+  );
 }

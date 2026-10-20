@@ -5,6 +5,7 @@ import type { Service } from '@mercadopleis/types';
 import ServiceClient from './ServiceClient';
 import { findPublicService } from '@/lib/servicesDb';
 import { metaDescription, pageMetadata, toJson } from '@/lib/seo';
+import { breadcrumbLd, JsonLd, serviceLd } from '@/lib/jsonLd';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -35,5 +36,13 @@ export default async function ServicePage({ params }: Props) {
   const { slug } = await params;
   const service = await load(slug);
   if (service === undefined) notFound();
-  return <ServiceClient initialService={service ? toJson(service as unknown as Service) : null} />;
+  return (
+    <>
+      {service && service.isListed && <JsonLd data={serviceLd(service)} />}
+      {service && (
+        <JsonLd data={breadcrumbLd([{ name: 'Mercadopleis', path: '/' }, { name: 'Services', path: '/#services' }, { name: service.title, path: `/services/${service.slug}` }])} />
+      )}
+      <ServiceClient initialService={service ? toJson(service as unknown as Service) : null} />
+    </>
+  );
 }
