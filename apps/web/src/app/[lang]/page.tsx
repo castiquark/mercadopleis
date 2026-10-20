@@ -10,9 +10,9 @@ export async function generateMetadata(props: LangParams) {
   return { alternates: languageAlternates('/', await pageLang(props)) };
 }
 
-// The catalog is in the HTML for crawlers and slow connections, regenerated at most once a minute;
-// visitors get the cached page without waiting on a cold function or database.
-export const revalidate = 60;
+// The catalog is in the HTML for crawlers and slow connections, rendered per request. Not ISR: on Netlify the
+// background regeneration of the rewritten root (/ -> /en) cached the 404 page at the edge (20 Oct 2026).
+export const dynamic = 'force-dynamic';
 
 /** null when the catalog cannot be read: the client then loads it itself, instead of showing an empty catalog. */
 async function initialServices(): Promise<Service[] | null> {

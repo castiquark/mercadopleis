@@ -20,8 +20,8 @@ export async function generateMetadata(props: LangParams) {
   });
 }
 
-// Open requests are in the HTML for crawlers, regenerated at most once a minute.
-export const revalidate = 60;
+// Open requests are in the HTML for crawlers, rendered per request (not ISR: see the note in ../page.tsx).
+export const dynamic = 'force-dynamic';
 
 /** null when the requests cannot be read: the client then loads them itself (never an empty list or a raw error). */
 async function initialRequests(): Promise<RequestSummary[] | null> {

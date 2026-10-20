@@ -134,7 +134,7 @@ describe('home page (server render)', () => {
     const mod = await import('@/app/[lang]/page');
     const el: any = await mod.default();
     expect(client(el).props.initialServices.map((x: any) => x.slug)).toEqual(['transcripcion-audio']);
-    expect(mod.revalidate).toBe(60);
+    expect(mod.dynamic).toBe('force-dynamic');
     expect(jsonLd(el).map((d: any) => d['@type'])).toEqual(['Organization', 'WebSite']);
 
     dbDown = true;
@@ -149,7 +149,7 @@ describe('requests list page (server render)', () => {
     const mod = await import('@/app/[lang]/requests/page');
     const el: any = await mod.default();
     expect(el.props.initialRequests).toEqual([{ slug: 'dataset-jsonl', createdAt: '2026-10-02T00:00:00.000Z', proposalCount: 2 }]);
-    expect(mod.revalidate).toBe(60);
+    expect(mod.dynamic).toBe('force-dynamic');
     dbDown = true;
     const down: any = await mod.default();
     dbDown = false;
