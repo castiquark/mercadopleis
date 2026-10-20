@@ -26,6 +26,7 @@ export function landingMetadata(landing: Landing, lang: Language): Metadata {
 export function LandingPage({ landing, lang }: { landing: Landing; lang: Language }) {
   const { copy, translated } = landingCopy(landing, lang);
   const textLang = translated ? lang : 'en';
+  const relatedHeading = textLang === 'en' ? 'Related' : 'Relacionado';
   // Read by the language suggestion bar, so it never offers a language this page is not written in.
   const langs = (['en', 'es', 'pt'] as const).filter((l) => landing[l]).join(',');
   return (
@@ -76,6 +77,21 @@ export function LandingPage({ landing, lang }: { landing: Landing; lang: Languag
           )}
         </section>
       ))}
+
+      {copy.related && copy.related.length > 0 && (
+        <section className="mt-12">
+          <h2 className="text-2xl font-bold text-white">{relatedHeading}</h2>
+          <ul className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {copy.related.map((r) => (
+              <li key={r.href}>
+                <Link href={r.href} className="text-primary-light hover:underline">
+                  {r.label} →
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="mt-12">
         <h2 className="text-2xl font-bold text-white">FAQ</h2>
