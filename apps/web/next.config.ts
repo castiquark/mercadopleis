@@ -8,8 +8,9 @@ const nextConfig: NextConfig = {
   // map straight to the segment. API routes, /mcp, /.well-known, Next internals and public files never get a prefix.
   async rewrites() {
     return {
+      // The root goes first: on Netlify an afterFiles rewrite of / was served the prerendered 404 (20 Oct 2026).
+      beforeFiles: [{ source: '/', destination: '/en' }],
       afterFiles: [
-        { source: '/', destination: '/en' },
         {
           source: '/:path((?!api(?:/|$)|mcp(?:/|$)|_next/|\.well-known/|es(?:/|$)|pt(?:/|$)|en(?:/|$)).*)',
           destination: '/en/:path',
