@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { concatHex, createPublicClient, encodeFunctionData, http, isAddress, parseUnits } from 'viem';
@@ -30,10 +29,9 @@ import {
   type ApiOrder,
 } from './session.js';
 import { API_URL } from './config.js';
+import { VERSION } from './version.js';
 import { BUILDER_DATA_SUFFIX, CHAIN_ID, ORDER_STATUS, erc20Abi, escrowAbi, getNetwork } from './config.js';
 
-// package.json sits next to src/ and dist/, so this works both in development and when installed from npm.
-const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
 
 /** Tools that act as the signed-in wallet (or show what is yours). In HTTP mode they accept a sessionToken. */
 const SIGNED_IN_TOOLS = new Set([
@@ -54,7 +52,7 @@ export interface ServerOptions {
 }
 
 export function createServer({ remote = false }: ServerOptions = {}): McpServer {
-  const server = new McpServer({ name: 'mercadopleis', version }, { instructions: SERVER_INSTRUCTIONS });
+  const server = new McpServer({ name: 'mercadopleis', version: VERSION }, { instructions: SERVER_INSTRUCTIONS });
 
   // Over HTTP every call is independent: tools that need a signed-in wallet take the token from login as an argument
   // (clients that can set headers may send it as "Authorization: Bearer <token>" instead).

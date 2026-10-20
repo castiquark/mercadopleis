@@ -44,13 +44,13 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "node scripts/gen-version.mjs && tsc",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
     "lint": "tsc --noEmit",
     "test:smoke": "tsx src/smoke.ts",
     "release": "node scripts/release.mjs",
-    "prepublishOnly": "tsc --noEmit && vitest run && tsc",
+    "prepublishOnly": "node scripts/gen-version.mjs && tsc --noEmit && vitest run && tsc",
     "dev:http": "tsx src/http-server.ts"
   },
   "dependencies": {

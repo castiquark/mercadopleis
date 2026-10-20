@@ -78,6 +78,12 @@ describe('package metadata', () => {
     expect(server.packages[0].identifier).toBe(pkg.name);
     expect(server.packages[0].version).toBe(pkg.version);
   });
+
+  it('the compiled-in version matches package.json (run scripts/gen-version.mjs)', async () => {
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf8'));
+    const { VERSION } = await import('./version.js');
+    expect(VERSION).toBe(pkg.version);
+  });
 });
 
 describe('order calldata', () => {
