@@ -2,7 +2,8 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@mercadopleis/types', '@mercadopleis/contracts-abi', '@mercadopleis/database'],
-  serverExternalPackages: ['@electric-sql/pglite', 'postgres'],
+  // The MCP server reads its own package.json at runtime (createRequire), which bundling would break.
+  serverExternalPackages: ['@electric-sql/pglite', 'postgres', '@mercadopleis/mcp-server'],
   webpack: (config) => {
     config.externals.push('pino-pretty', 'lokijs', 'encoding');
     config.resolve.fallback = {
