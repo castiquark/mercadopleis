@@ -25,10 +25,12 @@ const fail = (msg) => {
   console.error(`✗ ${msg}`);
   process.exit(1);
 };
+// Throws instead of exiting, so the finally block below still deletes mcp-publisher.
 const run = (cmd, args, opts = {}) => {
   const r = spawnSync(cmd, args, { cwd: root, stdio: 'inherit', shell: win, ...opts });
-  if (r.status !== 0) fail(`${cmd} ${args.join(' ')} exited with ${r.status}`);
+  if (r.status !== 0) throw new Error(`${cmd} ${args.join(' ')} exited with ${r.status}`);
 };
+for (const ev of ['uncaughtException', 'unhandledRejection']) process.on(ev, (e) => fail(e?.message ?? String(e)));
 const capture = (cmd, args) => {
   try {
     return execFileSync(cmd, args, { cwd: root, encoding: 'utf8', shell: win, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
@@ -72,8 +74,14 @@ if (!onNpm) {
   run('npm', ['publish']);
 }
 
-// 5. Official MCP registry with a throwaway mcp-publisher.
+// 5. Official MCP registry with a throwaway mcp-publisher. The registry checks npm, which can take a few minutes to
+// show a new version.
 if (!onRegistry) {
+  for (let i = 0; capture('npm', ['view', `${pkg.name}@${version}`, 'version']) !== version; i++) {
+    if (i === 30) fail(`npm still does not show ${version} after 10 minutes; run this script again later`);
+    if (i === 0) console.log(`  waiting for npm to show ${version}...`);
+    await new Promise((r) => setTimeout(r, 20_000));
+  }
   const os = { win32: 'windows', darwin: 'darwin', linux: 'linux' }[process.platform];
   const arch = { x64: 'amd64', arm64: 'arm64' }[process.arch];
   if (!os || !arch) fail(`no mcp-publisher build for ${process.platform}/${process.arch}`);
@@ -81,7 +89,7 @@ if (!onRegistry) {
   try {
     const url = `https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_${os}_${arch}.tar.gz`;
     const dl = await fetch(url);
-    if (!dl.ok) fail(`download failed (${dl.status}): ${url}`);
+    if (!dl.ok) throw new Error(`download failed (${dl.status}): ${url}`);
     writeFileSync(join(dir, 'mcp-publisher.tar.gz'), Buffer.from(await dl.arrayBuffer()));
     run('tar', ['-xzf', 'mcp-publisher.tar.gz'], { cwd: dir, shell: false });
     const bin = join(dir, win ? 'mcp-publisher.exe' : 'mcp-publisher');
