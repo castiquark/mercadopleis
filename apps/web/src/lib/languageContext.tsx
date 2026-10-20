@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation';
 
 import { translations, type Language, type TranslationKey } from './translations';
+import { rememberLanguageChoice } from '@/lib/langChoice';
 import { DEFAULT_LANG, LANGS as ROUTE_LANGS, localePath, splitLocale } from './i18nRoutes';
 
 export { translations };
@@ -52,11 +53,7 @@ export function LanguageProvider({ children, language }: { children: React.React
 
   const setLanguage = (lang: Language) => {
     if (lang === language) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, lang);
-    } catch {
-      // Ignore
-    }
+    rememberLanguageChoice(lang);
     const { path } = splitLocale(pathname || '/');
     const query = typeof window !== 'undefined' ? window.location.search + window.location.hash : '';
     router.push(localePath(path, lang) + query);

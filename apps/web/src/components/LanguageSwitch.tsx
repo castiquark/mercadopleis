@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useLanguage, LANGUAGES, type Language } from '@/lib/languageContext';
 import { localePath, splitLocale } from '@/lib/i18nRoutes';
 import { Globe } from 'lucide-react';
+import { rememberLanguageChoice } from '@/lib/langChoice';
 
 const TITLES: Record<Language, string> = { es: 'Ver en español', en: 'View in English', pt: 'Ver em português' };
 
@@ -22,6 +23,7 @@ export function LanguageSwitch() {
           key={lang}
           href={localePath(path, lang)}
           hrefLang={lang}
+          onClick={() => rememberLanguageChoice(lang)}
           aria-current={language === lang ? 'true' : undefined}
           className={`rounded-md px-2.5 py-2.5 transition sm:px-2 sm:py-1 ${
             language === lang ? 'bg-primary text-white shadow-sm font-bold' : 'text-slate-400 hover:text-white'

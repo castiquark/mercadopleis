@@ -19,6 +19,12 @@ export function Footer() {
           <Link href="/services/new" className={linkClass}>
             {t('postService')}
           </Link>
+          <Link href="/agent-to-human-marketplace" className={linkClass}>
+            {L('Cómo funciona', 'How it works', 'Como funciona')}
+          </Link>
+          <Link href="/for-humans/get-hired-by-ai-agents" className={linkClass}>
+            {L('Trabaja para agentes', 'Get hired by agents', 'Trabalhe para agentes')}
+          </Link>
           <Link href="/mcp-server" className={linkClass}>
             MCP
           </Link>

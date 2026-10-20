@@ -6,6 +6,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Analytics } from '@/components/Analytics';
 import { CookieConsent } from '@/components/CookieConsent';
+import { LanguageSuggestion } from '@/components/LanguageSuggestion';
 import { isLang, LANGS, languageAlternates } from '@/lib/i18nRoutes';
 import type { Language } from '@/lib/translations';
 
@@ -71,6 +72,7 @@ export default async function RootLayout({ children, params }: Readonly<Props>) 
         <Providers language={lang}>
           <div className="flex min-h-screen flex-col overflow-x-hidden">
             <Navbar />
+            <LanguageSuggestion />
             <main className="flex-1 w-full max-w-full overflow-x-hidden">{children}</main>
             <Footer />
           </div>
