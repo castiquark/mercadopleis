@@ -10,11 +10,14 @@ export { MarketplaceEscrowV3Abi } from './MarketplaceEscrowV3Abi';
  * `disputeTimeoutAt`). New orders go here once an address is filled in. Arbitrator 0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb.
  */
 export const ESCROW_V3_ADDRESSES: Partial<Record<number, `0x${string}`>> = {
-  // Base Sepolia: pending deploy
+  // Base Sepolia: deployed 22 Oct 2026, verified on BaseScan (tx 0x408bd0a5...287bb)
+  [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: '0x41dfDBCE9635f9c50E8da236C30E2ea2F2f96c5e',
   // Base Mainnet: pending deploy
 };
 
-export const ESCROW_V3_DEPLOY_BLOCKS: Partial<Record<number, number>> = {};
+export const ESCROW_V3_DEPLOY_BLOCKS: Partial<Record<number, number>> = {
+  [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: 48907528,
+};
 
 /** Escrow v2, legacy once v3 is live on a chain: read-only for history and orders created before the switch. */
 export const ESCROW_V2_ADDRESSES: Record<number, `0x${string}`> = {
