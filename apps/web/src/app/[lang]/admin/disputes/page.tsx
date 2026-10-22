@@ -69,7 +69,16 @@ export default function AdminDisputesPage() {
   const explorerBaseUrl = isSepolia ? 'https://sepolia.basescan.org' : 'https://basescan.org';
   const { writeContractAsync } = useWriteContract();
 
-  const isArbitrator = !!address && isAdminWallet(address);
+  // The arbitrator is whatever wallet the contract names (arbitrator()), not only the operator wallets.
+  const [onchainArbitrator, setOnchainArbitrator] = useState<string | null>(null);
+  useEffect(() => {
+    if (!publicClient || !escrowAddress) return;
+    publicClient
+      .readContract({ address: escrowAddress, abi: MarketplaceEscrowAbi, functionName: 'arbitrator' })
+      .then((a) => setOnchainArbitrator(String(a).toLowerCase()))
+      .catch(() => setOnchainArbitrator(null));
+  }, [publicClient, escrowAddress]);
+  const isArbitrator = !!address && (isAdminWallet(address) || address.toLowerCase() === onchainArbitrator);
   const isAuthorized = isArbitrator || isAdmin;
 
   const loadData = useCallback(async () => {

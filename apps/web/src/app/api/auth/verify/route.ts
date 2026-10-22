@@ -68,7 +68,9 @@ export async function POST(request: NextRequest) {
     });
 
     const { isAdminWallet } = await import('@mercadopleis/types');
-    const isFeeCollectorAdmin = isAdminWallet(normalized);
+    // Operator wallets, plus whichever wallet the escrow contract names as arbitrator (it can change on-chain).
+    const { isOnchainArbitrator } = await import('@/lib/escrowState');
+    const isFeeCollectorAdmin = isAdminWallet(normalized) || (await isOnchainArbitrator(normalized));
     let userRole = isFeeCollectorAdmin ? 'ADMIN' : 'USER';
     let userId: string;
 

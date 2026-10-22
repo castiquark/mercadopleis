@@ -58,3 +58,28 @@ export async function readEscrowOrder(chainId: number, contractOrderId: number):
     return null;
   }
 }
+
+// The arbitrator is read from the contract (arbitrator()), not assumed to be the deployer wallet: it can change
+// with setArbitrator. Cached for 5 minutes per chain; an RPC failure counts as "not the arbitrator".
+const arbitratorCache = new Map<number, { address: string | null; at: number }>();
+
+export async function readArbitrator(chainId: number): Promise<string | null> {
+  const hit = arbitratorCache.get(chainId);
+  if (hit && Date.now() - hit.at < 5 * 60_000) return hit.address;
+  let address: string | null = null;
+  try {
+    const { client, escrow } = escrowClient(chainId);
+    address = ((await client.readContract({ address: escrow, abi: MarketplaceEscrowAbi, functionName: 'arbitrator' })) as string).toLowerCase();
+  } catch {
+    address = null;
+  }
+  arbitratorCache.set(chainId, { address, at: Date.now() });
+  return address;
+}
+
+/** True if the wallet is the escrow arbitrator on Base Mainnet or Base Sepolia. */
+export async function isOnchainArbitrator(wallet: string): Promise<boolean> {
+  const w = wallet.toLowerCase();
+  const [main, sepolia] = await Promise.all([readArbitrator(8453), readArbitrator(84532)]);
+  return w === main || w === sepolia;
+}

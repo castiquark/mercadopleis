@@ -29,6 +29,8 @@ network:
   reviewWindowSeconds: 432000
   reviewWindowDays: 5
   protocolFeeBps: 300
+  arbitrator: "0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb"
+  arbitrationPolicy: https://github.com/castiquark/mercadopleis/blob/main/docs/ARBITRATION_POLICY.md
   buyerFeeBps: 0
 
 capabilities:

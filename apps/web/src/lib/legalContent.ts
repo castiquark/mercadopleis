@@ -72,7 +72,8 @@ export const TERMS: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
         title: '4. Disputas y arbitraje',
         paragraphs: [
           'Comprador o vendedor pueden abrir una disputa mientras la orden esté fondeada o entregada. El árbitro designado revisa la información de las partes y decide un reparto de los fondos entre ambos. La decisión se ejecuta en el contrato y es definitiva dentro de la plataforma, sin perjuicio de los derechos que la ley te reconozca frente a la otra parte.',
-          'En esta etapa inicial, el árbitro es el propio operador de Mercadopleis, que también recibe la comisión. Como la comisión solo se cobra sobre la parte que recibe el vendedor, lo indicamos para que lo tengas en cuenta.',
+          'En esta etapa inicial, el árbitro es la wallet 0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb, operada por el equipo de Mercadopleis y distinta de la que es propietaria del contrato y recibe la comisión. Decide según la política arbitral pública (https://github.com/castiquark/mercadopleis/blob/main/docs/ARBITRATION_POLICY.md): solo con lo registrado en Mercadopleis, en un plazo de 7 días desde que se abre la disputa, indicando la regla aplicada y sin apelación en esta etapa. Como la comisión solo se cobra sobre la parte que recibe el vendedor y el equipo la recibe, lo indicamos para que lo tengas en cuenta.',
+          'Si vence el plazo y el vendedor no registró la entrega, el comprador puede reclamar el reembolso completo directamente en el contrato. El contrato actual (v2) todavía permite registrar una entrega después del plazo, mientras el comprador no haya reclamado el reembolso, y permite abrir una disputa sobre una orden fondeada; en esos casos el reembolso deja de ser automático y lo decide el árbitro, que según la política trata una entrega fuera de plazo como no entregada. La versión 3 del contrato, en preparación, corrige esto.',
         ],
       },
       {
@@ -156,7 +157,8 @@ export const TERMS: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
         title: '4. Disputes and arbitration',
         paragraphs: [
           'Buyer or seller can open a dispute while the order is funded or delivered. The appointed arbitrator reviews the information from both parties and decides how to split the funds between them. The decision is executed in the contract and is final within the platform, without prejudice to any rights the law gives you against the other party.',
-          'During this early stage, the arbitrator is the Mercadopleis operator itself, which also receives the fee. Since the fee is only charged on the part the seller receives, we disclose this so you can take it into account.',
+          'During this early stage, the arbitrator is the wallet 0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb, run by the Mercadopleis team and separate from the wallet that owns the contract and receives the fee. It decides by the public arbitration policy (https://github.com/castiquark/mercadopleis/blob/main/docs/ARBITRATION_POLICY.md): only from what is recorded on Mercadopleis, within 7 days of the dispute being opened, stating the rule applied, with no appeal during this stage. Since the fee is only charged on the part the seller receives and the team receives it, we disclose this so you can take it into account.',
+          'If the deadline passes and the seller has not recorded a delivery, the buyer can claim a full refund directly from the contract. The current contract (v2) still lets a seller record a delivery after the deadline, as long as the buyer has not claimed the refund, and lets a dispute be opened on a funded order; in those cases the refund is no longer automatic and the arbitrator decides it, treating a delivery after the deadline as not delivered under the policy. Version 3 of the contract, in preparation, fixes this.',
         ],
       },
       {
@@ -240,7 +242,8 @@ export const TERMS: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
         title: '4. Disputas e arbitragem',
         paragraphs: [
           'Comprador ou vendedor podem abrir uma disputa enquanto o pedido estiver depositado ou entregue. O árbitro designado revisa as informações apresentadas pelas partes e decide a divisão dos fundos entre ambos. A decisão é executada no contrato e é definitiva na plataforma, sem prejuízo dos direitos legais que você possa exercer contra a outra parte.',
-          'Nesta fase inicial, o árbitro é o próprio operador da Mercadopleis, que também recebe a taxa. Como a taxa só incide sobre a parte que o vendedor recebe, destacamos essa informação para que você a leve em consideração.',
+          'Nesta fase inicial, o árbitro é a carteira 0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb, operada pela equipe da Mercadopleis e diferente da carteira que é proprietária do contrato e recebe a taxa. Ele decide conforme a política arbitral pública (https://github.com/castiquark/mercadopleis/blob/main/docs/ARBITRATION_POLICY.md): apenas com o que está registrado na Mercadopleis, em até 7 dias após a abertura da disputa, indicando a regra aplicada e sem recurso nesta fase. Como a taxa só incide sobre a parte que o vendedor recebe e a equipe a recebe, destacamos essa informação para que você a leve em consideração.',
+          'Se o prazo vencer e o vendedor não tiver registrado a entrega, o comprador pode solicitar o reembolso total diretamente no contrato. O contrato atual (v2) ainda permite registrar uma entrega após o prazo, enquanto o comprador não tiver solicitado o reembolso, e permite abrir uma disputa sobre um pedido depositado; nesses casos o reembolso deixa de ser automático e é decidido pelo árbitro, que pela política trata uma entrega fora do prazo como não entregue. A versão 3 do contrato, em preparação, corrige isso.',
         ],
       },
       {
