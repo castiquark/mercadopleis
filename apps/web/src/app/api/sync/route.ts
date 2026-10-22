@@ -5,7 +5,14 @@ import { base, baseSepolia } from 'viem/chains';
 import { db, orders, disputes, blockchainTransactions, users, services } from '@mercadopleis/database';
 import { notifyOrder, counterpart } from '@/lib/notify';
 import { and, eq, desc } from 'drizzle-orm';
-import { ESCROW_ADDRESSES, ESCROW_DEPLOY_BLOCKS, MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
+import {
+  ESCROW_ADDRESSES,
+  ESCROW_DEPLOY_BLOCKS,
+  ESCROW_V3_ADDRESSES,
+  ESCROW_V3_DEPLOY_BLOCKS,
+  MarketplaceEscrowAbi,
+  MarketplaceEscrowV3Abi,
+} from '@mercadopleis/contracts-abi';
 
 // Public RPCs reject large getLogs ranges, so scan in small windows and catch up over several calls.
 // Each provider caps eth_getLogs differently (public Base: 1,000 blocks; public Base Sepolia: 200), so the window
@@ -64,98 +71,93 @@ async function ensureServiceForSeller(sellerId: string, grossAmountUsdc: string,
   return created;
 }
 
-export async function GET(request: NextRequest) {
-  const limited = await enforceRateLimit([{ name: 'sync:ip', id: getClientIp(request), limit: 12, windowSeconds: 60 }]);
-  if (limited) return limited;
+type EscrowVersion = 'v2' | 'v3';
 
-  try {
-    const searchParams = request.nextUrl.searchParams;
-    const requestedChainId = Number(searchParams.get('chainId')) || 
-      (process.env.NEXT_PUBLIC_CHAIN_ID ? Number(process.env.NEXT_PUBLIC_CHAIN_ID) : CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID);
+// Each escrow keeps its own cursor: v2 in SYNC_CHECKPOINT rows (as before v3), v3 in SYNC_CHECKPOINT_V3 rows. The v2
+// escrow stays indexed after v3 goes live, for the orders created on it before the switch.
+const CHECKPOINT = {
+  v2: { eventType: 'SYNC_CHECKPOINT', prefix: 'checkpoint' },
+  v3: { eventType: 'SYNC_CHECKPOINT_V3', prefix: 'checkpoint3' },
+};
 
-    const isSepolia = requestedChainId === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
-    const targetChain = isSepolia ? baseSepolia : base;
-    const targetChainId = targetChain.id;
+async function syncEscrow(opts: {
+  client: any;
+  targetChainId: number;
+  escrowAddress: `0x${string}`;
+  deployBlock: number | undefined;
+  version: EscrowVersion;
+  chunkBlocks: bigint;
+  currentBlock: bigint;
+  requestedFrom: string | null;
+}) {
+  const { client, targetChainId, escrowAddress, deployBlock, version, chunkBlocks: CHUNK_BLOCKS, currentBlock, requestedFrom } = opts;
+  const escrowKey = escrowAddress.toLowerCase();
+  const checkpoint = CHECKPOINT[version];
 
-    const rpcUrl = isSepolia
-      ? (process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org')
-      : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
-
-    // Per-chain registry only: a single env var cannot be right for both networks.
-    const CHUNK_BLOCKS = process.env.SYNC_LOG_CHUNK_BLOCKS && Number(process.env.SYNC_LOG_CHUNK_BLOCKS) > 0
-      ? BigInt(Math.floor(Number(process.env.SYNC_LOG_CHUNK_BLOCKS)))
-      : isSepolia ? DEFAULT_CHUNK_BLOCKS.sepolia : DEFAULT_CHUNK_BLOCKS.mainnet;
-
-    const escrowAddress = ESCROW_ADDRESSES[targetChainId];
-    const escrowKey = escrowAddress.toLowerCase();
-
-    const client = createPublicClient({
-      chain: targetChain,
-      transport: http(rpcUrl),
-    });
-
-    const currentBlock = await client.getBlockNumber();
-
-    // 1. Persistent Cursor Lookup from blockchainTransactions
-    const latestTx = await db.query.blockchainTransactions.findFirst({
+  // 1. Persistent cursor: the latest checkpoint of this escrow. Every run writes one at the last scanned block, so it
+  //    is never behind the events it covered. A v2 chain indexed before checkpoints existed falls back to its
+  //    latest row, as before.
+  const latestCheckpoint = await db.query.blockchainTransactions.findFirst({
+    where: and(eq(blockchainTransactions.chainId, targetChainId), eq(blockchainTransactions.eventType, checkpoint.eventType)),
+    orderBy: [desc(blockchainTransactions.blockNumber)],
+  });
+  const latestTx = latestCheckpoint ?? (version === 'v2'
+    ? await db.query.blockchainTransactions.findFirst({
       where: eq(blockchainTransactions.chainId, targetChainId),
       orderBy: [desc(blockchainTransactions.blockNumber)],
-    });
+    })
+    : undefined);
 
-    const deployBlock = ESCROW_DEPLOY_BLOCKS[targetChainId];
-    let fromBlock: bigint;
-    if (latestTx && latestTx.blockNumber) {
-      fromBlock = BigInt(latestTx.blockNumber) + 1n;
-    } else if (deployBlock !== undefined) {
-      fromBlock = BigInt(deployBlock);
-    } else {
-      fromBlock = currentBlock > 1000n ? currentBlock - 1000n : 0n;
-    }
-    // Rows from an older escrow deployment can leave the cursor before the current contract existed.
-    if (deployBlock !== undefined && fromBlock < BigInt(deployBlock)) fromBlock = BigInt(deployBlock);
+  let fromBlock: bigint;
+  if (latestTx && latestTx.blockNumber) {
+    fromBlock = BigInt(latestTx.blockNumber) + 1n;
+  } else if (deployBlock !== undefined) {
+    fromBlock = BigInt(deployBlock);
+  } else {
+    fromBlock = currentBlock > 1000n ? currentBlock - 1000n : 0n;
+  }
+  // Rows from an older escrow deployment can leave the cursor before the current contract existed.
+  if (deployBlock !== undefined && fromBlock < BigInt(deployBlock)) fromBlock = BigInt(deployBlock);
 
-    // This endpoint is public: an explicit fromBlock may only rescan backwards (reconciliation is idempotent).
-    // Moving the cursor forward would let anyone make the indexer skip events.
-    const requestedFrom = searchParams.get('fromBlock');
-    if (requestedFrom && /^\d+$/.test(requestedFrom)) {
-      const requested = BigInt(requestedFrom);
-      if (requested < fromBlock && (deployBlock === undefined || requested >= BigInt(deployBlock))) fromBlock = requested;
-    }
+  // This endpoint is public: an explicit fromBlock may only rescan backwards (reconciliation is idempotent).
+  // Moving the cursor forward would let anyone make the indexer skip events.
+  if (requestedFrom && /^\d+$/.test(requestedFrom)) {
+    const requested = BigInt(requestedFrom);
+    if (requested < fromBlock && (deployBlock === undefined || requested >= BigInt(deployBlock))) fromBlock = requested;
+  }
 
-    if (fromBlock > currentBlock) {
-      return NextResponse.json({
-        synced: true,
-        message: 'Indexer is already up to date with latest block',
-        chainId: targetChainId,
-        currentBlock: currentBlock.toString(),
-        lastIndexedBlock: latestTx?.blockNumber,
-      });
-    }
+  if (fromBlock > currentBlock) {
+    return { version, escrowAddress, upToDate: true, lastIndexedBlock: latestTx?.blockNumber };
+  }
 
-    // 2. Scan the escrow lifecycle events in bounded windows. RPC providers reject large getLogs ranges, and a
-    //    single failing range would otherwise block the indexer forever. Each call catches up by at most
-    //    MAX_CHUNKS_PER_RUN windows and the checkpoint only advances to what was actually scanned.
-    const scanTo = (() => {
-      const cap = fromBlock + CHUNK_BLOCKS * MAX_CHUNKS_PER_RUN - 1n;
-      return currentBlock < cap ? currentBlock : cap;
-    })();
+  // 2. Scan the escrow lifecycle events in bounded windows. RPC providers reject large getLogs ranges, and a
+  //    single failing range would otherwise block the indexer forever. Each call catches up by at most
+  //    MAX_CHUNKS_PER_RUN windows and the checkpoint only advances to what was actually scanned.
+  const scanTo = (() => {
+    const cap = fromBlock + CHUNK_BLOCKS * MAX_CHUNKS_PER_RUN - 1n;
+    return currentBlock < cap ? currentBlock : cap;
+  })();
 
-    const rawLogs: any[] = [];
-    for (let start = fromBlock; start <= scanTo; start += CHUNK_BLOCKS) {
-      const end = start + CHUNK_BLOCKS - 1n < scanTo ? start + CHUNK_BLOCKS - 1n : scanTo;
-      rawLogs.push(...(await client.getLogs({ address: escrowAddress, fromBlock: start, toBlock: end })));
-    }
+  const rawLogs: any[] = [];
+  for (let start = fromBlock; start <= scanTo; start += CHUNK_BLOCKS) {
+    const end = start + CHUNK_BLOCKS - 1n < scanTo ? start + CHUNK_BLOCKS - 1n : scanTo;
+    rawLogs.push(...(await client.getLogs({ address: escrowAddress, fromBlock: start, toBlock: end })));
+  }
 
-    const decoded = parseEventLogs({ abi: MarketplaceEscrowAbi, logs: rawLogs, strict: false }) as any[];
-    const byEvent = (name: string) => decoded.filter((l) => l.eventName === name);
-    const orderFundedLogs = byEvent('OrderFunded');
-    const deliveryLogs = byEvent('DeliverySubmitted');
-    const releaseLogs = byEvent('OrderReleased');
-    const refundLogs = byEvent('OrderRefunded');
-    const disputeOpenedLogs = byEvent('DisputeOpened');
-    const disputeResolvedLogs = byEvent('DisputeResolved');
+  const abi = version === 'v3' ? MarketplaceEscrowV3Abi : MarketplaceEscrowAbi;
+  const decoded = parseEventLogs({ abi, logs: rawLogs, strict: false }) as any[];
+  const byEvent = (name: string) => decoded.filter((l) => l.eventName === name);
+  const orderFundedLogs = byEvent('OrderFunded');
+  const deliveryLogs = byEvent('DeliverySubmitted');
+  const releaseLogs = byEvent('OrderReleased');
+  const refundLogs = byEvent('OrderRefunded');
+  const disputeOpenedLogs = byEvent('DisputeOpened');
+  const disputeResolvedLogs = byEvent('DisputeResolved');
+  // v3 pull payments: balances are read on-chain (withdrawable), so these are only counted.
+  const creditedLogs = byEvent('Credited');
+  const withdrawnLogs = byEvent('Withdrawn');
 
-    // 3. Reconcile Events with Database
+  // 3. Reconcile Events with Database
 
     // Reconcile OrderFunded
     for (const log of orderFundedLogs) {
@@ -236,9 +238,13 @@ export async function GET(request: NextRequest) {
         where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId), eq(orders.escrowAddress, escrowKey)),
       });
       if (existing) {
+        // v3 emits autoReleaseTime 0 for a delivery submitted during a dispute: the order stays DISPUTED.
+        const inDispute = autoReleaseDeadline === 0;
         await db
           .update(orders)
-          .set({ status: 'DELIVERED', deliveryHash, autoReleaseDeadline, deliveredAt: new Date(), updatedAt: new Date() })
+          .set(inDispute
+            ? { deliveryHash, deliveredAt: new Date(), updatedAt: new Date() }
+            : { status: 'DELIVERED', deliveryHash, autoReleaseDeadline, deliveredAt: new Date(), updatedAt: new Date() })
           .where(eq(orders.id, existing.id));
         // Notify only on a real transition: re-scans of old blocks must not announce past events.
         if (existing.status === 'FUNDED') await notifyOrder(existing, 'order_delivered', ['buyer']);
@@ -341,7 +347,7 @@ export async function GET(request: NextRequest) {
             await db.insert(disputes).values({
               orderId: existing.id,
               openedById: openerUser.id,
-              reason: 'Dispute opened on-chain via MarketplaceEscrow.openDispute()',
+              reason: `Dispute opened on-chain via ${version === 'v3' ? 'MarketplaceEscrowV3' : 'MarketplaceEscrow'}.openDispute()`,
               status: 'OPEN',
             }).onConflictDoNothing();
           }
@@ -408,30 +414,91 @@ export async function GET(request: NextRequest) {
 
     // 4. Save Persistent Checkpoint Cursor
     await db.insert(blockchainTransactions).values({
-      txHash: `checkpoint_${targetChainId}_${scanTo}`,
+      txHash: `${checkpoint.prefix}_${targetChainId}_${scanTo}`,
       chainId: targetChainId,
-      eventType: 'SYNC_CHECKPOINT',
+      eventType: checkpoint.eventType,
       blockNumber: Number(scanTo),
       status: 'CONFIRMED',
     }).onConflictDoNothing();
+
+  return {
+    version,
+    escrowAddress,
+    scannedFromBlock: fromBlock.toString(),
+    scannedToBlock: scanTo.toString(),
+    upToDate: scanTo >= currentBlock,
+    eventsFound: {
+      orderFunded: orderFundedLogs.length,
+      deliverySubmitted: deliveryLogs.length,
+      orderReleased: releaseLogs.length,
+      orderRefunded: refundLogs.length,
+      disputeOpened: disputeOpenedLogs.length,
+      disputeResolved: disputeResolvedLogs.length,
+      ...(version === 'v3' ? { credited: creditedLogs.length, withdrawn: withdrawnLogs.length } : {}),
+    },
+  };
+}
+
+export async function GET(request: NextRequest) {
+  const limited = await enforceRateLimit([{ name: 'sync:ip', id: getClientIp(request), limit: 12, windowSeconds: 60 }]);
+  if (limited) return limited;
+
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const requestedChainId = Number(searchParams.get('chainId')) ||
+      (process.env.NEXT_PUBLIC_CHAIN_ID ? Number(process.env.NEXT_PUBLIC_CHAIN_ID) : CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID);
+
+    const isSepolia = requestedChainId === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
+    const targetChain = isSepolia ? baseSepolia : base;
+    const targetChainId = targetChain.id;
+
+    const rpcUrl = isSepolia
+      ? (process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org')
+      : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
+
+    // Per-chain registry only: a single env var cannot be right for both networks.
+    const chunkBlocks = process.env.SYNC_LOG_CHUNK_BLOCKS && Number(process.env.SYNC_LOG_CHUNK_BLOCKS) > 0
+      ? BigInt(Math.floor(Number(process.env.SYNC_LOG_CHUNK_BLOCKS)))
+      : isSepolia ? DEFAULT_CHUNK_BLOCKS.sepolia : DEFAULT_CHUNK_BLOCKS.mainnet;
+
+    const client = createPublicClient({
+      chain: targetChain,
+      transport: http(rpcUrl),
+    });
+
+    const currentBlock = await client.getBlockNumber();
+
+    // ?escrow=v2|v3 limits the run to one escrow; ?fromBlock applies only to a single-escrow run.
+    const only = searchParams.get('escrow');
+    const v3Address = ESCROW_V3_ADDRESSES[targetChainId];
+    const targets: { version: EscrowVersion; address: `0x${string}`; deployBlock: number | undefined }[] = [];
+    if (v3Address && only !== 'v2') targets.push({ version: 'v3', address: v3Address, deployBlock: ESCROW_V3_DEPLOY_BLOCKS[targetChainId] });
+    if (only !== 'v3') targets.push({ version: 'v2', address: ESCROW_ADDRESSES[targetChainId], deployBlock: ESCROW_DEPLOY_BLOCKS[targetChainId] });
+    const requestedFrom = targets.length === 1 ? searchParams.get('fromBlock') : null;
+
+    const results = [];
+    for (const t of targets) {
+      results.push(await syncEscrow({
+        client,
+        targetChainId,
+        escrowAddress: t.address,
+        deployBlock: t.deployBlock,
+        version: t.version,
+        chunkBlocks,
+        currentBlock,
+        requestedFrom,
+      }));
+    }
 
     return NextResponse.json({
       synced: true,
       network: targetChain.name,
       chainId: targetChainId,
-      escrowAddress,
-      scannedFromBlock: fromBlock.toString(),
-      scannedToBlock: scanTo.toString(),
       currentBlock: currentBlock.toString(),
-      upToDate: scanTo >= currentBlock,
-      eventsFound: {
-        orderFunded: orderFundedLogs.length,
-        deliverySubmitted: deliveryLogs.length,
-        orderReleased: releaseLogs.length,
-        orderRefunded: refundLogs.length,
-        disputeOpened: disputeOpenedLogs.length,
-        disputeResolved: disputeResolvedLogs.length,
-      },
+      // Fields of the first escrow (v3 once deployed) at the top level, as before, for existing callers.
+      ...results[0],
+      upToDate: results.every((r) => r.upToDate),
+      escrows: results,
     });
   } catch (err: any) {
     console.error('[Sync] Error during blockchain event reconciliation:', err);
