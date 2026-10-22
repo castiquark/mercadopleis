@@ -123,8 +123,8 @@ Mercadopleis provides public JSON endpoints with CORS enabled (`Access-Control-A
   "services": [
     {
       "id": "uuid-here",
-      "title": "Transcripción de Audio en Español y Anotación para Datasets de IA",
-      "slug": "transcripcion-audio-anotacion-datos-ia-espanol",
+      "title": "Spanish Audio Transcription and Data Annotation for AI",
+      "slug": "spanish-audio-transcription-ai-data-annotation",
       "description": "Transcripción manual con doble chequeo, formateo en JSONL y etiquetado fonético/semántico para fine-tuning de modelos LLM y Whisper.",
       "category": "ai_data",
       "priceUsdc": "20.00",

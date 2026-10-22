@@ -81,3 +81,8 @@ export function visibleProposals<T extends { sellerId: string }>(request: { buye
   if (viewer.id === request.buyerId || viewer.role === 'ADMIN') return proposals;
   return proposals.filter((p) => p.sellerId === viewer.id);
 }
+
+/** Internal test requests (e.g. "Prueba interna: verificación del flujo de pago"): kept out of the sitemap and noindex. */
+export function isTestRequest(r: { slug: string; title?: string | null }): boolean {
+  return /^(prueba-interna|test-)/i.test(r.slug) || /^\s*(prueba interna|internal test)\b/i.test(r.title ?? '');
+}

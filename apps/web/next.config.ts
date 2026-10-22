@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { SERVICE_SLUG_RENAMES } from './src/lib/serviceSlugs';
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@mercadopleis/types', '@mercadopleis/contracts-abi', '@mercadopleis/database'],
@@ -23,6 +24,10 @@ const nextConfig: NextConfig = {
     return [
       { source: '/en', destination: '/', permanent: true },
       { source: '/en/:path*', destination: '/:path*', permanent: true },
+      // English slugs for the operator's services (22 Oct 2026): 301 from the old Spanish slugs, in every language.
+      ...Object.entries(SERVICE_SLUG_RENAMES).flatMap(([oldSlug, newSlug]) =>
+        ['', '/es', '/pt'].map((prefix) => ({ source: `${prefix}/services/${oldSlug}`, destination: `${prefix}/services/${newSlug}`, statusCode: 301 as const }))
+      ),
     ];
   },
   webpack: (config) => {

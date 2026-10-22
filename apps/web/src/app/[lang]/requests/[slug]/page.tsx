@@ -1,4 +1,5 @@
 import { cache } from 'react';
+import { isTestRequest } from '@/lib/requests';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import RequestClient from './RequestClient';
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${found.title} — mercadopleis`,
     description: metaDescription(`${Number(found.budgetUsdc).toFixed(2)} USDC · ${found.deliveryDays} d · ${found.description}`),
     path: `/requests/${found.slug}`,
-    noindex: found.status === 'CANCELLED',
+    noindex: found.status === 'CANCELLED' || isTestRequest(found),
   });
 }
 

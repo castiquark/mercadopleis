@@ -1,12 +1,13 @@
 import { db, services } from '@mercadopleis/database';
-import { and, desc, eq, sql, type SQL } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql, type SQL } from 'drizzle-orm';
+import { SERVICE_SLUG_RENAMES, serviceSlugCandidates } from './serviceSlugs';
 import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 
 /** One service with its seller's public profile, for the public API and the server-rendered service page. */
 export async function findPublicService(slug: string) {
-  return db.query.services.findFirst({
-    where: eq(services.slug, slug),
+  const service = await db.query.services.findFirst({
+    where: inArray(services.slug, serviceSlugCandidates(slug)),
     with: {
       seller: {
         columns: {
@@ -27,6 +28,7 @@ export async function findPublicService(slug: string) {
       // Orders are private (buyers, delivery links, hashes): never include them here.
     },
   });
+  return service && { ...service, slug: SERVICE_SLUG_RENAMES[service.slug] ?? service.slug };
 }
 
 /**
@@ -57,6 +59,7 @@ export async function listPublicServices(filters: (SQL | undefined)[] = [], limi
 
   const formattedServices = queriedServices.map((s: any) => ({
     ...s,
+    slug: SERVICE_SLUG_RENAMES[s.slug] ?? s.slug,
     price: {
       amount: s.priceUsdc,
       currency: 'USDC',
