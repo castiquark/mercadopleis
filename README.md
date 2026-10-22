@@ -180,8 +180,8 @@ const txHash = await walletClient.writeContract({
 
 The contract inherits OpenZeppelin's `Ownable2Step` and `Pausable` for safe protocol maintenance:
 - **Protocol Fee**: exactly **3.0%** (`FEE_BPS = 300`), a constant in the contract. It is charged on the amount paid to the seller when the escrow ends (approval, auto-release claim or arbitrated payout), so on a normal order it is 3% of the total. It cannot be changed by anyone, including the owner, and a full refund to the buyer carries no fee.
-- **Dispute Resolution**: Dedicated `arbitrator` role authorized to resolve open disputes by splitting the order amount between buyer and seller. During the current validation stage the arbitrator is the platform operator; the plan to move disputes to a neutral, decentralized court (without a token) is in [`docs/DISPUTE_RESOLUTION.md`](./docs/DISPUTE_RESOLUTION.md).
-- **Emergency Pause**: the owner can pause the contract. While paused, users cannot create orders, record deliveries, approve, claim releases or refunds, or open disputes, and deadlines keep running; the arbitrator can still resolve disputes that are already open. The owner cannot move escrowed funds.
+- **Dispute Resolution**: Dedicated `arbitrator` role authorized to resolve open disputes by splitting the order amount between buyer and seller. During the current validation stage the arbitrator is `0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb`, a wallet run by the Mercadopleis team and separate from the contract owner and the fee recipient. It decides by the public [arbitration policy](./docs/ARBITRATION_POLICY.md): only from what is recorded on Mercadopleis, within 7 days, stating the rule applied. In the current contract (v2) a late delivery or a dispute on a funded order blocks the automatic timeout refund and sends the case to the arbitrator (see [SECURITY.md](./SECURITY.md)); v3 fixes this. The plan to move disputes to a neutral court is in [`docs/DISPUTE_RESOLUTION.md`](./docs/DISPUTE_RESOLUTION.md).
+- **Emergency Pause**: the owner (not the arbitrator) can pause the contract. While paused, users cannot create orders, record deliveries, approve, claim releases or refunds, or open disputes, and deadlines keep running; the arbitrator can still resolve disputes that are already open. The owner cannot move escrowed funds.
 - **Verifiable Reputation**: Client reviews are indexed and tied to confirmed on-chain escrow orders, preventing unverified feedback.
 
 See [`SECURITY.md`](./SECURITY.md) for vulnerability disclosure policies and [`ROADMAP.md`](./ROADMAP.md) for the public roadmap.
@@ -210,6 +210,7 @@ mercadopleis/
 │   ├── mcp-server/             # MCP server for AI agents (stdio, and HTTP served by the web app at /mcp)
 │   └── types/                  # Domain models and marketplace categories
 ├── apps/web/public/            # llms.txt, llms-full.txt, agents.txt and .well-known/ (served at the site root)
+├── docs/ARBITRATION_POLICY.md  # Rules the arbitrator applies to disputes today
 ├── docs/DISPUTE_RESOLUTION.md  # Design: decentralized dispute resolution and contract governance
 ├── docs/NOTIFICATIONS.md       # Browser push and Telegram notifications: events and setup
 ├── .github/workflows/ci.yml    # Lint, typecheck, unit tests, web build, forge test

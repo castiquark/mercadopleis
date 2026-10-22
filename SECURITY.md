@@ -37,7 +37,8 @@ Our smart contract suite undergoes automated invariant testing and fuzzing with 
    No funds can be locked in limbo or lost to rounding dust.
 2. **Review Window Protection**:
    A mandatory 5-day (432,000 seconds) inspection period begins when the seller marks an order delivered. Funds cannot be auto-released prior to this window.
-3. **Timeout Refund Guarantee**:
-   If a seller fails to submit a delivery hash before the agreed deadline, the buyer can reclaim 100% of their deposited USDC via `claimTimeoutRefund()`.
+3. **Timeout Refund**:
+   If the deadline passes and the seller has not recorded a delivery hash, the buyer can reclaim 100% of the deposited USDC via `claimTimeoutRefund()`.
+   **Known limitation of the current contract (v2):** `submitDelivery()` does not check the deadline, so a seller can still record a delivery after it as long as the buyer has not claimed the refund, and either party can open a dispute on a funded order. In both cases the refund is no longer automatic and goes to the arbitrator. Under rule 2 of the [arbitration policy](./docs/ARBITRATION_POLICY.md), a delivery submitted after the deadline counts as not delivered (unless the buyer accepted a new date in the order chat in time), so the buyer gets a full refund. A disputed order has no on-chain timeout in v2; the policy commits the arbitrator to resolve within 7 days. Contract v3, in progress, enforces the deadline in `submitDelivery()`, lets only the buyer dispute a funded order and adds a dispute timeout.
 4. **Reentrancy Protection**:
    All state changes precede token transfers following the Checks-Effects-Interactions pattern and OpenZeppelin `ReentrancyGuard`.

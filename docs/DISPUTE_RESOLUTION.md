@@ -3,7 +3,9 @@
 **Estado:** propuesta de diseño (no implementada)  
 **Fecha:** 3 de octubre de 2026  
 **Alcance:** cómo se deciden las disputas del escrow, quién controla los permisos del contrato y cómo se financia la plataforma, desde la etapa actual hasta una resolución sin operador central.  
-**Relacionado:** [ROADMAP.md](../ROADMAP.md) · [SECURITY.md](../SECURITY.md) · [`MarketplaceEscrow.sol`](../contracts/src/MarketplaceEscrow.sol)
+**Relacionado:** [ARBITRATION_POLICY.md](./ARBITRATION_POLICY.md) (reglas vigentes) · [ROADMAP.md](../ROADMAP.md) · [SECURITY.md](../SECURITY.md) · [`MarketplaceEscrow.sol`](../contracts/src/MarketplaceEscrow.sol)
+
+> **Situación actual (22 de octubre de 2026):** el árbitro es `0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb`, una wallet operada por el equipo de Mercadopleis, distinta del propietario del contrato y del destinatario de la comisión. Decide según la [política arbitral](./ARBITRATION_POLICY.md). Este documento describe el diseño a futuro; la descentralización del arbitraje queda pospuesta, y la versión 3 del contrato pondrá al árbitro detrás de una interfaz para poder conectar otro sin cambiar el escrow.
 
 ---
 
@@ -11,7 +13,7 @@
 
 1. **La plataforma se sostiene solo con la comisión fija del 3%** que cobra el contrato al vendedor. No hay otras fuentes de ingreso previstas.
 2. **Nadie custodia fondos.** Esto ya se cumple: el dinero solo se mueve según las reglas del contrato.
-3. **Las disputas las decide un tercero neutral**, no el operador de la plataforma, que hoy es árbitro y a la vez recibe la comisión.
+3. **Las disputas las decide un tercero neutral**, no el equipo de la plataforma, que hoy opera la wallet árbitro y a la vez cobra la comisión.
 4. **Los permisos de administración no pueden usarse por sorpresa.** Cualquier cambio sensible se anuncia on-chain con antelación.
 
 Este documento es público para que usuarios, agentes y colaboradores sepan hacia dónde va el protocolo y puedan opinar antes de que se implemente.
