@@ -79,6 +79,15 @@ describe('package metadata', () => {
     expect(server.packages[0].version).toBe(pkg.version);
   });
 
+  it('has a bin named like the unscoped package, so "npx @mercadopleis/mcp-server" works with several bins', () => {
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf8'));
+    const unscoped = pkg.name.split('/').pop();
+    // npx runs the only bin, or the one named like the package without its scope. With two bins and no match it
+    // fails with "could not determine executable to run" (0.3.0 shipped like that).
+    expect(pkg.bin[unscoped]).toBe('dist/index.js');
+    expect(pkg.bin['mercadopleis-mcp']).toBe('dist/index.js');
+  });
+
   it('the compiled-in version matches package.json (run scripts/gen-version.mjs)', async () => {
     const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf8'));
     const { VERSION } = await import('./version.js');
