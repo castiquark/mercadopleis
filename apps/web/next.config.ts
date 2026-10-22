@@ -19,6 +19,13 @@ const nextConfig: NextConfig = {
       ],
     };
   },
+  // The home and /requests render per request (no ISR: on 20 Oct 2026 Netlify's background regeneration of the
+  // rewritten / cached the 404 at the edge). The CDN caches the rendered page for 60 s instead, to save function
+  // calls; it only ever stores a response a visitor actually got, not a background regeneration.
+  async headers() {
+    const cdn = { key: 'Netlify-CDN-Cache-Control', value: 'public, durable, s-maxage=60, stale-while-revalidate=300' };
+    return ['/', '/es', '/pt', '/requests', '/es/requests', '/pt/requests'].map((source) => ({ source, headers: [cdn] }));
+  },
   // /en is the root: one URL per page.
   async redirects() {
     return [
