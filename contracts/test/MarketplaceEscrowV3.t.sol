@@ -36,6 +36,10 @@ contract MarketplaceEscrowV3Test is Test {
         (,,,,,,, s) = escrow.orders(id);
     }
 
+    function _owed(address who) internal view returns (uint256) {
+        return usdc.balanceOf(who) + escrow.withdrawable(address(usdc), who);
+    }
+
     function _deliver(uint256 id) internal {
         vm.prank(seller);
         escrow.submitDelivery(id, H);
@@ -48,9 +52,9 @@ contract MarketplaceEscrowV3Test is Test {
         _deliver(id);
         vm.prank(buyer);
         escrow.approveDelivery(id);
-        assertEq(usdc.balanceOf(seller), 97e6);
-        assertEq(usdc.balanceOf(feeRecipient), 3e6);
-        assertEq(usdc.balanceOf(address(escrow)), 0);
+        assertEq(_owed(seller), 97e6);
+        assertEq(_owed(feeRecipient), 3e6);
+        assertEq(usdc.balanceOf(address(escrow)), escrow.totalWithdrawable(address(usdc)));
     }
 
     function test_DeliveryOnTheDeadlineIsAccepted() public {
@@ -68,7 +72,7 @@ contract MarketplaceEscrowV3Test is Test {
         escrow.claimAutoRelease(id);
         vm.warp(block.timestamp + 5 days);
         escrow.claimAutoRelease(id);
-        assertEq(usdc.balanceOf(seller), 97e6);
+        assertEq(_owed(seller), 97e6);
     }
 
     // --- deadline extension ---
@@ -125,22 +129,22 @@ contract MarketplaceEscrowV3Test is Test {
         uint256 id = _fund();
         vm.prank(buyer);
         escrow.openDispute(id);
-        vm.warp(block.timestamp + 30 days - 1);
+        vm.warp(block.timestamp + 14 days - 1);
         vm.expectRevert(MarketplaceEscrowV3.DisputeTimeoutNotReached.selector);
         escrow.claimDisputeTimeout(id);
     }
 
-    function test_TimeoutAfterDelivery_SplitsFiftyFiftyWithFeeOnSellerHalf() public {
+    function test_TimeoutAfterDelivery_PaysSellerWhoeverDisputed() public {
         uint256 id = _fund();
         _deliver(id);
         vm.prank(buyer);
         escrow.openDispute(id);
         vm.warp(block.timestamp + 30 days);
         escrow.claimDisputeTimeout(id);
-        assertEq(usdc.balanceOf(seller), 485e5); // 50 - 3% of 50 = 48.5
-        assertEq(usdc.balanceOf(feeRecipient), 15e5);
-        assertEq(usdc.balanceOf(buyer), 1_000e6 - AMOUNT + 50e6);
-        assertEq(usdc.balanceOf(address(escrow)), 0);
+        assertEq(_owed(seller), 97e6);
+        assertEq(_owed(feeRecipient), 3e6);
+        assertEq(_owed(buyer), 1_000e6 - AMOUNT);
+        assertEq(usdc.balanceOf(address(escrow)), escrow.totalWithdrawable(address(usdc)));
     }
 
     function test_ArbitratorSplitStillWorks() public {
@@ -150,8 +154,8 @@ contract MarketplaceEscrowV3Test is Test {
         escrow.openDispute(id);
         vm.prank(arbitrator);
         escrow.resolveDispute(id, 60e6, 40e6);
-        assertEq(usdc.balanceOf(seller), 582e5);
-        assertEq(usdc.balanceOf(feeRecipient), 18e5);
+        assertEq(_owed(seller), 582e5);
+        assertEq(_owed(feeRecipient), 18e5);
         vm.prank(arbitrator);
         vm.expectRevert();
         escrow.resolveDispute(id, 60e6, 40e6); // already resolved
@@ -184,7 +188,7 @@ contract MarketplaceEscrowV3Test is Test {
         escrow.openDispute(a);
         vm.prank(arbitrator);
         escrow.rule(a, 1);
-        assertEq(usdc.balanceOf(buyer), 1_000e6);
+        assertEq(_owed(buyer), 1_000e6);
 
         uint256 b = _fund();
         _deliver(b);
@@ -192,15 +196,15 @@ contract MarketplaceEscrowV3Test is Test {
         escrow.openDispute(b);
         vm.prank(arbitrator);
         escrow.rule(b, 2);
-        assertEq(usdc.balanceOf(seller), 97e6);
+        assertEq(_owed(seller), 97e6);
 
         uint256 c = _fund();
         _deliver(c);
         vm.prank(buyer);
         escrow.openDispute(c);
         vm.prank(arbitrator);
-        escrow.rule(c, 0); // refused: default outcome for a delivered order = 50/50
-        assertEq(usdc.balanceOf(seller), 97e6 + 485e5);
+        escrow.rule(c, 0); // refused: default outcome for a delivered order = seller paid
+        assertEq(_owed(seller), 97e6 + 97e6);
 
         uint256 d = _fund();
         vm.prank(buyer);
@@ -217,6 +221,7 @@ contract MarketplaceEscrowV3Test is Test {
         _deliver(delivered);
         uint256 funded = _fund();
         uint256 toDispute = _fund();
+        vm.warp(block.timestamp + 2 days); // `funded` is past its deadline before the pause
         vm.prank(owner);
         escrow.pause();
 
@@ -231,25 +236,85 @@ contract MarketplaceEscrowV3Test is Test {
         vm.expectRevert();
         escrow.claimAutoRelease(delivered);
 
-        // open: buyer exits
+        // open: buyer exits and withdrawals
         vm.prank(buyer);
         escrow.claimTimeoutRefund(funded);
         vm.prank(buyer);
         escrow.openDispute(toDispute);
         vm.prank(buyer);
         escrow.approveDelivery(delivered);
+        vm.prank(seller);
+        escrow.withdraw(address(usdc), seller);
+        assertEq(usdc.balanceOf(seller), 97e6);
 
-        // arbitrator paths blocked while paused, work again after unpause
+        // arbitrator paths blocked while paused; the dispute timeout does not run while paused
         vm.prank(arbitrator);
         vm.expectRevert();
         escrow.resolveDispute(toDispute, 0, AMOUNT);
         vm.warp(block.timestamp + 30 days);
-        vm.expectRevert();
+        vm.expectRevert(MarketplaceEscrowV3.DisputeTimeoutNotReached.selector);
         escrow.claimDisputeTimeout(toDispute);
         vm.prank(owner);
         escrow.unpause();
+        vm.expectRevert(MarketplaceEscrowV3.DisputeTimeoutNotReached.selector);
+        escrow.claimDisputeTimeout(toDispute);
+        vm.warp(block.timestamp + 14 days);
         escrow.claimDisputeTimeout(toDispute);
         assertEq(uint8(_status(toDispute)), uint8(MarketplaceEscrowV3.OrderStatus.Resolved));
+    }
+
+    function test_DisputeTimeoutReachedBeforePauseCanBeClaimedWhilePaused() public {
+        uint256 id = _fund();
+        vm.prank(buyer);
+        escrow.openDispute(id);
+        vm.warp(block.timestamp + 14 days);
+        vm.prank(owner);
+        escrow.pause();
+        escrow.claimDisputeTimeout(id);
+        assertEq(_owed(buyer), 1_000e6);
+    }
+
+    // --- withdrawals and admin ---
+
+    function test_WithdrawToAnotherAddressAndOnlyOnce() public {
+        uint256 id = _fund();
+        _deliver(id);
+        vm.prank(buyer);
+        escrow.approveDelivery(id);
+        address cold = makeAddr("cold");
+        vm.prank(seller);
+        escrow.withdraw(address(usdc), cold);
+        assertEq(usdc.balanceOf(cold), 97e6);
+        assertEq(escrow.withdrawable(address(usdc), seller), 0);
+        vm.prank(seller);
+        vm.expectRevert(MarketplaceEscrowV3.NothingToWithdraw.selector);
+        escrow.withdraw(address(usdc), cold);
+        vm.prank(seller);
+        vm.expectRevert(MarketplaceEscrowV3.InvalidAddress.selector);
+        escrow.withdraw(address(usdc), address(0));
+    }
+
+    function test_RenounceOwnershipIsDisabled() public {
+        vm.prank(owner);
+        vm.expectRevert(MarketplaceEscrowV3.RenounceDisabled.selector);
+        escrow.renounceOwnership();
+        assertEq(escrow.owner(), owner);
+    }
+
+    function test_ExtendDeadlineCountsPausedTime() public {
+        uint256 id = _fund();
+        vm.prank(owner);
+        escrow.pause();
+        vm.warp(block.timestamp + 3 days);
+        vm.prank(owner);
+        escrow.unpause();
+        uint256 eff = escrow.effectiveDeadline(id);
+        vm.prank(buyer);
+        vm.expectRevert(MarketplaceEscrowV3.InvalidDeadline.selector);
+        escrow.extendDeadline(id, eff); // must move past the effective deadline
+        vm.prank(buyer);
+        escrow.extendDeadline(id, eff + 1 days);
+        assertEq(escrow.effectiveDeadline(id), eff + 1 days);
     }
 
     // --- layout compatibility with v2 readers ---
@@ -280,9 +345,9 @@ contract MarketplaceEscrowV3Test is Test {
         vm.prank(arbitrator);
         escrow.resolveDispute(id, sellerPart, amount - sellerPart);
 
-        assertEq(usdc.balanceOf(address(escrow)), 0);
-        assertEq(usdc.balanceOf(buyer) + usdc.balanceOf(seller) + usdc.balanceOf(feeRecipient), 1_000e6);
-        assertEq(usdc.balanceOf(feeRecipient), (uint256(sellerPart) * 300) / 10_000);
+        assertEq(usdc.balanceOf(address(escrow)), escrow.totalWithdrawable(address(usdc)));
+        assertEq(_owed(buyer) + _owed(seller) + _owed(feeRecipient), 1_000e6);
+        assertEq(_owed(feeRecipient), (uint256(sellerPart) * 300) / 10_000);
     }
 
     function testFuzz_DefaultOutcomeConservesFunds(uint96 amount, bool delivered) public {
@@ -295,9 +360,9 @@ contract MarketplaceEscrowV3Test is Test {
         vm.warp(block.timestamp + 30 days);
         escrow.claimDisputeTimeout(id);
 
-        assertEq(usdc.balanceOf(address(escrow)), 0);
-        assertEq(usdc.balanceOf(buyer) + usdc.balanceOf(seller) + usdc.balanceOf(feeRecipient), 1_000e6);
-        if (!delivered) assertEq(usdc.balanceOf(buyer), 1_000e6); // no delivery: full refund, no fee
+        assertEq(usdc.balanceOf(address(escrow)), escrow.totalWithdrawable(address(usdc)));
+        assertEq(_owed(buyer) + _owed(seller) + _owed(feeRecipient), 1_000e6);
+        if (!delivered) assertEq(_owed(buyer), 1_000e6); // no delivery: full refund, no fee
     }
 
     function testFuzz_ReleaseConservesFunds(uint96 amount) public {
@@ -307,8 +372,8 @@ contract MarketplaceEscrowV3Test is Test {
         _deliver(id);
         vm.warp(block.timestamp + 5 days);
         escrow.claimAutoRelease(id);
-        assertEq(usdc.balanceOf(address(escrow)), 0);
-        assertEq(usdc.balanceOf(seller) + usdc.balanceOf(feeRecipient), amount);
+        assertEq(usdc.balanceOf(address(escrow)), escrow.totalWithdrawable(address(usdc)));
+        assertEq(_owed(seller) + _owed(feeRecipient), amount);
     }
 }
 
@@ -319,14 +384,17 @@ contract EscrowHandler is Test {
     address public buyer = address(0xB0B);
     address public seller = address(0x5E11);
     address public arbitrator;
+    address public feeRecipient;
 
-    constructor(MarketplaceEscrowV3 _e, MockUSDC _u, address _arb) {
+    constructor(MarketplaceEscrowV3 _e, MockUSDC _u, address _arb, address _fee) {
         escrow = _e;
         usdc = _u;
         arbitrator = _arb;
+        feeRecipient = _fee;
     }
 
     function fund(uint96 amount) external {
+        if (escrow.paused()) return;
         amount = uint96(bound(amount, 1, 100e6));
         vm.prank(buyer);
         escrow.createAndFundOrder(seller, address(usdc), amount, 1);
@@ -379,6 +447,18 @@ contract EscrowHandler is Test {
         try escrow.claimAutoRelease(id) {} catch {}
     }
 
+    function withdraw(uint256 who) external {
+        address account = [buyer, seller, feeRecipient][who % 3];
+        vm.prank(account);
+        try escrow.withdraw(address(usdc), account) {} catch {}
+    }
+
+    /// @dev The handler owns the escrow, so pauses are part of the random sequence.
+    function togglePause() external {
+        if (escrow.paused()) escrow.unpause();
+        else escrow.pause();
+    }
+
     function warp(uint256 secs) external {
         vm.warp(block.timestamp + bound(secs, 0, 40 days));
     }
@@ -407,16 +487,26 @@ contract MarketplaceEscrowV3InvariantTest is StdInvariant, Test {
         usdc = new MockUSDC();
         escrow = new MarketplaceEscrowV3(address(this), feeRecipient, arbitrator);
         escrow.setAcceptedToken(address(usdc), true);
-        handler = new EscrowHandler(escrow, usdc, arbitrator);
+        handler = new EscrowHandler(escrow, usdc, arbitrator, feeRecipient);
+        escrow.transferOwnership(address(handler));
+        vm.prank(address(handler));
+        escrow.acceptOwnership();
         usdc.mint(handler.buyer(), SUPPLY);
         vm.prank(handler.buyer());
         usdc.approve(address(escrow), type(uint256).max);
         targetContract(address(handler));
     }
 
-    /// The escrow holds exactly the sum of its open orders (nothing is created, lost or stuck).
-    function invariant_EscrowBalanceEqualsOpenOrders() public view {
-        assertEq(usdc.balanceOf(address(escrow)), handler.openAmount());
+    /// The escrow holds exactly its open orders plus the settled funds not yet withdrawn (nothing created, lost or stuck).
+    function invariant_EscrowBalanceEqualsOpenOrdersPlusWithdrawable() public view {
+        assertEq(usdc.balanceOf(address(escrow)), handler.openAmount() + escrow.totalWithdrawable(address(usdc)));
+    }
+
+    /// totalWithdrawable is the sum of the per-account credits.
+    function invariant_TotalWithdrawableMatchesAccounts() public view {
+        uint256 sum = escrow.withdrawable(address(usdc), handler.buyer()) + escrow.withdrawable(address(usdc), handler.seller())
+            + escrow.withdrawable(address(usdc), feeRecipient);
+        assertEq(escrow.totalWithdrawable(address(usdc)), sum);
     }
 
     /// Money is only moved between the four parties.

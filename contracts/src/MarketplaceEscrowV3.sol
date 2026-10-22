@@ -21,13 +21,22 @@ interface IArbitrable {
  * @notice Non-custodial escrow for a service marketplace. v3 fixes the issues reported against v2:
  *         - a delivery can only be submitted before the deadline (the buyer can extend it);
  *         - only the buyer can dispute an order that has not been delivered;
- *         - every dispute ends: after DISPUTE_TIMEOUT anyone can apply a default outcome;
- *         - pause stops new exposure and every payout that depends on a third party, but never the
- *           buyer's own exits (timeout refund, dispute, approval).
+ *         - every dispute ends: after DISPUTE_TIMEOUT anyone can apply a default outcome, which depends on the
+ *           order (delivered: seller is paid; not delivered and deadline passed: buyer is refunded), not on who
+ *           opened the dispute;
+ *         - payouts are pull payments: settling an order credits `withdrawable` and each party calls `withdraw`,
+ *           so a blacklisted address (USDC) cannot block an order or the other parties;
+ *         - pause stops new exposure and every payout that depends on a third party, but never the buyer's own exits
+ *           (timeout refund, dispute, approval) or withdrawals; time does not run for any order while paused
+ *           (deadline, review window and dispute timeout are extended by the paused time).
  * @dev    The protocol fee is a constant (FEE_BPS = 3%) charged on the amount paid to the seller. A full
  *         refund to the buyer carries no fee. The `orders` getter has the same layout as v2 so integrators
- *         keep reading it unchanged; dispute data lives in `disputes`. Admin functions match v2, so
- *         EscrowAdmin (timelock plus guardian) can own this contract unchanged.
+ *         keep reading it unchanged, but its `deadline` and `autoReleaseTime` exclude pauses that happened since the
+ *         order last changed status: read `effectiveDeadline` / `effectiveAutoReleaseTime` / `disputeTimeoutAt`.
+ *         Dispute data lives in `disputes`. Admin functions match v2, so EscrowAdmin (timelock plus guardian) can
+ *         own this contract unchanged.
+ *         Only plain ERC-20 tokens (USDC) may be whitelisted: fee-on-transfer or rebasing tokens break the accounting.
+ *         Invariant: token.balanceOf(this) == sum(amount of Funded/Delivered/Disputed orders) + totalWithdrawable[token].
  */
 contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2Step {
     using SafeERC20 for IERC20;
@@ -36,7 +45,7 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
     uint256 public constant FEE_DENOMINATOR = 10_000;
     uint256 public constant FEE_BPS = 300; // 3% protocol fee, immutable and not configurable
     uint256 public constant AUTO_RELEASE_DURATION = 5 days; // buyer review window after a delivery
-    uint256 public constant DISPUTE_TIMEOUT = 30 days; // after this, anyone can apply the default outcome
+    uint256 public constant DISPUTE_TIMEOUT = 14 days; // after this, anyone can apply the default outcome
     uint256 public constant MAX_DEADLINE_DAYS = 365;
 
     // --- Enums ---
@@ -76,6 +85,17 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
     mapping(uint256 => DisputeInfo) public disputes;
     mapping(address => bool) public acceptedTokens;
 
+    /// @notice Settled funds waiting to be withdrawn, per token and account.
+    mapping(address => mapping(address => uint256)) public withdrawable;
+    /// @notice Sum of `withdrawable` per token.
+    mapping(address => uint256) public totalWithdrawable;
+
+    /// @dev Paused seconds accumulated by finished pauses, and the start of the current one.
+    uint256 private _pausedTotal;
+    uint256 private _pausedAt;
+    /// @notice pausedTime() when the order's current timer was set; the timer is extended by pausedTime() - snapshot.
+    mapping(uint256 => uint256) public pauseSnapshot;
+
     // --- Events ---
     event OrderFunded(
         uint256 indexed orderId,
@@ -85,6 +105,7 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
         uint256 amount,
         uint256 deadline
     );
+    /// @dev autoReleaseTime is 0 when the delivery is submitted during a dispute (the order stays Disputed).
     event DeliverySubmitted(uint256 indexed orderId, address indexed seller, bytes32 deliveryHash, uint256 autoReleaseTime);
     event DeadlineExtended(uint256 indexed orderId, uint256 oldDeadline, uint256 newDeadline);
     event OrderReleased(uint256 indexed orderId, uint256 sellerPayout, uint256 platformFee);
@@ -92,6 +113,8 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
     event DisputeOpened(uint256 indexed orderId, address indexed openedBy);
     event DisputeResolved(uint256 indexed orderId, uint256 sellerPayout, uint256 buyerRefund, uint256 platformFee);
     event DisputeTimeoutClaimed(uint256 indexed orderId, address indexed caller);
+    event Credited(uint256 indexed orderId, address indexed token, address indexed account, uint256 amount);
+    event Withdrawn(address indexed token, address indexed account, address to, uint256 amount);
     event FeeRecipientUpdated(address oldRecipient, address newRecipient);
     event ArbitratorUpdated(address oldArbitrator, address newArbitrator);
     event TokenWhitelisted(address indexed token, bool allowed);
@@ -109,6 +132,8 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
     error DisputeTimeoutNotReached();
     error DisputeMathMismatch();
     error InvalidRuling();
+    error NothingToWithdraw();
+    error RenounceDisabled();
 
     // --- Modifiers ---
     modifier onlyArbitrator() {
@@ -127,6 +152,32 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
     /// @notice Protocol fee in basis points. Always 300 (3%).
     function feeBps() external pure returns (uint256) {
         return FEE_BPS;
+    }
+
+    // --- Time views (pauses extend every timer) ---
+
+    /// @notice Total seconds the escrow has been paused, including the current pause.
+    function pausedTime() public view returns (uint256) {
+        return paused() ? _pausedTotal + (block.timestamp - _pausedAt) : _pausedTotal;
+    }
+
+    function _pauseExtension(uint256 orderId) internal view returns (uint256) {
+        return pausedTime() - pauseSnapshot[orderId];
+    }
+
+    /// @notice Delivery deadline including pauses. Meaningful while the order is Funded or Disputed.
+    function effectiveDeadline(uint256 orderId) public view returns (uint256) {
+        return orders[orderId].deadline + _pauseExtension(orderId);
+    }
+
+    /// @notice End of the review window including pauses. Meaningful while the order is Delivered.
+    function effectiveAutoReleaseTime(uint256 orderId) public view returns (uint256) {
+        return orders[orderId].autoReleaseTime + _pauseExtension(orderId);
+    }
+
+    /// @notice When claimDisputeTimeout becomes possible, including pauses. Meaningful while the order is Disputed.
+    function disputeTimeoutAt(uint256 orderId) public view returns (uint256) {
+        return uint256(disputes[orderId].openedAt) + DISPUTE_TIMEOUT + _pauseExtension(orderId);
     }
 
     // --- Buyer / seller functions ---
@@ -158,6 +209,7 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
             deliveryHash: bytes32(0),
             status: OrderStatus.Funded
         });
+        pauseSnapshot[orderId] = _pausedTotal;
 
         emit OrderFunded(orderId, msg.sender, seller, token, amount, deadline);
 
@@ -169,27 +221,37 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
         Order storage order = orders[orderId];
         if (order.status != OrderStatus.Funded) revert InvalidStatus(order.status, OrderStatus.Funded);
         if (msg.sender != order.buyer) revert Unauthorized();
-        if (newDeadline <= order.deadline || newDeadline > block.timestamp + MAX_DEADLINE_DAYS * 1 days) {
+        uint256 oldDeadline = effectiveDeadline(orderId);
+        if (newDeadline <= oldDeadline || newDeadline > block.timestamp + MAX_DEADLINE_DAYS * 1 days) {
             revert InvalidDeadline();
         }
 
-        uint256 oldDeadline = order.deadline;
         order.deadline = newDeadline;
+        pauseSnapshot[orderId] = _pausedTotal;
         emit DeadlineExtended(orderId, oldDeadline, newDeadline);
     }
 
-    /// @notice Registers delivery. Only the seller, only while the order is Funded and the deadline has not passed.
+    /// @notice Registers delivery. Only the seller, only before the deadline, while the order is Funded or while a
+    ///         dispute the buyer opened before any delivery is pending (the order then stays Disputed and the delivery
+    ///         counts for the default outcome).
     function submitDelivery(uint256 orderId, bytes32 deliveryHash) external nonReentrant whenNotPaused {
         Order storage order = orders[orderId];
-        if (order.status != OrderStatus.Funded) revert InvalidStatus(order.status, OrderStatus.Funded);
+        bool inDispute = order.status == OrderStatus.Disputed && order.deliveryHash == bytes32(0);
+        if (order.status != OrderStatus.Funded && !inDispute) revert InvalidStatus(order.status, OrderStatus.Funded);
         if (msg.sender != order.seller) revert Unauthorized();
-        if (block.timestamp > order.deadline) revert DeadlinePassed();
+        if (block.timestamp > effectiveDeadline(orderId)) revert DeadlinePassed();
         if (deliveryHash == bytes32(0)) revert InvalidAmount();
+
+        order.deliveryHash = deliveryHash;
+        if (inDispute) {
+            emit DeliverySubmitted(orderId, msg.sender, deliveryHash, 0);
+            return;
+        }
 
         uint256 autoRelease = block.timestamp + AUTO_RELEASE_DURATION;
         order.status = OrderStatus.Delivered;
-        order.deliveryHash = deliveryHash;
         order.autoReleaseTime = autoRelease;
+        pauseSnapshot[orderId] = _pausedTotal;
 
         emit DeliverySubmitted(orderId, msg.sender, deliveryHash, autoRelease);
     }
@@ -208,28 +270,29 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
     function claimAutoRelease(uint256 orderId) external nonReentrant whenNotPaused {
         Order storage order = orders[orderId];
         if (order.status != OrderStatus.Delivered) revert InvalidStatus(order.status, OrderStatus.Delivered);
-        if (block.timestamp < order.autoReleaseTime) revert AutoReleaseNotReady();
+        if (block.timestamp < effectiveAutoReleaseTime(orderId)) revert AutoReleaseNotReady();
 
         _executeRelease(orderId, order);
     }
 
-    /// @notice Full refund to the buyer if nothing was delivered before the deadline. Not blocked by pause.
+    /// @notice Full refund to the buyer if nothing was delivered before the deadline. Not blocked by pause, but the
+    ///         deadline does not run while paused.
     function claimTimeoutRefund(uint256 orderId) external nonReentrant {
         Order storage order = orders[orderId];
         if (order.status != OrderStatus.Funded) revert InvalidStatus(order.status, OrderStatus.Funded);
         if (msg.sender != order.buyer) revert Unauthorized();
-        if (block.timestamp <= order.deadline) revert DeadlineNotPassed();
+        if (block.timestamp <= effectiveDeadline(orderId)) revert DeadlineNotPassed();
 
         order.status = OrderStatus.Refunded;
         uint256 refundAmount = order.amount;
 
         emit OrderRefunded(orderId, order.buyer, refundAmount);
 
-        IERC20(order.token).safeTransfer(order.buyer, refundAmount);
+        _credit(orderId, order.token, order.buyer, refundAmount);
     }
 
     /// @notice Opens a dispute. The buyer can dispute a Funded or Delivered order; the seller only a Delivered one.
-    ///         Not blocked by pause.
+    ///         Not blocked by pause. Any other status reverts InvalidStatus(current, Delivered).
     function openDispute(uint256 orderId) external nonReentrant {
         Order storage order = orders[orderId];
         bool delivered = order.status == OrderStatus.Delivered;
@@ -237,6 +300,10 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
             revert InvalidStatus(order.status, OrderStatus.Delivered);
         }
         if (msg.sender != order.buyer && !(delivered && msg.sender == order.seller)) revert Unauthorized();
+
+        // Fold the pauses so far into the deadline, then restart the pause clock for the dispute timeout.
+        if (!delivered) order.deadline = effectiveDeadline(orderId);
+        pauseSnapshot[orderId] = pausedTime();
 
         order.status = OrderStatus.Disputed;
         disputes[orderId] = DisputeInfo({openedAt: uint64(block.timestamp), fromDelivered: delivered});
@@ -275,23 +342,41 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
         }
     }
 
-    /// @notice After DISPUTE_TIMEOUT without a ruling anyone can apply the default outcome: a dispute opened before any
-    ///         delivery refunds the buyer in full; one opened after a delivery splits the amount 50/50.
-    function claimDisputeTimeout(uint256 orderId) external nonReentrant whenNotPaused {
+    /// @notice After DISPUTE_TIMEOUT without a ruling anyone can apply the default outcome: if the seller delivered
+    ///         (before the dispute or during it), the seller is paid; if not, the buyer is refunded once the deadline
+    ///         has also passed. Not blocked by pause (the outcome needs no third-party decision), but the timeout and
+    ///         the deadline do not run while paused.
+    function claimDisputeTimeout(uint256 orderId) external nonReentrant {
         Order storage order = orders[orderId];
         if (order.status != OrderStatus.Disputed) revert InvalidStatus(order.status, OrderStatus.Disputed);
-        if (block.timestamp < uint256(disputes[orderId].openedAt) + DISPUTE_TIMEOUT) revert DisputeTimeoutNotReached();
+        if (block.timestamp < disputeTimeoutAt(orderId)) revert DisputeTimeoutNotReached();
+        if (order.deliveryHash == bytes32(0) && block.timestamp <= effectiveDeadline(orderId)) revert DeadlineNotPassed();
 
         emit DisputeTimeoutClaimed(orderId, msg.sender);
         _applyDefaultOutcome(orderId, order);
     }
 
+    // --- Withdrawals ---
+
+    /// @notice Withdraws all settled funds of the caller in `token` to `to`. Never blocked by pause. A blacklisted
+    ///         account can send its balance to another address.
+    function withdraw(address token, address to) external nonReentrant {
+        if (to == address(0)) revert InvalidAddress();
+        uint256 amount = withdrawable[token][msg.sender];
+        if (amount == 0) revert NothingToWithdraw();
+
+        withdrawable[token][msg.sender] = 0;
+        totalWithdrawable[token] -= amount;
+        emit Withdrawn(token, msg.sender, to, amount);
+
+        IERC20(token).safeTransfer(to, amount);
+    }
+
     // --- Internal helpers ---
 
     function _applyDefaultOutcome(uint256 orderId, Order storage order) internal {
-        if (disputes[orderId].fromDelivered) {
-            uint256 sellerAmount = order.amount / 2;
-            _settleDispute(orderId, order, sellerAmount, order.amount - sellerAmount);
+        if (order.deliveryHash != bytes32(0)) {
+            _settleDispute(orderId, order, order.amount, 0);
         } else {
             _settleDispute(orderId, order, 0, order.amount);
         }
@@ -309,9 +394,9 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
 
         emit DisputeResolved(orderId, sellerPayout, buyerRefund, fee);
 
-        if (buyerRefund > 0) IERC20(order.token).safeTransfer(order.buyer, buyerRefund);
-        if (sellerPayout > 0) IERC20(order.token).safeTransfer(order.seller, sellerPayout);
-        if (fee > 0) IERC20(order.token).safeTransfer(feeRecipient, fee);
+        _credit(orderId, order.token, order.buyer, buyerRefund);
+        _credit(orderId, order.token, order.seller, sellerPayout);
+        _credit(orderId, order.token, feeRecipient, fee);
     }
 
     function _executeRelease(uint256 orderId, Order storage order) internal {
@@ -323,8 +408,15 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
 
         emit OrderReleased(orderId, sellerPayout, fee);
 
-        if (sellerPayout > 0) IERC20(order.token).safeTransfer(order.seller, sellerPayout);
-        if (fee > 0) IERC20(order.token).safeTransfer(feeRecipient, fee);
+        _credit(orderId, order.token, order.seller, sellerPayout);
+        _credit(orderId, order.token, feeRecipient, fee);
+    }
+
+    function _credit(uint256 orderId, address token, address account, uint256 amount) internal {
+        if (amount == 0) return;
+        withdrawable[token][account] += amount;
+        totalWithdrawable[token] += amount;
+        emit Credited(orderId, token, account, amount);
     }
 
     // --- Admin / configuration (same as v2, so EscrowAdmin works unchanged) ---
@@ -343,6 +435,7 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
         emit ArbitratorUpdated(oldArbitrator, newArbitrator);
     }
 
+    /// @notice Only plain ERC-20 tokens (USDC): fee-on-transfer or rebasing tokens break the escrow accounting.
     function setAcceptedToken(address token, bool allowed) external onlyOwner {
         if (token == address(0)) revert InvalidAddress();
         acceptedTokens[token] = allowed;
@@ -350,10 +443,17 @@ contract MarketplaceEscrowV3 is IArbitrable, ReentrancyGuard, Pausable, Ownable2
     }
 
     function pause() external onlyOwner {
+        _pausedAt = block.timestamp;
         _pause();
     }
 
     function unpause() external onlyOwner {
+        _pausedTotal += block.timestamp - _pausedAt;
         _unpause();
+    }
+
+    /// @dev Disabled: without an owner a paused escrow could never be unpaused.
+    function renounceOwnership() public pure override {
+        revert RenounceDisabled();
     }
 }

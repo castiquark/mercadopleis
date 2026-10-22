@@ -49,6 +49,16 @@ abstract contract KupiaSpec is Test {
         id = escrow.createAndFundOrder(seller, address(usdc), AMOUNT, 1);
     }
 
+    /// Wallet balance plus funds credited by the escrow (v3 pays by pull; v2 pushes).
+    function _settled(address who) internal view virtual returns (uint256) {
+        return usdc.balanceOf(who);
+    }
+
+    /// Escrow balance that still backs open orders.
+    function _heldForOrders() internal view virtual returns (uint256) {
+        return usdc.balanceOf(address(escrow));
+    }
+
     function _status(uint256 id) internal view returns (uint8 s) {
         (,,,,,,, s) = escrow.orders(id);
     }
@@ -65,7 +75,7 @@ abstract contract KupiaSpec is Test {
         vm.prank(buyer);
         escrow.claimTimeoutRefund(id);
         assertEq(_status(id), 4); // Refunded
-        assertEq(usdc.balanceOf(buyer), AMOUNT * 10);
+        assertEq(_settled(buyer), AMOUNT * 10);
     }
 
     // Finding 2a: the seller cannot dispute an order that has not been delivered.
@@ -86,8 +96,8 @@ abstract contract KupiaSpec is Test {
         vm.warp(block.timestamp + 31 days);
         escrow.claimDisputeTimeout(id); // anyone
         assertEq(_status(id), 6); // Resolved
-        assertEq(usdc.balanceOf(buyer), AMOUNT * 10);
-        assertEq(usdc.balanceOf(address(escrow)), 0);
+        assertEq(_settled(buyer), AMOUNT * 10);
+        assertEq(_heldForOrders(), 0);
     }
 
     // Finding 3: pausing also stops the arbitrator from moving funds.
@@ -108,6 +118,14 @@ abstract contract KupiaSpec is Test {
 contract KupiaSpecV3 is KupiaSpec {
     function _deploy() internal override returns (IEscrowLike) {
         return IEscrowLike(address(new MarketplaceEscrowV3(owner, makeAddr("fee"), arbitrator)));
+    }
+
+    function _settled(address who) internal view override returns (uint256) {
+        return usdc.balanceOf(who) + MarketplaceEscrowV3(address(escrow)).withdrawable(address(usdc), who);
+    }
+
+    function _heldForOrders() internal view override returns (uint256) {
+        return usdc.balanceOf(address(escrow)) - MarketplaceEscrowV3(address(escrow)).totalWithdrawable(address(usdc));
     }
 }
 
