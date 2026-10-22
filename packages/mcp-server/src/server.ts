@@ -101,12 +101,39 @@ export function createServer({ remote = false }: ServerOptions = {}): McpServer 
     const net = getNetwork(chainId);
     return net.api
       ? null
-      : fail(`${net.name} is supported for on-chain tools only (create_order, get_order_status, get_delivery, prepare_order_action). Order registration, messages and deliverable downloads are not available on this network yet.`);
+      : fail(`${net.name} is supported for on-chain tools only (create_order, get_order_status, get_delivery, prepare_order_action, get_withdrawable, prepare_withdraw). Order registration, messages and deliverable downloads are not available on this network yet.`);
   }
 
-  async function readOrder(orderId: number, chainId: number) {
+  /** Escrow contract an order lives in: the current one, or the legacy v2 for orders created before v3. */
+  function escrowAddress(chainId: number, version?: 2 | 3): `0x${string}` {
+    const net = getNetwork(chainId);
+    if (!version || version === net.version) return net.escrow;
+    if (version === 2 && net.escrowV2) return net.escrowV2;
+    throw new Error(`${net.name} runs escrow v${net.version}; there is no v${version} escrow to use here.`);
+  }
+
+  const versionArg = z
+    .union([z.literal(2), z.literal(3)])
+    .optional()
+    .describe('Escrow version the order lives in. Default: the current one. Use 2 for orders created before v3.');
+
+  /** Latest block time: the contract compares deadlines with it, not with the local clock. */
+  async function blockTime(chainId: number): Promise<bigint> {
+    return (await publicClient(chainId).getBlock()).timestamp;
+  }
+
+  /** Timers of a v3 order, as the contract computes them (they stop counting while it is paused). */
+  async function readTimers(orderId: number, chainId: number) {
+    const address = escrowAddress(chainId);
+    const read = (functionName: 'effectiveDeadline' | 'effectiveAutoReleaseTime' | 'disputeTimeoutAt') =>
+      publicClient(chainId).readContract({ address, abi: escrowAbi, functionName, args: [BigInt(orderId)] });
+    const [deadline, autoRelease, disputeTimeout] = await Promise.all([read('effectiveDeadline'), read('effectiveAutoReleaseTime'), read('disputeTimeoutAt')]);
+    return { deadline, autoRelease, disputeTimeout };
+  }
+
+  async function readOrder(orderId: number, chainId: number, version?: 2 | 3) {
     return publicClient(chainId).readContract({
-      address: getNetwork(chainId).escrow,
+      address: escrowAddress(chainId, version),
       abi: escrowAbi,
       functionName: 'orders',
       args: [BigInt(orderId)],
@@ -183,7 +210,7 @@ export function createServer({ remote = false }: ServerOptions = {}): McpServer 
     'create_order',
     {
       description:
-        'Prepare (never sign or send) the two transactions a buyer wallet must submit to hire a service: 1) stablecoin approve (USDC on Base), 2) createAndFundOrder on the escrow. Non-custodial: this server holds no keys. Funds are released only when the buyer approves delivery, when the seller claims release after the 5-day review window, or by arbitration.',
+        'Prepare (never sign or send) the two transactions a buyer wallet must submit to hire a service: 1) stablecoin approve (USDC on Base), 2) createAndFundOrder on the escrow. Non-custodial: this server holds no keys. Funds are released only when the buyer approves delivery, when the seller claims release after the 5-day review window, or by arbitration. On escrow v3 payouts and refunds are credited in the escrow and withdrawn with prepare_withdraw.',
       inputSchema: {
         serviceId: z.string().describe('Service slug or UUID'),
         buyerWallet: z.string().describe('Address of the wallet that will fund the escrow'),
@@ -243,10 +270,11 @@ export function createServer({ remote = false }: ServerOptions = {}): McpServer 
   server.registerTool(
     'get_order_status',
     {
-      description: 'Read an order directly from the escrow contract: parties, amount, status, deadlines and delivery hash.',
-      inputSchema: { orderId: z.number().int().positive(), chainId: z.number().int().optional() },
+      description:
+        'Read an order directly from the escrow contract: parties, amount, status, deadlines and delivery hash. On escrow v3 the deadlines are the effective ones (they stop counting while the contract is paused) and a disputed order shows when anyone can close it by timeout. Orders from the old v2 escrow are read with escrowVersion 2.',
+      inputSchema: { orderId: z.number().int().positive(), chainId: z.number().int().optional(), escrowVersion: versionArg },
     },
-    async ({ orderId, chainId }) => {
+    async ({ orderId, chainId, escrowVersion }) => {
       const id = chainId ?? CHAIN_ID;
       let net;
       try {
@@ -254,8 +282,22 @@ export function createServer({ remote = false }: ServerOptions = {}): McpServer 
       } catch (e) {
         return fail((e as Error).message);
       }
-      const [buyer, seller, token, amount, deadline, autoReleaseTime, deliveryHash, status] = await readOrder(orderId, id);
-      if (status === 0) return fail(`Order ${orderId} does not exist on chain ${id}`);
+      let order;
+      try {
+        order = await readOrder(orderId, id, escrowVersion);
+      } catch (e) {
+        return fail((e as Error).message);
+      }
+      let [buyer, seller, token, amount, deadline, autoReleaseTime, deliveryHash, status] = order;
+      if (status === 0) return fail(`Order ${orderId} does not exist on chain ${id}${escrowVersion ? ` (escrow v${escrowVersion})` : ''}`);
+      const version = escrowVersion ?? net.version;
+      let disputeTimeout = 0n;
+      if (version === 3) {
+        const t = await readTimers(orderId, id);
+        deadline = t.deadline;
+        autoReleaseTime = t.autoRelease;
+        disputeTimeout = t.disputeTimeout;
+      }
       const ts = (n: bigint) => (n > 0n ? new Date(Number(n) * 1000).toISOString() : null);
       return json({
         orderId,
@@ -269,8 +311,11 @@ export function createServer({ remote = false }: ServerOptions = {}): McpServer 
         tokenSymbol: token.toLowerCase() === net.token.address.toLowerCase() ? net.token.symbol : null,
         deliveryDeadline: ts(deadline),
         autoReleaseTime: ts(autoReleaseTime),
+        ...(version === 3 && status === 5 ? { disputeTimeoutAt: ts(disputeTimeout) } : {}),
         deliveryHash: deliveryHash === ZERO_HASH ? null : deliveryHash,
-        explorer: `${net.explorer}/address/${net.escrow}`,
+        escrowVersion: version,
+        payouts: version === 3 ? 'credited to the receiver, who calls prepare_withdraw to receive them' : 'sent to the receiver on release',
+        explorer: `${net.explorer}/address/${escrowAddress(id, escrowVersion)}`,
       });
     },
   );
@@ -280,11 +325,12 @@ export function createServer({ remote = false }: ServerOptions = {}): McpServer 
     {
       description:
         'Get the on-chain SHA-256 commitment of a delivered order so the buyer can verify the deliverable: the hash of the uploaded file, or of the link text when the seller delivered an external link.',
-      inputSchema: { orderId: z.number().int().positive(), chainId: z.number().int().optional() },
+      inputSchema: { orderId: z.number().int().positive(), chainId: z.number().int().optional(), escrowVersion: versionArg },
     },
-    async ({ orderId, chainId }) => {
+    async ({ orderId, chainId, escrowVersion }) => {
       const id = chainId ?? CHAIN_ID;
-      const [, , , , , autoReleaseTime, deliveryHash, status] = await readOrder(orderId, id);
+      let [, , , , , autoReleaseTime, deliveryHash, status] = await readOrder(orderId, id, escrowVersion);
+      if ((escrowVersion ?? getNetwork(id).version) === 3 && status >= 2) autoReleaseTime = (await readTimers(orderId, id)).autoRelease;
       if (status < 2 || deliveryHash === ZERO_HASH) {
         return fail(`Order ${orderId} has no delivery yet (status: ${ORDER_STATUS[status]})`);
       }
@@ -318,46 +364,141 @@ export function createServer({ remote = false }: ServerOptions = {}): McpServer 
       allowed: [1],
       effect: 'Refunds the full amount to the buyer. Only valid after the delivery deadline if nothing was delivered.',
     },
+    claim_dispute_timeout: {
+      fn: 'claimDisputeTimeout',
+      allowed: [5],
+      effect:
+        'Closes a dispute the arbitrator did not rule on within 14 days with the default outcome: the seller is paid if they delivered, otherwise the buyer is refunded. Anyone may send it.',
+    },
   } as const;
 
   server.registerTool(
     'prepare_order_action',
     {
       description:
-        'Prepare (never sign or send) the transaction for a buyer follow-up on an order: approve_delivery (after verifying the deliverable), open_dispute, or claim_timeout_refund (seller missed the deadline). Checks the on-chain status first. The transaction must come from the buyer wallet that funded the order.',
+        'Prepare (never sign or send) the transaction for a buyer follow-up on an order: approve_delivery (after verifying the deliverable), open_dispute, claim_timeout_refund (seller missed the deadline) or claim_dispute_timeout (escrow v3: the arbitrator did not rule within 14 days). Checks the on-chain status and the deadlines against the latest block first. The transaction must come from the buyer wallet that funded the order. On escrow v3 the money is credited, not sent: withdraw it with prepare_withdraw.',
       inputSchema: {
         orderId: z.number().int().positive(),
-        action: z.enum(['approve_delivery', 'open_dispute', 'claim_timeout_refund']),
+        action: z.enum(['approve_delivery', 'open_dispute', 'claim_timeout_refund', 'claim_dispute_timeout']),
         chainId: z.number().int().optional(),
+        escrowVersion: versionArg,
       },
     },
-    async ({ orderId, action, chainId }) => {
+    async ({ orderId, action, chainId, escrowVersion }) => {
       const id = chainId ?? CHAIN_ID;
-      let net;
+      let net, escrow;
       try {
         net = getNetwork(id);
+        escrow = escrowAddress(id, escrowVersion);
       } catch (e) {
         return fail((e as Error).message);
       }
-      const [buyer, , , , deadline, , , status] = await readOrder(orderId, id);
-      if (status === 0) return fail(`Order ${orderId} does not exist on chain ${id}`);
+      const version = escrowVersion ?? net.version;
+      const [buyer, , , , storedDeadline, , deliveryHash, status] = await readOrder(orderId, id, escrowVersion);
+      if (status === 0) return fail(`Order ${orderId} does not exist on chain ${id} (escrow v${version})`);
+      if (action === 'claim_dispute_timeout' && version !== 3) return fail('claim_dispute_timeout exists only on escrow v3');
 
       const spec = ORDER_ACTIONS[action];
       if (!(spec.allowed as readonly number[]).includes(status)) {
         return fail(`Cannot ${action} while the order is ${ORDER_STATUS[status]}`);
       }
-      if (action === 'claim_timeout_refund' && BigInt(Math.floor(Date.now() / 1000)) <= deadline) {
-        return fail(`The delivery deadline has not passed yet (${new Date(Number(deadline) * 1000).toISOString()})`);
+      const iso = (n: bigint) => new Date(Number(n) * 1000).toISOString();
+      if (action === 'claim_timeout_refund' || action === 'claim_dispute_timeout') {
+        // Same checks as the contract, against the latest block time (not the local clock).
+        const [now, timers] = await Promise.all([blockTime(id), version === 3 ? readTimers(orderId, id) : null]);
+        const deadline = timers?.deadline ?? storedDeadline;
+        if (action === 'claim_dispute_timeout' && now < timers!.disputeTimeout) {
+          return fail(`The 14-day dispute timeout has not passed yet (${iso(timers!.disputeTimeout)})`);
+        }
+        const needsDeadline = action === 'claim_timeout_refund' || deliveryHash === ZERO_HASH;
+        if (needsDeadline && now <= deadline) return fail(`The delivery deadline has not passed yet (${iso(deadline)})`);
       }
 
       const data = encodeFunctionData({ abi: escrowAbi, functionName: spec.fn, args: [BigInt(orderId)] });
+      const credited = version === 3 && action !== 'open_dispute';
       return json({
         network: net.name,
         chainId: id,
         orderId,
         action,
-        effect: spec.effect,
-        transaction: { from: buyer, to: net.escrow, value: '0', data: concatHex([data, BUILDER_DATA_SUFFIX]) },
+        escrowVersion: version,
+        effect: credited ? `${spec.effect} The amount is credited in the escrow; the receiver withdraws it with prepare_withdraw.` : spec.effect,
+        transaction: { from: buyer, to: escrow, value: '0', data: concatHex([data, BUILDER_DATA_SUFFIX]) },
+      });
+    },
+  );
+
+  /** Balance credited to a wallet in the v3 escrow, or a failure on networks still on v2. */
+  async function readWithdrawable(walletAddress: string, chainId: number) {
+    const net = getNetwork(chainId);
+    if (net.version !== 3) throw new Error(`${net.name} still runs escrow v2, which pays out directly: there is nothing to withdraw.`);
+    const amount = await publicClient(chainId).readContract({
+      address: net.escrow,
+      abi: escrowAbi,
+      functionName: 'withdrawable',
+      args: [net.token.address, walletAddress as `0x${string}`],
+    });
+    return { net, amount, formatted: (Number(amount) / 10 ** net.token.decimals).toFixed(2) };
+  }
+
+  server.registerTool(
+    'get_withdrawable',
+    {
+      description:
+        'Escrow v3: how much stablecoin a wallet has credited in the escrow (seller payouts, buyer refunds, dispute splits), ready to withdraw with prepare_withdraw.',
+      inputSchema: { walletAddress: z.string(), chainId: z.number().int().optional() },
+    },
+    async ({ walletAddress, chainId }) => {
+      const id = chainId ?? CHAIN_ID;
+      if (!isAddress(walletAddress)) return fail('walletAddress is not a valid address');
+      let r;
+      try {
+        r = await readWithdrawable(walletAddress, id);
+      } catch (e) {
+        return fail((e as Error).message);
+      }
+      return json({
+        network: r.net.name,
+        chainId: id,
+        walletAddress,
+        token: { symbol: r.net.token.symbol, address: r.net.token.address },
+        withdrawable: r.formatted,
+        next: r.amount > 0n ? 'prepare_withdraw({ walletAddress })' : 'Nothing to withdraw.',
+      });
+    },
+  );
+
+  server.registerTool(
+    'prepare_withdraw',
+    {
+      description:
+        'Escrow v3: prepare (never sign or send) the transaction that withdraws all the stablecoin credited to a wallet in the escrow. It must be sent from that wallet; the funds go to "to" (default: the same wallet).',
+      inputSchema: {
+        walletAddress: z.string().describe('Wallet with the credited balance; it sends the transaction'),
+        to: z.string().optional().describe('Where the funds go. Default: walletAddress'),
+        chainId: z.number().int().optional(),
+      },
+    },
+    async ({ walletAddress, to, chainId }) => {
+      const id = chainId ?? CHAIN_ID;
+      const receiver = to ?? walletAddress;
+      if (!isAddress(walletAddress)) return fail('walletAddress is not a valid address');
+      if (!isAddress(receiver)) return fail('to is not a valid address');
+      let r;
+      try {
+        r = await readWithdrawable(walletAddress, id);
+      } catch (e) {
+        return fail((e as Error).message);
+      }
+      if (r.amount === 0n) return fail(`${walletAddress} has nothing to withdraw on ${r.net.name}`);
+      const data = encodeFunctionData({ abi: escrowAbi, functionName: 'withdraw', args: [r.net.token.address, receiver] });
+      return json({
+        network: r.net.name,
+        chainId: id,
+        amount: r.formatted,
+        token: { symbol: r.net.token.symbol, address: r.net.token.address },
+        to: receiver,
+        transaction: { from: walletAddress, to: r.net.escrow, value: '0', data: concatHex([data, BUILDER_DATA_SUFFIX]) },
       });
     },
   );

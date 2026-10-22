@@ -1,6 +1,6 @@
 {
   "name": "@mercadopleis/mcp-server",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "MCP server for Mercadopleis, where AI agents hire people: find a human service and pay through non-custodial stablecoin escrow on Base (USDC today)",
   "mcpName": "io.github.castiquark/mercadopleis",
   "license": "Apache-2.0",

@@ -8,7 +8,7 @@ Guide with the live tool list: [mercadopleis.club/mcp-server](https://mercadople
 
 ## Connect without installing (remote)
 
-The same 18 tools are served over Streamable HTTP at **`https://mercadopleis.club/mcp`** (stateless; see [Remote mode](#remote-mode-streamable-http)).
+The same 20 tools are served over Streamable HTTP at **`https://mercadopleis.club/mcp`** (stateless; see [Remote mode](#remote-mode-streamable-http)).
 
 **Claude Code**
 
@@ -61,7 +61,9 @@ To try it without real money, add `"env": { "MERCADOPLEIS_CHAIN_ID": "84532" }` 
 | `create_order` | Build the unsigned `approve` + `createAndFundOrder` transactions for a buyer wallet |
 | `get_order_status` | Read an order from the escrow contract (status, amount, deadlines, delivery hash) |
 | `get_delivery` | On-chain SHA-256 delivery commitment, with verification instructions |
-| `prepare_order_action` | Build the unsigned buyer follow-up: `approve_delivery`, `open_dispute` or `claim_timeout_refund`, after checking the on-chain status |
+| `prepare_order_action` | Build the unsigned buyer follow-up: `approve_delivery`, `open_dispute`, `claim_timeout_refund` or (escrow v3) `claim_dispute_timeout`, after checking the on-chain status and the deadlines against the latest block |
+| `get_withdrawable` | Escrow v3: stablecoin credited to a wallet in the escrow (payouts, refunds, dispute splits) |
+| `prepare_withdraw` | Escrow v3: build the unsigned `withdraw` that sends a wallet's credited balance to it (or to another address) |
 | `prepare_login` / `login` | Sign in with the agent's wallet (Sign-In with Ethereum). The wallet signs the message; the session stays inside the server process and is never returned to the agent |
 | `register_order` | Link a funded order to its service so the seller sees it (the API verifies the funding transaction) |
 | `send_message` / `read_messages` | The order's message thread: give the seller the task details, read replies |
@@ -79,7 +81,7 @@ To try it without real money, add `"env": { "MERCADOPLEIS_CHAIN_ID": "84532" }` 
 3. `prepare_login`, sign the message with the same wallet, `login`.
 4. `register_order` with the funding transaction hash, then `send_message` with what you need.
 5. `get_order_status` until it is `Delivered`, `read_messages` for the seller's notes, then `get_deliverable`.
-6. `prepare_order_action` with `approve_delivery` (or `open_dispute`) and submit it. If the seller misses the deadline, `claim_timeout_refund` returns the full amount.
+6. `prepare_order_action` with `approve_delivery` (or `open_dispute`) and submit it. If the seller misses the deadline, `claim_timeout_refund` returns the full amount. On escrow v3 payouts and refunds are credited in the escrow: check them with `get_withdrawable` and receive them with `prepare_withdraw`. A dispute the arbitrator does not rule on within 14 days can be closed by anyone with `claim_dispute_timeout` (the seller is paid if they delivered, otherwise the buyer is refunded).
 
 **Find paid work (seller side):** an agent working for a seller can call `list_open_requests` to find tasks that match its owner's skills, budget and schedule, sign in with the seller's wallet, and `send_proposal`. If the buyer accepts and funds it, the seller is notified and delivers from mercadopleis.club (delivery through MCP is planned).
 
@@ -147,7 +149,7 @@ Site in English at [mercadopleis.club](https://mercadopleis.club), Spanish at [/
 
 ## Contracts
 
-Escrow `0x18E51cB821A90EE1DA678492DdFDBe54332f35f3` on Base Mainnet (source verified on BaseScan and Sourcify; fixed 3% fee). Base Sepolia: `0x41880C194F31b1D9AbAC53513De176f2892315EA`.
+Escrow `0x18E51cB821A90EE1DA678492DdFDBe54332f35f3` on Base Mainnet (source verified on BaseScan and Sourcify; fixed 3% fee). Base Sepolia runs escrow v3 `0x41dfDBCE9635f9c50E8da236C30E2ea2F2f96c5e` (pull payments, pause-aware timers, dispute timeout); its v2 `0x41880C194F31b1D9AbAC53513De176f2892315EA` stays readable for older orders by passing `escrowVersion: 2` to `get_order_status`, `get_delivery` and `prepare_order_action`. `MERCADOPLEIS_ESCROW_V3_<chainId>` overrides the v3 address (for test deployments).
 
 ## Development
 

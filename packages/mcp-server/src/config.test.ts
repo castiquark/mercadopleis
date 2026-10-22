@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { concatHex, decodeFunctionData, encodeFunctionData, getAddress, parseUnits } from 'viem';
 import { MarketplaceEscrowAbi } from '../../contracts-abi/src/MarketplaceEscrowAbi';
+import { MarketplaceEscrowV3Abi } from '../../contracts-abi/src/MarketplaceEscrowV3Abi';
 import { BUILDER_DATA_SUFFIX, NETWORKS, ORDER_STATUS, erc20Abi, escrowAbi, getNetwork } from './config';
 
 const repoRoot = resolve(__dirname, '../../..');
@@ -32,7 +33,7 @@ describe('drift guards against the contract', () => {
 
   it('the minimal ABI used by the MCP server matches the published escrow ABI', () => {
     for (const fn of escrowAbi) {
-      const published = MarketplaceEscrowAbi.find((x: any) => x.type === 'function' && x.name === fn.name) as any;
+      const published = [...MarketplaceEscrowV3Abi, ...MarketplaceEscrowAbi].find((x: any) => x.type === 'function' && x.name === fn.name) as any;
       expect(published, `function ${fn.name} exists in the escrow ABI`).toBeDefined();
       expect(published.inputs.map((i: any) => i.type)).toEqual(fn.inputs.map((i) => i.type));
       expect(published.outputs.map((o: any) => o.type)).toEqual(fn.outputs.map((o) => o.type));
@@ -40,9 +41,12 @@ describe('drift guards against the contract', () => {
   });
 
   it('the escrow address of each network matches the registry in contracts-abi', async () => {
-    const { ESCROW_ADDRESSES } = await import('../../contracts-abi/src/index');
+    const { ESCROW_ADDRESSES, ESCROW_V3_ADDRESSES, ESCROW_V2_ADDRESSES } = await import('../../contracts-abi/src/index');
     for (const chainId of [8453, 84532]) {
-      expect(NETWORKS[chainId].escrow.toLowerCase()).toBe(ESCROW_ADDRESSES[chainId].toLowerCase());
+      const v3 = ESCROW_V3_ADDRESSES[chainId];
+      expect(NETWORKS[chainId].escrow.toLowerCase()).toBe((v3 ?? ESCROW_ADDRESSES[chainId]).toLowerCase());
+      expect(NETWORKS[chainId].version).toBe(v3 ? 3 : 2);
+      if (v3) expect(NETWORKS[chainId].escrowV2?.toLowerCase()).toBe(ESCROW_V2_ADDRESSES[chainId].toLowerCase());
     }
   });
 
