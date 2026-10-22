@@ -5,7 +5,7 @@ import { listPublicServices } from '@/lib/servicesDb';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { validateServiceInput } from '@/lib/validation';
 import { enforceRateLimit } from '@/lib/rateLimit';
-import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
+import { currentEscrow } from '@/lib/networks';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
         protocol: 'Mercadopleis Agent Commerce v1',
         network: 'Base Mainnet',
         chainId: 8453,
-        escrowContract: ESCROW_ADDRESSES[8453],
+        escrowContract: currentEscrow(8453),
         acceptedToken: {
           symbol: 'USDC',
           address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',

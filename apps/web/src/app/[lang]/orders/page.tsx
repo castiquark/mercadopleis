@@ -3,7 +3,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from '@/components/LocaleLink';
 import { useAccount, usePublicClient, useWriteContract } from 'wagmi';
-import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
+// The v3 ABI is a superset of v2 (same functions, getters and events), so it serves orders in either escrow.
+import { MarketplaceEscrowV3Abi as MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
+import { currentEscrow, currentEscrowKey, isV3Escrow, orderEscrow } from '@/lib/networks';
+import { WithdrawPanel } from '@/components/WithdrawPanel';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { useAuth } from '@/lib/authContext';
 import { useLanguage } from '@/lib/languageContext';
@@ -51,6 +54,10 @@ interface MockOrder {
   platformFeeUsdc: number;
   status: 'CREATED' | 'FUNDED' | 'DELIVERED' | 'RELEASED' | 'REFUNDED' | 'DISPUTED';
   chainId?: number;
+  /** Escrow contract the order lives in (v2 or v3). */
+  escrowAddress?: string | null;
+  /** v3 only: when anyone can settle an open dispute with the default outcome (unix seconds). */
+  disputeTimeoutAt?: number;
   txHashFunding?: string;
   txHashRelease?: string;
   deliveryHash?: string;
@@ -111,7 +118,14 @@ export default function OrdersDashboardPage() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   const activeChainId = chainId || CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID;
-  const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID];
+  const escrowAddress = currentEscrow(activeChainId);
+  const [withdrawRefresh, setWithdrawRefresh] = useState(0);
+  const isV3 = (o: MockOrder) => isV3Escrow(o.chainId ?? activeChainId, o.escrowAddress);
+  // v3 credits settled funds to a withdrawable balance instead of sending them.
+  const creditNote = (o: MockOrder) =>
+    isV3(o)
+      ? ' ' + L('El monto queda en el saldo para retirar del escrow; retíralo desde el aviso de arriba.', 'The amount is credited to the escrow balance; withdraw it from the notice above.', 'O valor fica no saldo para sacar do escrow; saque-o pelo aviso acima.')
+      : '';
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
 
@@ -121,6 +135,8 @@ export default function OrdersDashboardPage() {
     params: { address: `0x${string}`; abi: typeof MarketplaceEscrowAbi; dataSuffix?: `0x${string}`; functionName: string; args: readonly unknown[] },
     order: MockOrder
   ): Promise<`0x${string}`> => {
+    // Every order is acted on in the escrow it was funded in (v2 orders keep working after v3 goes live).
+    params = { ...params, address: orderEscrow(order.chainId ?? activeChainId, order.escrowAddress) };
     if (publicClient) {
       try {
         await publicClient.simulateContract({ ...(params as any), account: address });
@@ -150,6 +166,43 @@ export default function OrdersDashboardPage() {
     }
     return writeContractAsync(params as any);
   };
+
+  // v3 timers pause with the contract: show the effective deadline, review window and dispute timeout.
+  const timersKey = orders.filter((o) => isV3(o) && ['FUNDED', 'DELIVERED', 'DISPUTED'].includes(o.status)).map((o) => o.id + o.status).join(',');
+  useEffect(() => {
+    if (!publicClient || !timersKey) return;
+    let cancelled = false;
+    (async () => {
+      const targets = orders.filter((o) => isV3(o) && (o.chainId ?? activeChainId) === activeChainId && ['FUNDED', 'DELIVERED', 'DISPUTED'].includes(o.status) && o.contractOrderId);
+      const updates: Record<string, Partial<MockOrder>> = {};
+      for (const o of targets) {
+        const address = orderEscrow(activeChainId, o.escrowAddress);
+        const id = [BigInt(o.contractOrderId)] as const;
+        try {
+          const [deadline, autoRelease, disputeTimeout] = (await Promise.all([
+            publicClient.readContract({ address, abi: MarketplaceEscrowAbi, functionName: 'effectiveDeadline', args: id }),
+            publicClient.readContract({ address, abi: MarketplaceEscrowAbi, functionName: 'effectiveAutoReleaseTime', args: id }),
+            publicClient.readContract({ address, abi: MarketplaceEscrowAbi, functionName: 'disputeTimeoutAt', args: id }),
+          ])) as bigint[];
+          updates[o.id] = {
+            deadlineTimestamp: Number(deadline) || o.deadlineTimestamp,
+            autoReleaseDeadline: Number(autoRelease) || o.autoReleaseDeadline,
+            // Without an open dispute the contract returns only the duration (14 days), not a date.
+            disputeTimeoutAt: Number(disputeTimeout) > 1_000_000_000 ? Number(disputeTimeout) : undefined,
+          };
+        } catch (err) {
+          console.warn('Could not read v3 timers:', err);
+        }
+      }
+      if (!cancelled && Object.keys(updates).length) {
+        setOrders((prev) => prev.map((o) => (updates[o.id] ? { ...o, ...updates[o.id] } : o)));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [publicClient, timersKey, activeChainId]);
 
   const networkName = (id?: number) => (id === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID ? 'Base Sepolia' : 'Base Mainnet');
   const formatDate = (unixSeconds?: number | null) =>
@@ -237,6 +290,7 @@ export default function OrdersDashboardPage() {
           platformFeeUsdc: Number((p.amountUsdc * 0.03).toFixed(2)),
           status: 'FUNDED',
           chainId: p.chainId,
+          escrowAddress: currentEscrowKey(p.chainId),
           txHashFunding: p.txHashFunding,
           deadlineTimestamp: Math.floor(p.createdAt / 1000) + p.deliveryDays * 86400,
           sellerAddress: p.sellerWallet,
@@ -262,6 +316,7 @@ export default function OrdersDashboardPage() {
             platformFeeUsdc: parseFloat(bo.platformFeeUsdc),
             status: bo.status,
             chainId: bo.chainId || activeChainId,
+            escrowAddress: bo.escrowAddress ?? null,
             txHashFunding: bo.txHashFunding || undefined,
             txHashRelease: bo.txHashRelease || undefined,
             deliveryHash: bo.deliveryHash,
@@ -362,6 +417,7 @@ export default function OrdersDashboardPage() {
         prev.map((o) => (o.id === order.id ? { ...o, status: 'RELEASED' } : o))
       );
       setActionNotice(L(`¡Orden #${order.contractOrderId} aprobada! Fondos liberados al vendedor.`, `Order #${order.contractOrderId} approved. Funds released to the seller.`, `Pedido #${order.contractOrderId} aprovado! Fundos liberados para o vendedor.`));
+      setWithdrawRefresh((n) => n + 1);
     } catch (err: any) {
       if (isUserRejection(err)) {
         setActionNotice(L('Operación cancelada en tu wallet.', 'Operation cancelled in your wallet.', 'Operação cancelada na sua carteira.'));
@@ -481,7 +537,12 @@ export default function OrdersDashboardPage() {
       setOrders((prev) =>
         prev.map((o) => (o.id === order.id ? { ...o, status: 'REFUNDED' } : o))
       );
-      setActionNotice(L('El monto íntegro se reembolsó a tu wallet.', 'The full amount was refunded to your wallet.', 'O valor total foi reembolsado para sua carteira.'));
+      setActionNotice(
+        isV3(order)
+          ? L('El monto íntegro quedó acreditado a tu favor en el escrow.', 'The full amount was credited to you in the escrow.', 'O valor total foi creditado a você no escrow.') + creditNote(order)
+          : L('El monto íntegro se reembolsó a tu wallet.', 'The full amount was refunded to your wallet.', 'O valor total foi reembolsado para sua carteira.')
+      );
+      setWithdrawRefresh((n) => n + 1);
     } catch (err: any) {
       if (isUserRejection(err)) {
         setActionNotice(L('Operación cancelada en tu wallet.', 'Operation cancelled in your wallet.', 'Operação cancelada na sua carteira.'));
@@ -523,8 +584,45 @@ export default function OrdersDashboardPage() {
 
       setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: 'RELEASED' } : o)));
       setActionNotice(
-        L(`Pago cobrado: ${order.sellerAmountUsdc} USDC enviados a tu wallet.`, `Payment received: ${order.sellerAmountUsdc} USDC sent to your wallet.`, `Pagamento recebido: ${order.sellerAmountUsdc} USDC enviados para sua carteira.`)
+        isV3(order)
+          ? L(`Pago cobrado: ${order.sellerAmountUsdc} USDC acreditados a tu favor.`, `Payment claimed: ${order.sellerAmountUsdc} USDC credited to you.`, `Pagamento recebido: ${order.sellerAmountUsdc} USDC creditados a você.`) + creditNote(order)
+          : L(`Pago cobrado: ${order.sellerAmountUsdc} USDC enviados a tu wallet.`, `Payment received: ${order.sellerAmountUsdc} USDC sent to your wallet.`, `Pagamento recebido: ${order.sellerAmountUsdc} USDC enviados para sua carteira.`)
       );
+      setWithdrawRefresh((n) => n + 1);
+    } catch (err: any) {
+      if (isUserRejection(err)) {
+        setActionNotice(L('Operación cancelada en tu wallet.', 'Operation cancelled in your wallet.', 'Operação cancelada na sua carteira.'));
+      } else {
+        console.error(err);
+        setActionNotice(`Error: ${err?.shortMessage || err?.message || (L('Error en la transacción', 'Transaction error', 'Erro na transação'))}`);
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // v3: anyone can settle a dispute the arbitrator left open for 14 days. Default outcome: seller paid if the
+  // delivery was recorded, buyer refunded if not.
+  const handleClaimDisputeTimeout = async (order: MockOrder) => {
+    try {
+      assertOrderChain(order);
+      setIsProcessing(true);
+      setActionNotice(L(`Cerrando la disputa de la orden #${order.contractOrderId}...`, `Closing the dispute of order #${order.contractOrderId}...`, `Encerrando a disputa do pedido #${order.contractOrderId}...`));
+      const txHash = await escrowWrite(
+        { address: escrowAddress, abi: MarketplaceEscrowAbi, dataSuffix: BUILDER_DATA_SUFFIX, functionName: 'claimDisputeTimeout', args: [BigInt(order.contractOrderId)] },
+        order
+      );
+      await confirmTx(publicClient, txHash);
+      try {
+        await syncChain(order.chainId ?? activeChainId);
+      } catch (err) {
+        console.warn('Sync note:', err);
+      }
+      setActionNotice(
+        L('Disputa cerrada con el resultado por defecto: cobra quien vende si registró la entrega; si no, se reembolsa a quien compra.', 'Dispute closed with the default outcome: the seller is paid if the delivery was recorded; otherwise the buyer is refunded.', 'Disputa encerrada com o resultado padrão: quem vende recebe se registrou a entrega; caso contrário, quem compra é reembolsado.') + creditNote(order)
+      );
+      setWithdrawRefresh((n) => n + 1);
+      await loadOrders();
     } catch (err: any) {
       if (isUserRejection(err)) {
         setActionNotice(L('Operación cancelada en tu wallet.', 'Operation cancelled in your wallet.', 'Operação cancelada na sua carteira.'));
@@ -616,7 +714,10 @@ export default function OrdersDashboardPage() {
         throw new Error(L('Conecta tu wallet para enviar esta transacción on-chain.', 'Connect your wallet to send this on-chain transaction.', 'Conecte sua carteira para enviar esta transação on-chain.'));
       }
 
+      const deliveredDuringDispute = activeDeliveryModalOrder.status === 'DISPUTED';
       try {
+        // v3: a delivery during a dispute opened before delivery keeps the order in dispute; the indexer records it.
+        if (deliveredDuringDispute) throw new Error('delivered during dispute');
         await updateOrder(activeDeliveryModalOrder.id, {
           status: 'DELIVERED',
           txHash,
@@ -632,7 +733,7 @@ export default function OrdersDashboardPage() {
           o.id === activeDeliveryModalOrder.id
             ? {
                 ...o,
-                status: 'DELIVERED',
+                status: deliveredDuringDispute ? 'DISPUTED' : 'DELIVERED',
                 deliveryUrl: deliveryInputUrl,
                 deliveryHash: finalHash,
                 autoReleaseDeadline: Math.floor(Date.now() / 1000) + 86400 * 5,
@@ -706,6 +807,9 @@ export default function OrdersDashboardPage() {
       </div>
 
       {/* Notifications Alert */}
+      {/* v3: settled funds wait in the escrow until withdrawn (buyers, sellers and the fee recipient) */}
+      <WithdrawPanel refreshKey={withdrawRefresh} />
+
       {actionNotice && (
         <div className="mt-6 flex items-center justify-between rounded-xl border border-primary/30 bg-primary/10 p-4 text-sm text-primary-light">
           <span>{actionNotice}</span>
@@ -920,6 +1024,13 @@ export default function OrdersDashboardPage() {
                       {t('sellerWorkingNotice').replace('{date}', formatDate(order.deadlineTimestamp) || '—')}
                     </span>
                     <button
+                      onClick={() => handleOpenDispute(order)}
+                      disabled={isProcessing}
+                      className="rounded-lg border border-red-500/30 px-3 py-2.5 text-xs font-semibold text-red-300 hover:bg-red-500/10 sm:py-1.5"
+                    >
+                      {t('openDispute')}
+                    </button>
+                    <button
                       onClick={() => handleClaimRefund(order)}
                       disabled={isProcessing || nowSeconds <= order.deadlineTimestamp}
                       title={nowSeconds <= order.deadlineTimestamp ? t('refundNotYet') : undefined}
@@ -931,14 +1042,40 @@ export default function OrdersDashboardPage() {
                 )}
 
                 {/* Seller Controls */}
-                {order.role === 'seller' && order.status === 'FUNDED' && (
-                  <button
-                    onClick={() => openDeliveryModal(order)}
-                    disabled={isProcessing}
-                    className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-md shadow-primary/20 transition hover:bg-primary-hover active:scale-95"
-                  >
-                    {t('submitDelivery')}
-                  </button>
+                {order.role === 'seller' &&
+                  (order.status === 'FUNDED' || (order.status === 'DISPUTED' && isV3(order) && !order.deliveryHash)) &&
+                  (isV3(order) && nowSeconds > order.deadlineTimestamp ? (
+                    <span className="text-xs text-slate-400">
+                      {L('El plazo de entrega venció: el contrato ya no acepta la entrega, salvo que quien compra extienda el plazo.', 'The delivery deadline has passed: the contract no longer accepts the delivery unless the buyer extends the deadline.', 'O prazo de entrega venceu: o contrato não aceita mais a entrega, a menos que quem compra estenda o prazo.')}
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => openDeliveryModal(order)}
+                      disabled={isProcessing}
+                      className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-md shadow-primary/20 transition hover:bg-primary-hover active:scale-95"
+                    >
+                      {t('submitDelivery')}
+                    </button>
+                  ))}
+
+                {/* v3: an open dispute the arbitrator has not resolved can be closed with the default outcome after 14 days */}
+                {order.status === 'DISPUTED' && isV3(order) && order.dispute?.status !== 'RESOLVED' && order.disputeTimeoutAt && (
+                  <div className="flex w-full flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+                    <span>
+                      {nowSeconds >= order.disputeTimeoutAt
+                        ? L('El árbitro no resolvió en 14 días: cualquiera de las partes puede cerrar la disputa con el resultado por defecto.', 'The arbitrator did not rule within 14 days: either party can close the dispute with the default outcome.', 'O árbitro não decidiu em 14 dias: qualquer parte pode encerrar a disputa com o resultado padrão.')
+                        : L(`Si el árbitro no resuelve antes del ${formatDate(order.disputeTimeoutAt)}, la disputa se podrá cerrar con el resultado por defecto.`, `If the arbitrator has not ruled by ${formatDate(order.disputeTimeoutAt)}, the dispute can be closed with the default outcome.`, `Se o árbitro não decidir até ${formatDate(order.disputeTimeoutAt)}, a disputa poderá ser encerrada com o resultado padrão.`)}
+                    </span>
+                    {nowSeconds >= order.disputeTimeoutAt && (
+                      <button
+                        onClick={() => handleClaimDisputeTimeout(order)}
+                        disabled={isProcessing}
+                        className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-surface-elevated disabled:opacity-50"
+                      >
+                        {L('Cerrar la disputa', 'Close the dispute', 'Encerrar a disputa')}
+                      </button>
+                    )}
+                  </div>
                 )}
 
                 {order.role === 'seller' && order.status === 'DELIVERED' && (

@@ -4,14 +4,28 @@
  * wallet's generic "exceeds max transaction gas limit".
  */
 
-export type EscrowErrorName = 'InvalidStatus' | 'Unauthorized' | 'DeadlineNotPassed' | 'AutoReleaseNotReady' | 'EnforcedPause';
+export type EscrowErrorName =
+  | 'InvalidStatus'
+  | 'Unauthorized'
+  | 'DeadlineNotPassed'
+  | 'AutoReleaseNotReady'
+  | 'EnforcedPause'
+  // escrow v3
+  | 'DeadlinePassed'
+  | 'DisputeTimeoutNotReached'
+  | 'NothingToWithdraw'
+  | 'InvalidRuling'
+  | 'TokenNotAccepted';
 
 export interface DecodedEscrowError {
   name: EscrowErrorName;
   args: readonly unknown[];
 }
 
-const KNOWN = new Set<string>(['InvalidStatus', 'Unauthorized', 'DeadlineNotPassed', 'AutoReleaseNotReady', 'EnforcedPause']);
+const KNOWN = new Set<string>([
+  'InvalidStatus', 'Unauthorized', 'DeadlineNotPassed', 'AutoReleaseNotReady', 'EnforcedPause',
+  'DeadlinePassed', 'DisputeTimeoutNotReached', 'NothingToWithdraw', 'InvalidRuling', 'TokenNotAccepted',
+]);
 
 // Order of MarketplaceEscrow.OrderStatus.
 const ONCHAIN_STATUS = ['NONE', 'FUNDED', 'DELIVERED', 'RELEASED', 'REFUNDED', 'DISPUTED', 'RESOLVED'] as const;
@@ -92,6 +106,32 @@ export function escrowErrorMessage(decoded: DecodedEscrowError, L: Lfn): string 
         'El escrow está pausado temporalmente. Inténtalo más tarde.',
         'The escrow is temporarily paused. Try again later.',
         'O escrow está pausado temporariamente. Tente novamente mais tarde.'
+      );
+    case 'DeadlinePassed':
+      return L(
+        'El plazo de entrega ya venció: el contrato no acepta entregas fuera de plazo. Si quien compra acepta otra fecha, puede extender el plazo.',
+        'The delivery deadline has passed: the contract does not accept late deliveries. The buyer can extend the deadline if they agree to a new date.',
+        'O prazo de entrega já venceu: o contrato não aceita entregas fora do prazo. Se quem compra aceitar outra data, pode estender o prazo.'
+      );
+    case 'DisputeTimeoutNotReached':
+      return L(
+        'La disputa todavía está dentro de los 14 días que tiene el árbitro para decidir.',
+        'The dispute is still within the 14 days the arbitrator has to decide.',
+        'A disputa ainda está dentro dos 14 dias que o árbitro tem para decidir.'
+      );
+    case 'NothingToWithdraw':
+      return L(
+        'No tienes saldo para retirar en este escrow.',
+        'You have no balance to withdraw from this escrow.',
+        'Você não tem saldo para sacar neste escrow.'
+      );
+    case 'InvalidRuling':
+      return L('Decisión no válida para esta disputa.', 'Invalid ruling for this dispute.', 'Decisão inválida para esta disputa.');
+    case 'TokenNotAccepted':
+      return L(
+        'El escrow no acepta este token.',
+        'The escrow does not accept this token.',
+        'O escrow não aceita este token.'
       );
   }
 }

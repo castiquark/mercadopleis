@@ -7,7 +7,10 @@ import Link from '@/components/LocaleLink';
 import NotFound from '@/app/[lang]/not-found';
 import { usePublicClient, useAccount, useWriteContract } from 'wagmi';
 import { parseUnits } from 'viem';
-import { MarketplaceEscrowAbi, ESCROW_ADDRESSES, calculateOrderAmounts } from '@mercadopleis/contracts-abi';
+// v3 ABI: a superset of v2, so it resolves disputes in either escrow.
+import { MarketplaceEscrowV3Abi as MarketplaceEscrowAbi, calculateOrderAmounts } from '@mercadopleis/contracts-abi';
+import { currentEscrow, orderEscrow } from '@/lib/networks';
+import { decodeEscrowError, escrowErrorMessage } from '@/lib/escrowErrors';
 import { CONTRACT_CONFIG, isAdminWallet } from '@mercadopleis/types';
 import { fetchDisputes, resolveDisputeApi } from '@/lib/api';
 import { confirmTx } from '@/lib/txConfirm';
@@ -32,6 +35,9 @@ interface DisputeItem {
   id: string;
   contractOrderId: number;
   orderId?: string;
+  chainId?: number;
+  /** Escrow the disputed order lives in (v2 or v3). */
+  escrowAddress?: string | null;
   serviceTitle: string;
   grossAmountUsdc: number;
   reason: string;
@@ -64,7 +70,7 @@ export default function AdminDisputesPage() {
   }, []);
 
   const activeChainId = chainId || CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID;
-  const escrowAddress = ESCROW_ADDRESSES[activeChainId] || ESCROW_ADDRESSES[CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID];
+  const escrowAddress = currentEscrow(activeChainId);
   const isSepolia = activeChainId === CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID;
   const explorerBaseUrl = isSepolia ? 'https://sepolia.basescan.org' : 'https://basescan.org';
   const { writeContractAsync } = useWriteContract();
@@ -90,6 +96,8 @@ export default function AdminDisputesPage() {
           id: d.id,
           contractOrderId: d.order?.contractOrderId || 0,
           orderId: d.orderId,
+          chainId: d.order?.chainId,
+          escrowAddress: d.order?.escrowAddress ?? null,
           serviceTitle: d.order?.service?.title || 'Servicio de Marketplace',
           grossAmountUsdc: parseFloat(d.order?.grossAmountUsdc || '0'),
           reason: d.reason,
@@ -140,13 +148,20 @@ export default function AdminDisputesPage() {
       // On-chain resolution if connected
       let resolveTxHash: `0x${string}`;
       if (isConnected && escrowAddress && escrowAddress !== '0x0000000000000000000000000000000000000000') {
-        resolveTxHash = await writeContractAsync({
-          address: escrowAddress,
+        const params = {
+          address: orderEscrow(selectedDispute.chainId ?? activeChainId, selectedDispute.escrowAddress),
           abi: MarketplaceEscrowAbi,
-          dataSuffix: BUILDER_DATA_SUFFIX,
-          functionName: 'resolveDispute',
-          args: [BigInt(selectedDispute.contractOrderId), sellerRaw, buyerRaw],
-        });
+          functionName: 'resolveDispute' as const,
+          args: [BigInt(selectedDispute.contractOrderId), sellerRaw, buyerRaw] as const,
+        };
+        // Simulate first so a revert shows the contract's reason (wrong wallet, order not in dispute, paused).
+        try {
+          await publicClient?.simulateContract({ ...params, account: address });
+        } catch (err) {
+          const decoded = decodeEscrowError(err);
+          throw decoded ? new Error(escrowErrorMessage(decoded, (es, en, pt) => L(es, en, pt))) : err;
+        }
+        resolveTxHash = await writeContractAsync({ ...params, dataSuffix: BUILDER_DATA_SUFFIX });
         resolveTxHash = await confirmTx(publicClient, resolveTxHash);
       } else {
         throw new Error(L('Conecta tu wallet para enviar la transacción.', 'Connect your wallet to send the transaction.', 'Conecte sua carteira para enviar a transação.'));

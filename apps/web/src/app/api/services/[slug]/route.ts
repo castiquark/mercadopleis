@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { findPublicService } from '@/lib/servicesDb';
-import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
+import { currentEscrow } from '@/lib/networks';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -32,7 +32,7 @@ export async function GET(
         protocol: 'Mercadopleis Escrow Protocol v1',
         network: 'Base Mainnet',
         chainId: 8453,
-        escrowContract: ESCROW_ADDRESSES[8453],
+        escrowContract: currentEscrow(8453),
         service,
       },
       { headers: CORS_HEADERS }

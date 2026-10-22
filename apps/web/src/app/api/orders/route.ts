@@ -3,12 +3,12 @@ import { db, orders, services } from '@mercadopleis/database';
 import { and, eq } from 'drizzle-orm';
 import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { notifyOrder } from '@/lib/notify';
-import { calculateOrderAmounts, MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
+import { calculateOrderAmounts, MarketplaceEscrowV3Abi as MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { createPublicClient, http, parseEventLogs, parseUnits } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { enforceRateLimit } from '@/lib/rateLimit';
-import { currentEscrowKey } from '@/lib/networks';
+import { currentEscrowKey, knownEscrows } from '@/lib/networks';
 import { readEscrowOrder } from '@/lib/escrowState';
 
 interface VerifiedFunding {
@@ -20,6 +20,8 @@ interface VerifiedFunding {
   token: string;
   amount: bigint;
   deadline: number;
+  /** Lowercase address of the escrow that emitted OrderFunded. */
+  escrowAddress?: string;
   error?: string;
 }
 
@@ -30,7 +32,7 @@ async function verifyOnChainFunding(
   const targetChainId = requestedChainId === 84532 ? 84532 : 8453;
   const isSepolia = targetChainId === 84532;
   const chain = isSepolia ? baseSepolia : base;
-  const escrow = ESCROW_ADDRESSES[targetChainId];
+  const escrows = knownEscrows(targetChainId).map((a) => a.toLowerCase());
   const rpc = isSepolia
     ? (process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org')
     : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
@@ -49,7 +51,7 @@ async function verifyOnChainFunding(
         logs: receipt.logs,
         eventName: 'OrderFunded',
       });
-      const log = logs.find((l) => l.address.toLowerCase() === escrow.toLowerCase());
+      const log = logs.find((l) => escrows.includes(l.address.toLowerCase()));
 
       if (log) {
         return {
@@ -61,6 +63,7 @@ async function verifyOnChainFunding(
           token: log.args.token,
           amount: log.args.amount,
           deadline: Number(log.args.deadline),
+          escrowAddress: log.address.toLowerCase(),
         };
       }
     }
@@ -193,7 +196,7 @@ export async function POST(request: NextRequest) {
       where: and(
         eq(orders.contractOrderId, verification.orderId),
         eq(orders.chainId, verification.chainId),
-        eq(orders.escrowAddress, currentEscrowKey(verification.chainId))
+        eq(orders.escrowAddress, verification.escrowAddress ?? currentEscrowKey(verification.chainId))
       ),
     });
 
@@ -225,7 +228,7 @@ export async function POST(request: NextRequest) {
         sellerId: service.sellerId,
         contractOrderId: verification.orderId,
         chainId: verification.chainId,
-        escrowAddress: currentEscrowKey(verification.chainId),
+        escrowAddress: verification.escrowAddress ?? currentEscrowKey(verification.chainId),
         txHashFunding,
         grossAmountUsdc: grossAmount.toString(),
         platformFeeBps: feeBps,

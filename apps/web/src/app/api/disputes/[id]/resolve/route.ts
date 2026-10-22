@@ -5,14 +5,16 @@ import { getAuthUserFromRequest } from '@/lib/serverAuth';
 import { notifyOrder } from '@/lib/notify';
 import { createPublicClient, http, parseEventLogs, formatUnits } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
-import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
+import { MarketplaceEscrowV3Abi as MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
+import { orderEscrow } from '@/lib/networks';
 
 export const dynamic = 'force-dynamic';
 
 async function verifyOnChainDisputeResolution(
   txHash: `0x${string}`,
   contractOrderId: number,
-  targetChainId: number
+  targetChainId: number,
+  escrowAddress?: string | null
 ): Promise<{
   isValid: boolean;
   sellerPayoutUsdc: string;
@@ -22,7 +24,7 @@ async function verifyOnChainDisputeResolution(
 }> {
   const isSepolia = targetChainId === 84532;
   const chain = isSepolia ? baseSepolia : base;
-  const escrow = ESCROW_ADDRESSES[isSepolia ? 84532 : 8453];
+  const escrow = orderEscrow(isSepolia ? 84532 : 8453, escrowAddress);
   const rpc = isSepolia
     ? (process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org')
     : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
@@ -115,7 +117,8 @@ export async function POST(
     const verification = await verifyOnChainDisputeResolution(
       resolutionTx as `0x${string}`,
       dispute.order.contractOrderId,
-      targetChainId
+      targetChainId,
+      dispute.order.escrowAddress
     );
 
     if (!verification.isValid) {

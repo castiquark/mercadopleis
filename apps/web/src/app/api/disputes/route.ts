@@ -8,7 +8,8 @@ import { LIMITS, isSafeHttpUrl } from '@/lib/validation';
 import { enforceRateLimit } from '@/lib/rateLimit';
 import { createPublicClient, http, parseEventLogs } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
-import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
+import { MarketplaceEscrowV3Abi as MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
+import { orderEscrow } from '@/lib/networks';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,11 +17,12 @@ async function verifyOnChainDisputeOpen(
   txHash: `0x${string}`,
   contractOrderId: number,
   expectedInitiatorWallet: string,
-  targetChainId: number
+  targetChainId: number,
+  escrowAddress?: string | null
 ): Promise<boolean> {
   const isSepolia = targetChainId === 84532;
   const chain = isSepolia ? baseSepolia : base;
-  const escrow = ESCROW_ADDRESSES[isSepolia ? 84532 : 8453];
+  const escrow = orderEscrow(isSepolia ? 84532 : 8453, escrowAddress);
   const rpc = isSepolia
     ? (process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org')
     : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
@@ -162,12 +164,13 @@ export async function POST(request: NextRequest) {
       disputeTx as `0x${string}`,
       order.contractOrderId,
       authUser.walletAddress,
-      targetChainId
+      targetChainId,
+      order.escrowAddress
     );
     if (!isValidOnChain && order.contractOrderId) {
       // No receipt for that hash (smart account or relayer): the contract shows whether the order is in dispute.
       // The caller was already checked to be the buyer or the seller of this order.
-      isValidOnChain = (await readEscrowOrder(targetChainId, order.contractOrderId))?.status === 'Disputed';
+      isValidOnChain = (await readEscrowOrder(targetChainId, order.contractOrderId, order.escrowAddress))?.status === 'Disputed';
     }
 
     if (!isValidOnChain) {

@@ -50,3 +50,28 @@ describe('currentEscrowKey', () => {
     }
   });
 });
+
+import { ESCROW_ADDRESSES, ESCROW_V3_ADDRESSES } from '@mercadopleis/contracts-abi';
+import { currentEscrow, isV3Escrow, knownEscrows, orderEscrow } from './networks';
+
+describe('escrow v3 alongside v2', () => {
+  it('new orders use v3 where it is deployed and v2 elsewhere', () => {
+    expect(currentEscrow(84532)).toBe(ESCROW_V3_ADDRESSES[84532] ?? ESCROW_ADDRESSES[84532]);
+    expect(currentEscrow(8453)).toBe(ESCROW_V3_ADDRESSES[8453] ?? ESCROW_ADDRESSES[8453]);
+  });
+  it('keeps v2 known for older orders', () => {
+    expect(knownEscrows(84532)).toContain(ESCROW_ADDRESSES[84532]);
+    expect(orderEscrow(84532, null)).toBe(ESCROW_ADDRESSES[84532]);
+    expect(orderEscrow(84532, ESCROW_ADDRESSES[84532].toLowerCase())).toBe(ESCROW_ADDRESSES[84532]);
+    expect(orderEscrow(84532, '0x0000000000000000000000000000000000000001')).toBe(ESCROW_ADDRESSES[84532]);
+  });
+  it('tells v3 orders apart', () => {
+    const v3 = ESCROW_V3_ADDRESSES[84532];
+    if (v3) {
+      expect(isV3Escrow(84532, v3.toLowerCase())).toBe(true);
+      expect(orderEscrow(84532, v3.toLowerCase())).toBe(v3);
+    }
+    expect(isV3Escrow(84532, ESCROW_ADDRESSES[84532])).toBe(false);
+    expect(isV3Escrow(84532, null)).toBe(false);
+  });
+});

@@ -7,7 +7,8 @@ import { isSafeHttpUrl } from '@/lib/validation';
 import { isStorageRefOwnedBy } from '@/lib/storage';
 import { createPublicClient, http, parseEventLogs } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
-import { MarketplaceEscrowAbi, ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
+import { MarketplaceEscrowV3Abi as MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
+import { orderEscrow } from '@/lib/networks';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { readEscrowOrder } from '@/lib/escrowState';
 
@@ -16,13 +17,14 @@ async function verifyOnChainDelivery(
   contractOrderId: number,
   expectedSellerWallet: string,
   expectedDeliveryHash: string,
-  targetChainId: number
+  targetChainId: number,
+  escrowAddress?: string | null
 ): Promise<number | null> {
   if (!contractOrderId || contractOrderId <= 0) return null;
 
   const isSepolia = targetChainId === 84532;
   const chain = isSepolia ? baseSepolia : base;
-  const escrow = ESCROW_ADDRESSES[isSepolia ? 84532 : 8453];
+  const escrow = orderEscrow(isSepolia ? 84532 : 8453, escrowAddress);
   const rpc = isSepolia
     ? (process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org')
     : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
@@ -63,13 +65,14 @@ async function verifyOnChainRelease(
   txHash: `0x${string}`,
   contractOrderId: number,
   expectedGrossAmountUsdc: number,
-  targetChainId: number
+  targetChainId: number,
+  escrowAddress?: string | null
 ): Promise<boolean> {
   if (!contractOrderId || contractOrderId <= 0) return false;
 
   const isSepolia = targetChainId === 84532;
   const chain = isSepolia ? baseSepolia : base;
-  const escrow = ESCROW_ADDRESSES[isSepolia ? 84532 : 8453];
+  const escrow = orderEscrow(isSepolia ? 84532 : 8453, escrowAddress);
   const rpc = isSepolia
     ? (process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org')
     : (process.env.BASE_MAINNET_RPC_URL || process.env.BASE_RPC_URL || 'https://mainnet.base.org');
@@ -248,13 +251,14 @@ export async function PATCH(
           existingOrder.contractOrderId,
           existingOrder.seller.walletAddress,
           resolvedDeliveryHash,
-          targetChainId
+          targetChainId,
+          existingOrder.escrowAddress
         );
 
         if (autoReleaseDeadline === null) {
           // No receipt for that hash (a smart account or relayer may have landed it under another one): trust the
           // contract state instead, which records the seller and the delivery hash.
-          const onChain = await readEscrowOrder(targetChainId, existingOrder.contractOrderId);
+          const onChain = await readEscrowOrder(targetChainId, existingOrder.contractOrderId, existingOrder.escrowAddress);
           if (
             onChain &&
             ['Delivered', 'Released', 'Disputed', 'Resolved'].includes(onChain.status) &&
@@ -302,11 +306,12 @@ export async function PATCH(
           releaseTx as `0x${string}`,
           existingOrder.contractOrderId,
           parseFloat(existingOrder.grossAmountUsdc),
-          targetChainId
+          targetChainId,
+          existingOrder.escrowAddress
         );
         if (!isValidOnChain) {
           // Same fallback as deliveries: the contract says whether the escrow paid out this order.
-          const onChain = await readEscrowOrder(targetChainId, existingOrder.contractOrderId);
+          const onChain = await readEscrowOrder(targetChainId, existingOrder.contractOrderId, existingOrder.escrowAddress);
           isValidOnChain =
             onChain?.status === 'Released' &&
             onChain.amount === BigInt(Math.round(parseFloat(existingOrder.grossAmountUsdc) * 1_000_000));
@@ -334,7 +339,7 @@ export async function PATCH(
         if (!existingOrder.contractOrderId) {
           return NextResponse.json({ error: 'The order has no on-chain contractOrderId' }, { status: 400 });
         }
-        const onChain = await readEscrowOrder(targetChainId, existingOrder.contractOrderId);
+        const onChain = await readEscrowOrder(targetChainId, existingOrder.contractOrderId, existingOrder.escrowAddress);
         if (onChain?.status !== 'Refunded') {
           return NextResponse.json(
             { error: `The escrow on chain ${targetChainId} does not show this order as refunded` },

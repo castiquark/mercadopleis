@@ -1,7 +1,7 @@
 import { db, services } from '@mercadopleis/database';
 import { and, desc, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import { SERVICE_SLUG_RENAMES, serviceSlugCandidates } from './serviceSlugs';
-import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
+import { currentEscrow } from '@/lib/networks';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 
 /** One service with its seller's public profile, for the public API and the server-rendered service page. */
@@ -70,7 +70,7 @@ export async function listPublicServices(filters: (SQL | undefined)[] = [], limi
       network: 'Base',
       chainId: 8453,
       method: 'smart_contract_escrow',
-      escrowContract: ESCROW_ADDRESSES[8453],
+      escrowContract: currentEscrow(8453),
       feeBps: CONTRACT_CONFIG.FEE_BPS,
       reviewWindowDays: 5,
     },
