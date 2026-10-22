@@ -2,6 +2,25 @@ import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { MarketplaceEscrowAbi } from './MarketplaceEscrowAbi';
 
 export { MarketplaceEscrowAbi };
+export { MarketplaceEscrowV3Abi } from './MarketplaceEscrowV3Abi';
+
+/**
+ * Escrow v3 (pull payments: settled funds are credited to `withdrawable(token, account)` and claimed with
+ * `withdraw(token, to)`; timers pause with the contract, read `effectiveDeadline` / `effectiveAutoReleaseTime` /
+ * `disputeTimeoutAt`). New orders go here once an address is filled in. Arbitrator 0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb.
+ */
+export const ESCROW_V3_ADDRESSES: Partial<Record<number, `0x${string}`>> = {
+  // Base Sepolia: pending deploy
+  // Base Mainnet: pending deploy
+};
+
+export const ESCROW_V3_DEPLOY_BLOCKS: Partial<Record<number, number>> = {};
+
+/** Escrow v2, legacy once v3 is live on a chain: read-only for history and orders created before the switch. */
+export const ESCROW_V2_ADDRESSES: Record<number, `0x${string}`> = {
+  [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: '0x41880C194F31b1D9AbAC53513De176f2892315EA',
+  [CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID]: '0x18E51cB821A90EE1DA678492DdFDBe54332f35f3',
+};
 
 export const ESCROW_ADDRESSES: Record<number, `0x${string}`> = {
   // Base Sepolia: fixed-fee escrow v2 (verified on BaseScan and Sourcify)
