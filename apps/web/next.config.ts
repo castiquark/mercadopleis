@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs/config';
 import { SERVICE_SLUG_RENAMES } from './src/lib/serviceSlugs';
 
 const nextConfig: NextConfig = {
@@ -55,4 +56,17 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry (errors only). Source maps are uploaded at build time only when SENTRY_AUTH_TOKEN, SENTRY_ORG and
+// SENTRY_PROJECT are set (Netlify production); without them the build skips the upload and still succeeds.
+const sentryUpload = !!(process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT);
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  telemetry: false,
+  widenClientFileUpload: true,
+  sourcemaps: { disable: !sentryUpload, deleteSourcemapsAfterUpload: true },
+  // Errors only: drop the SDK's tracing and debug code from the client bundle.
+  webpack: { treeshake: { removeTracing: true, removeDebugLogging: true } },
+});
