@@ -23,6 +23,12 @@ import { CONTRACT_CONFIG } from '@mercadopleis/types';
 
 export const dynamic = 'force-dynamic';
 
+// Order statuses only move forward: events are applied grouped by type, and a public rescan of old blocks must never
+// turn a RELEASED order back into DELIVERED. DisputeResolved is the exception among final statuses (it is authoritative
+// for how a dispute was split).
+const STATUS_RANK: Record<string, number> = { CREATED: 0, FUNDED: 1, DELIVERED: 2, DISPUTED: 3, RELEASED: 4, REFUNDED: 4, RESOLVED: 4 };
+const advances = (current: string, next: string) => (STATUS_RANK[next] ?? 0) > (STATUS_RANK[current] ?? 0);
+
 async function ensureUserForWallet(walletAddress: string) {
   const normalized = walletAddress.toLowerCase();
   const existing = await db.query.users.findFirst({
@@ -87,10 +93,11 @@ async function syncEscrow(opts: {
   deployBlock: number | undefined;
   version: EscrowVersion;
   chunkBlocks: bigint;
+  maxChunks: bigint;
   currentBlock: bigint;
   requestedFrom: string | null;
 }) {
-  const { client, targetChainId, escrowAddress, deployBlock, version, chunkBlocks: CHUNK_BLOCKS, currentBlock, requestedFrom } = opts;
+  const { client, targetChainId, escrowAddress, deployBlock, version, chunkBlocks: CHUNK_BLOCKS, maxChunks, currentBlock, requestedFrom } = opts;
   const escrowKey = escrowAddress.toLowerCase();
   const checkpoint = CHECKPOINT[version];
 
@@ -134,7 +141,7 @@ async function syncEscrow(opts: {
   //    single failing range would otherwise block the indexer forever. Each call catches up by at most
   //    MAX_CHUNKS_PER_RUN windows and the checkpoint only advances to what was actually scanned.
   const scanTo = (() => {
-    const cap = fromBlock + CHUNK_BLOCKS * MAX_CHUNKS_PER_RUN - 1n;
+    const cap = fromBlock + CHUNK_BLOCKS * maxChunks - 1n;
     return currentBlock < cap ? currentBlock : cap;
   })();
 
@@ -238,8 +245,9 @@ async function syncEscrow(opts: {
         where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId), eq(orders.escrowAddress, escrowKey)),
       });
       if (existing) {
-        // v3 emits autoReleaseTime 0 for a delivery submitted during a dispute: the order stays DISPUTED.
-        const inDispute = autoReleaseDeadline === 0;
+        // v3 emits autoReleaseTime 0 for a delivery submitted during a dispute: the order stays DISPUTED. A rescan of an
+        // order that is already past DELIVERED only refreshes the hash.
+        const inDispute = autoReleaseDeadline === 0 || !advances(existing.status, 'DELIVERED');
         await db
           .update(orders)
           .set(inDispute
@@ -267,10 +275,12 @@ async function syncEscrow(opts: {
         where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId), eq(orders.escrowAddress, escrowKey)),
       });
       if (existing) {
-        await db
-          .update(orders)
-          .set({ status: 'RELEASED', txHashRelease: log.transactionHash, releasedAt: new Date(), updatedAt: new Date() })
-          .where(eq(orders.id, existing.id));
+        if (advances(existing.status, 'RELEASED')) {
+          await db
+            .update(orders)
+            .set({ status: 'RELEASED', txHashRelease: log.transactionHash, releasedAt: new Date(), updatedAt: new Date() })
+            .where(eq(orders.id, existing.id));
+        }
         if (existing.status === 'DELIVERED') await notifyOrder(existing, 'order_released', ['seller']);
 
         await db.insert(blockchainTransactions).values({
@@ -291,10 +301,12 @@ async function syncEscrow(opts: {
         where: and(eq(orders.contractOrderId, orderId), eq(orders.chainId, targetChainId), eq(orders.escrowAddress, escrowKey)),
       });
       if (existing) {
-        await db
-          .update(orders)
-          .set({ status: 'REFUNDED', updatedAt: new Date() })
-          .where(eq(orders.id, existing.id));
+        if (advances(existing.status, 'REFUNDED')) {
+          await db
+            .update(orders)
+            .set({ status: 'REFUNDED', updatedAt: new Date() })
+            .where(eq(orders.id, existing.id));
+        }
         if (existing.status === 'FUNDED') await notifyOrder(existing, 'order_refunded', ['seller']);
 
         await db.insert(blockchainTransactions).values({
@@ -318,10 +330,12 @@ async function syncEscrow(opts: {
       });
 
       if (existing) {
-        await db
-          .update(orders)
-          .set({ status: 'DISPUTED', updatedAt: new Date() })
-          .where(eq(orders.id, existing.id));
+        if (advances(existing.status, 'DISPUTED')) {
+          await db
+            .update(orders)
+            .set({ status: 'DISPUTED', updatedAt: new Date() })
+            .where(eq(orders.id, existing.id));
+        }
         if (existing.status === 'FUNDED' || existing.status === 'DELIVERED') {
           const opener = await db.query.users.findFirst({ where: eq(users.walletAddress, openedByWallet), columns: { id: true } });
           await notifyOrder(existing, 'dispute_opened', [...(opener ? [counterpart(existing, opener.id)] : (['buyer', 'seller'] as const)), 'admins']);
@@ -476,6 +490,9 @@ export async function GET(request: NextRequest) {
     if (only !== 'v3') targets.push({ version: 'v2', address: ESCROW_ADDRESSES[targetChainId], deployBlock: ESCROW_DEPLOY_BLOCKS[targetChainId] });
     const requestedFrom = targets.length === 1 ? searchParams.get('fromBlock') : null;
 
+    // The getLogs budget of one call is shared by the escrows, so a lagging cursor cannot push the function past its
+    // timeout before any checkpoint is saved.
+    const maxChunks = MAX_CHUNKS_PER_RUN / BigInt(targets.length) || 1n;
     const results = [];
     for (const t of targets) {
       results.push(await syncEscrow({
@@ -485,6 +502,7 @@ export async function GET(request: NextRequest) {
         deployBlock: t.deployBlock,
         version: t.version,
         chunkBlocks,
+        maxChunks,
         currentBlock,
         requestedFrom,
       }));
