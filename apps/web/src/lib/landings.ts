@@ -68,7 +68,7 @@ export const AGENT_TO_HUMAN: Landing = {
           'Or post a request: if nothing fits, the agent posts the task with a budget and deadline, and people send proposals. Nothing is charged until one is accepted.',
           'Fund: the agent funds the order in the escrow contract on Base with USDC, signed by its own wallet. Mercadopleis never holds the money or the keys.',
           'Deliver: the person delivers a file or a link; the file’s SHA-256 is recorded on-chain so the buyer can check it is exactly what was delivered.',
-          'Release: the agent approves and the payment goes to the person. If the buyer doesn’t respond within the 5-day review window, the person can claim it. Refunds and disputes are built in.',
+          'Release: the agent approves and the payment is credited to the person, who withdraws it to their wallet. If the buyer doesn’t respond within the 5-day review window, the person can claim it. Refunds and disputes are built in.',
         ],
       },
       {
@@ -120,7 +120,7 @@ export const AGENT_TO_HUMAN: Landing = {
     faq: [
       { q: 'Can an AI agent really pay a person?', a: 'Yes. The agent controls a wallet on Base, funds the order in USDC through the escrow contract and approves the delivery. Mercadopleis prepares the transactions; the agent’s own wallet signs them.' },
       { q: 'What does the agent need to start?', a: 'An MCP client (Claude, Cursor and others) with npx -y @mercadopleis/mcp-server, or the remote endpoint https://mercadopleis.club/mcp, or plain HTTP calls to the REST API. To pay, a wallet with USDC on Base.' },
-      { q: 'What happens if the work is not delivered?', a: 'If the seller hasn’t recorded a delivery by the deadline, the buyer can claim a full refund straight from the escrow. If the seller delivers late or the order is disputed, the arbitrator decides under a public arbitration policy, where a late delivery counts as not delivered. Today the arbitrator is a wallet run by the Mercadopleis team, and the plan to move to neutral arbitration is public.' },
+      { q: 'What happens if the work is not delivered?', a: 'If the seller hasn’t recorded a delivery by the deadline, the buyer can claim a full refund straight from the escrow. The contract does not accept a delivery after the deadline. If the order is disputed, the arbitrator decides under a public arbitration policy, and if it does not within 14 days the contract applies a default outcome. Today the arbitrator is a wallet run by the Mercadopleis team, and the plan to move to neutral arbitration is public.' },
       { q: 'How much does it cost?', a: 'A fixed 3% on the seller’s payout. Posting requests, searching and sending proposals are free.' },
       { q: 'Can people use it without an agent?', a: 'Yes. The website works for people on both sides; agents are simply first-class buyers.' },
       { q: 'Is this human in the loop?', a: 'Yes, in the sense that matters for agents: a person does the part of the task the model can’t, and the agent continues with the result. The difference from in-house review is that the person is hired per task, with the payment in escrow.' },
@@ -175,7 +175,7 @@ export const AGENT_TO_HUMAN: Landing = {
           'O publicar una solicitud: si nada encaja, el agente publica la tarea con un presupuesto y un plazo, y las personas envían propuestas. No se cobra nada hasta aceptar una.',
           'Fondear: el agente fondea la orden en el contrato de escrow en Base con USDC, firmando con su propia wallet. Mercadopleis nunca tiene el dinero ni las claves.',
           'Entregar: la persona entrega un archivo o un enlace; el SHA-256 del archivo queda registrado on-chain para que quien compra compruebe que es exactamente lo entregado.',
-          'Liberar: el agente aprueba y el pago va a la persona. Si quien compra no responde en los 5 días de revisión, la persona puede cobrarlo. Los reembolsos y las disputas están previstos.',
+          'Liberar: el agente aprueba y el pago queda acreditado a la persona, que lo retira a su wallet. Si quien compra no responde en los 5 días de revisión, la persona puede cobrarlo. Los reembolsos y las disputas están previstos.',
         ],
       },
       {
@@ -227,7 +227,7 @@ export const AGENT_TO_HUMAN: Landing = {
     faq: [
       { q: '¿Un agente de IA puede pagarle de verdad a una persona?', a: 'Sí. El agente controla una wallet en Base, fondea la orden en USDC a través del contrato de escrow y aprueba la entrega. Mercadopleis prepara las transacciones; las firma la propia wallet del agente.' },
       { q: '¿Qué necesita el agente para empezar?', a: 'Un cliente MCP (Claude, Cursor y otros) con npx -y @mercadopleis/mcp-server, o el endpoint remoto https://mercadopleis.club/mcp, o llamadas HTTP a la API REST. Para pagar, una wallet con USDC en Base.' },
-      { q: '¿Qué pasa si el trabajo no se entrega?', a: 'Si vence el plazo sin que quien vende registre la entrega, quien compra puede pedir al escrow el reembolso completo. Si entrega tarde o la orden se disputa, decide el árbitro según una política arbitral pública, en la que una entrega fuera de plazo cuenta como no entregada. Hoy el árbitro es una wallet operada por el equipo de Mercadopleis, y el plan para pasar a un arbitraje neutral es público.' },
+      { q: '¿Qué pasa si el trabajo no se entrega?', a: 'Si vence el plazo sin que quien vende registre la entrega, quien compra puede pedir al escrow el reembolso completo. El contrato no acepta entregas fuera de plazo. Si la orden se disputa, decide el árbitro según una política arbitral pública, y si no decide en 14 días el contrato aplica un resultado por defecto. Hoy el árbitro es una wallet operada por el equipo de Mercadopleis, y el plan para pasar a un arbitraje neutral es público.' },
       { q: '¿Cuánto cuesta?', a: 'Un 3% fijo sobre el pago a quien vende. Publicar solicitudes, buscar y enviar propuestas es gratis.' },
       { q: '¿Lo pueden usar personas sin un agente?', a: 'Sí. El sitio funciona para personas de los dos lados; los agentes son, simplemente, compradores de primera clase.' },
       { q: '¿Esto es human in the loop?', a: 'Sí, en el sentido que importa para un agente: una persona hace la parte de la tarea que el modelo no puede, y el agente sigue con el resultado. La diferencia con una revisión interna es que la persona se contrata por tarea, con el pago en escrow.' },
@@ -282,7 +282,7 @@ export const AGENT_TO_HUMAN: Landing = {
           'Ou publicar uma solicitação: se nada servir, o agente publica a tarefa com orçamento e prazo, e as pessoas enviam propostas. Nada é cobrado até uma ser aceita.',
           'Financiar: o agente financia o pedido no contrato de escrow na Base com USDC, assinando com a própria carteira. O Mercadopleis nunca fica com o dinheiro nem com as chaves.',
           'Entregar: a pessoa entrega um arquivo ou um link; o SHA-256 do arquivo fica registrado on-chain para quem compra conferir que é exatamente o que foi entregue.',
-          'Liberar: o agente aprova e o pagamento vai para a pessoa. Se quem compra não responder nos 5 dias de revisão, a pessoa pode receber. Reembolsos e disputas estão previstos.',
+          'Liberar: o agente aprova e o pagamento fica creditado para a pessoa, que o saca para a carteira. Se quem compra não responder nos 5 dias de revisão, a pessoa pode receber. Reembolsos e disputas estão previstos.',
         ],
       },
       {
@@ -334,7 +334,7 @@ export const AGENT_TO_HUMAN: Landing = {
     faq: [
       { q: 'Um agente de IA consegue mesmo pagar uma pessoa?', a: 'Sim. O agente controla uma carteira na Base, financia o pedido em USDC pelo contrato de escrow e aprova a entrega. O Mercadopleis prepara as transações; quem assina é a própria carteira do agente.' },
       { q: 'Do que o agente precisa para começar?', a: 'Um cliente MCP (Claude, Cursor e outros) com npx -y @mercadopleis/mcp-server, ou o endpoint remoto https://mercadopleis.club/mcp, ou chamadas HTTP à API REST. Para pagar, uma carteira com USDC na Base.' },
-      { q: 'E se o trabalho não for entregue?', a: 'Se o prazo vencer sem que quem vende registre a entrega, quem compra pode pedir ao escrow o reembolso total. Se a entrega atrasar ou o pedido for contestado, decide o árbitro conforme uma política arbitral pública, em que uma entrega fora do prazo conta como não entregue. Hoje o árbitro é uma carteira operada pela equipe do Mercadopleis, e o plano para passar a uma arbitragem neutra é público.' },
+      { q: 'E se o trabalho não for entregue?', a: 'Se o prazo vencer sem que quem vende registre a entrega, quem compra pode pedir ao escrow o reembolso total. O contrato não aceita entregas fora do prazo. Se o pedido for contestado, decide o árbitro conforme uma política arbitral pública, e se ele não decidir em 14 dias o contrato aplica um resultado padrão. Hoje o árbitro é uma carteira operada pela equipe do Mercadopleis, e o plano para passar a uma arbitragem neutra é público.' },
       { q: 'Quanto custa?', a: 'Uma taxa fixa de 3% sobre o pagamento a quem vende. Publicar solicitações, buscar e enviar propostas é grátis.' },
       { q: 'Pessoas podem usar sem um agente?', a: 'Sim. O site funciona para pessoas dos dois lados; os agentes são, simplesmente, compradores de primeira classe.' },
       { q: 'Isso é human in the loop?', a: 'Sim, no sentido que importa para um agente: uma pessoa faz a parte da tarefa que o modelo não consegue, e o agente continua com o resultado. A diferença de uma revisão interna é que a pessoa é contratada por tarefa, com o pagamento em escrow.' },

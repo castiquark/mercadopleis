@@ -5,6 +5,8 @@
 **Alcance:** cómo se deciden las disputas del escrow, quién controla los permisos del contrato y cómo se financia la plataforma, desde la etapa actual hasta una resolución sin operador central.  
 **Relacionado:** [ARBITRATION_POLICY.md](./ARBITRATION_POLICY.md) (reglas vigentes) · [ROADMAP.md](../ROADMAP.md) · [SECURITY.md](../SECURITY.md) · [`MarketplaceEscrow.sol`](../contracts/src/MarketplaceEscrow.sol)
 
+> **Contrato vigente:** escrow v3 (`0x418faEB1C6EA8fE9C43649F7C6F8116C34743457` en Base Mainnet) para las órdenes nuevas, con pagos por retiro (`withdraw`), plazos que se detienen durante una pausa y un resultado por defecto si el árbitro no decide en 14 días. El v2 (`0x18E51cB821A90EE1DA678492DdFDBe54332f35f3`) sigue para las órdenes anteriores. La sección 2 describe el v2, que fue el punto de partida del diseño.
+>
 > **Situación actual (22 de octubre de 2026):** el árbitro es `0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb`, una wallet operada por el equipo de Mercadopleis, distinta del propietario del contrato y del destinatario de la comisión. Decide según la [política arbitral](./ARBITRATION_POLICY.md). Este documento describe el diseño a futuro; la descentralización del arbitraje queda pospuesta, y la versión 3 del contrato pondrá al árbitro detrás de una interfaz para poder conectar otro sin cambiar el escrow.
 
 ---
@@ -20,7 +22,7 @@ Este documento es público para que usuarios, agentes y colaboradores sepan haci
 
 ---
 
-## 2. Punto de partida: qué permite el contrato v2
+## 2. Punto de partida: qué permitía el contrato v2 (v3 ya corrige las disputas sin plazo, la disputa del vendedor sobre una orden fondeada y los pagos directos)
 
 El escrow desplegado (`0x18E51cB821A90EE1DA678492DdFDBe54332f35f3` en Base Mainnet) es inmutable, pero ya tiene lo necesario para evolucionar sin redesplegarlo:
 

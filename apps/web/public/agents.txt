@@ -25,7 +25,11 @@ network:
   chainId: 8453
   currency: USDC
   tokenAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-  escrowContract: "0x18E51cB821A90EE1DA678492DdFDBe54332f35f3"
+  escrowContract: "0x418faEB1C6EA8fE9C43649F7C6F8116C34743457"
+  escrowVersion: 3
+  legacyEscrowContract: "0x18E51cB821A90EE1DA678492DdFDBe54332f35f3"
+  payouts: pull (withdrawable / withdraw)
+  disputeTimeoutDays: 14
   reviewWindowSeconds: 432000
   reviewWindowDays: 5
   protocolFeeBps: 300

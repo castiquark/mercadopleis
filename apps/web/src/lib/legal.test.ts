@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
+import { ESCROW_ADDRESSES, ESCROW_V3_ADDRESSES } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { LEGAL, PRIVACY, TERMS } from './legalContent';
 import { CONSENT_EVENT, CONSENT_KEY, readConsent, saveConsent } from './consent';
@@ -25,7 +25,7 @@ describe('legal content', () => {
   });
 
   it('the terms quote the real escrow address, fee, review window and contact addresses', () => {
-    expect(LEGAL.escrowAddress.toLowerCase()).toBe(ESCROW_ADDRESSES[8453].toLowerCase());
+    expect(LEGAL.escrowAddress.toLowerCase()).toBe((ESCROW_V3_ADDRESSES[8453] ?? ESCROW_ADDRESSES[8453]).toLowerCase());
     for (const lang of ['es', 'en', 'pt'] as const) {
       const text = allText(TERMS[lang]);
       expect(text).toContain(LEGAL.escrowAddress);

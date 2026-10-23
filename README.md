@@ -4,9 +4,9 @@
 
 **The marketplace where AI agents hire people.**
 
-[![Base Mainnet](https://img.shields.io/badge/Network-Base_Mainnet_(8453)-0052FF?logo=coinbase&logoColor=white)](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3#code)
+[![Base Mainnet](https://img.shields.io/badge/Network-Base_Mainnet_(8453)-0052FF?logo=coinbase&logoColor=white)](https://basescan.org/address/0x418faEB1C6EA8fE9C43649F7C6F8116C34743457#code)
 [![USDC Settlement](https://img.shields.io/badge/Currency-Native_Circle_USDC-2775CA?logo=circle&logoColor=white)](https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
-[![Contract Verified](https://img.shields.io/badge/Contract-Verified_on_BaseScan-16a34a)](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3#code)
+[![Contract Verified](https://img.shields.io/badge/Contract-Verified_on_BaseScan-16a34a)](https://basescan.org/address/0x418faEB1C6EA8fE9C43649F7C6F8116C34743457#code)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![Next.js 15](https://img.shields.io/badge/Frontend-Next.js_15_(App_Router)-black?logo=nextdotjs)](https://nextjs.org/)
 [![CI](https://github.com/castiquark/mercadopleis/actions/workflows/ci.yml/badge.svg)](https://github.com/castiquark/mercadopleis/actions/workflows/ci.yml)
@@ -133,7 +133,7 @@ Mercadopleis exposes a 3-tier discovery surface designed for LLM models, agents,
 import { createWalletClient, parseUnits } from 'viem';
 import { base } from 'viem/chains';
 
-const ESCROW_ADDRESS = '0x18E51cB821A90EE1DA678492DdFDBe54332f35f3';
+const ESCROW_ADDRESS = '0x418faEB1C6EA8fE9C43649F7C6F8116C34743457'; // escrow v3
 const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
 // 1. Search services by capability
@@ -156,14 +156,18 @@ const txHash = await walletClient.writeContract({
   functionName: 'createAndFundOrder',
   args: [targetService.seller.walletAddress, USDC_ADDRESS, parseUnits(targetService.priceUsdc, 6), targetService.deliveryDays],
 });
+
+// 4. Later: approve the delivery; settled amounts are credited in the escrow and each party withdraws them
+await walletClient.writeContract({ address: ESCROW_ADDRESS, abi: marketplaceEscrowAbi, functionName: 'withdraw', args: [USDC_ADDRESS, account.address] });
 ```
 
 ---
 
 ## 🛡️ Smart Contract, Governance & Invariants
 
-- **Contract Address (Base Mainnet)**: [`0x18E51cB821A90EE1DA678492DdFDBe54332f35f3`](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3) (source verified on [BaseScan](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3#code) and [Sourcify](https://sourcify.dev/#/lookup/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3))
-- **Base Sepolia (testnet)**: `0x41880C194F31b1D9AbAC53513De176f2892315EA`
+- **Contract Address (Base Mainnet, escrow v3)**: [`0x418faEB1C6EA8fE9C43649F7C6F8116C34743457`](https://basescan.org/address/0x418faEB1C6EA8fE9C43649F7C6F8116C34743457) (source verified on [BaseScan](https://basescan.org/address/0x418faEB1C6EA8fE9C43649F7C6F8116C34743457#code)), `contracts/src/MarketplaceEscrowV3.sol`
+- **Base Sepolia (testnet, v3)**: `0x41dfDBCE9635f9c50E8da236C30E2ea2F2f96c5e`
+- **Escrow v2 (legacy)**: Base Mainnet [`0x18E51cB821A90EE1DA678492DdFDBe54332f35f3`](https://basescan.org/address/0x18E51cB821A90EE1DA678492DdFDBe54332f35f3#code), Sepolia `0x41880C194F31b1D9AbAC53513De176f2892315EA`. Orders created before v3 finish there; the web and MCP still read and act on them.
 - **Deprecated v1** (configurable fee, no longer used by the app): `0x9E5b4C1112F026568233DC571Dd4120DbE9fBF48`
 - **Settlement Token**: Native Circle USDC on Base ([`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`](https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913))
 
@@ -173,15 +177,17 @@ const txHash = await walletClient.writeContract({
    $$\text{sellerPayout} + \text{platformFee} = \text{grossAmount}$$
    $$\text{buyerRefund} + \text{sellerPayout} + \text{platformFee} = \text{grossAmount} \quad \text{(Dispute)}$$
 2. **Review Window**: 5 days (120 hours / 432,000 seconds) mandatory inspection period upon seller delivery before the seller can claim release.
-3. **Timeout Refund**: 100% refund claimable by the buyer if the seller fails to submit a delivery hash before the agreed deadline.
+3. **Timeout Refund**: 100% refund claimable by the buyer if the seller fails to submit a delivery hash before the agreed deadline; the contract rejects deliveries after it.
+5. **Funds conservation with pull payments**: escrow balance = open orders + total withdrawable (fuzzed invariant).
 4. **Reentrancy Guard**: OpenZeppelin `ReentrancyGuard` and Checks-Effects-Interactions pattern across all state-mutating methods.
 
 ### Governance & Administrative Controls
 
 The contract inherits OpenZeppelin's `Ownable2Step` and `Pausable` for safe protocol maintenance:
 - **Protocol Fee**: exactly **3.0%** (`FEE_BPS = 300`), a constant in the contract. It is charged on the amount paid to the seller when the escrow ends (approval, auto-release claim or arbitrated payout), so on a normal order it is 3% of the total. It cannot be changed by anyone, including the owner, and a full refund to the buyer carries no fee.
-- **Dispute Resolution**: Dedicated `arbitrator` role authorized to resolve open disputes by splitting the order amount between buyer and seller. During the current validation stage the arbitrator is `0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb`, a wallet run by the Mercadopleis team and separate from the contract owner and the fee recipient. It decides by the public [arbitration policy](./docs/ARBITRATION_POLICY.md): only from what is recorded on Mercadopleis, within 7 days, stating the rule applied. In the current contract (v2) a late delivery or a dispute on a funded order blocks the automatic timeout refund and sends the case to the arbitrator (see [SECURITY.md](./SECURITY.md)); v3 fixes this. The plan to move disputes to a neutral court is in [`docs/DISPUTE_RESOLUTION.md`](./docs/DISPUTE_RESOLUTION.md).
-- **Emergency Pause**: the owner (not the arbitrator) can pause the contract. While paused, users cannot create orders, record deliveries, approve, claim releases or refunds, or open disputes, and deadlines keep running; the arbitrator can still resolve disputes that are already open. The owner cannot move escrowed funds.
+- **Dispute Resolution**: Dedicated `arbitrator` role authorized to resolve open disputes by splitting the order amount between buyer and seller. During the current validation stage the arbitrator is `0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb`, a wallet run by the Mercadopleis team and separate from the contract owner and the fee recipient. It decides by the public [arbitration policy](./docs/ARBITRATION_POLICY.md): only from what is recorded on Mercadopleis, within 7 days, stating the rule applied. If it does not rule within 14 days, anyone can close the dispute with the contract's default outcome (seller paid if the delivery was recorded, otherwise buyer refunded after the deadline). The plan to move disputes to a neutral court is in [`docs/DISPUTE_RESOLUTION.md`](./docs/DISPUTE_RESOLUTION.md).
+- **Pull payments**: releases, refunds, dispute settlements and fees are credited in the escrow (`withdrawable`) and each party withdraws them with `withdraw`, also while the contract is paused.
+- **Emergency Pause**: the owner (not the arbitrator) can pause the contract. While paused, nobody can create orders, record deliveries, extend deadlines, claim auto-release or have disputes resolved; buyers can still approve, take refunds already due and open disputes, and everyone can withdraw. Timers stop during the pause. Ownership cannot be renounced. The owner cannot move escrowed funds.
 - **Verifiable Reputation**: Client reviews are indexed and tied to confirmed on-chain escrow orders, preventing unverified feedback.
 
 See [`SECURITY.md`](./SECURITY.md) for vulnerability disclosure policies and [`ROADMAP.md`](./ROADMAP.md) for the public roadmap.

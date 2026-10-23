@@ -1,14 +1,14 @@
 // Legal texts (Terms of Service and Privacy Policy) in Spanish, English and Brazilian Portuguese.
 // Operator-specific facts live in LEGAL so they can be completed without touching the wording.
 
-import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
+import { currentEscrow } from './networks';
 
 export const LEGAL = {
   siteName: 'mercadopleis',
   domain: 'mercadopleis.club',
   contactEmail: 'hello@mercadopleis.club',
   securityEmail: 'security@mercadopleis.club',
-  escrowAddress: ESCROW_ADDRESSES[8453] as string,
+  escrowAddress: currentEscrow(8453) as string,
   updatedEs: '17 de octubre de 2026',
   updatedEn: 'October 17, 2026',
   updatedPt: '17 de outubro de 2026',
@@ -56,6 +56,8 @@ export const TERMS: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
         paragraphs: [
           `El comprador deposita USDC en el contrato de escrow (${L.escrowAddress}). Mercadopleis no custodia fondos: las reglas las ejecuta el contrato.`,
           'El vendedor registra la entrega con un hash SHA-256: el del archivo, si lo sube a la plataforma, o el del texto del enlace, si entrega un enlace externo. En este último caso el hash prueba qué enlace se entregó, no su contenido, que el vendedor podría cambiar; revísalo antes de aprobar. El comprador dispone de 5 días desde la entrega para aprobarla o abrir una disputa. Si no hay acción, el vendedor puede reclamar la liberación del pago. Si el vendedor no entrega dentro del plazo acordado, el comprador puede reclamar el reembolso íntegro.',
+          'Los pagos se acreditan, no se envían: cuando una orden termina (aprobación, cobro tras la revisión, reembolso o resolución de una disputa), el contrato acredita a cada parte su monto, y la comisión, en un saldo dentro del escrow. Cada parte lo retira a su wallet cuando quiere, incluso con el contrato pausado.',
+          'El contrato hace cumplir los plazos: el vendedor no puede registrar la entrega después del plazo de entrega, salvo que el comprador lo extienda. Los plazos de entrega, de revisión y de disputa se detienen mientras el contrato está pausado y se reanudan después.',
           'Comisión: 3% fijo, descontado del cobro del vendedor, y 0% para el comprador. Es una constante del contrato: nadie puede modificarla, ni siquiera su propietario. Se cobra al finalizar el escrow sobre el monto que recibe el vendedor (en una orden normal, el 3% del total); un reembolso íntegro al comprador no tiene comisión. Cada usuario paga el gas de sus transacciones.',
           'Las transacciones en blockchain son irreversibles. Verifica direcciones, red y montos antes de firmar.',
         ],
@@ -63,17 +65,17 @@ export const TERMS: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
       {
         title: '3 bis. Facultades del propietario del contrato',
         paragraphs: [
-          'El propietario del contrato puede: cambiar el destinatario de la comisión, designar al árbitro, habilitar o deshabilitar tokens aceptados, pausar el contrato y transferir o renunciar a la propiedad. No puede cambiar la comisión.',
-          'Mientras el contrato está pausado no se pueden crear órdenes, registrar entregas, aprobarlas, reclamar liberaciones o reembolsos ni abrir disputas; el árbitro sí puede seguir resolviendo disputas ya abiertas. Los plazos de entrega y de revisión siguen corriendo durante la pausa.',
+          'El propietario del contrato puede: cambiar el destinatario de la comisión, designar al árbitro, habilitar o deshabilitar tokens aceptados, pausar y reanudar el contrato y transferir la propiedad. No puede cambiar la comisión ni renunciar a la propiedad: el contrato lo impide, para que un contrato pausado siempre pueda reanudarse.',
+          'Mientras el contrato está pausado no se pueden crear órdenes, registrar entregas, extender plazos, cobrar tras la revisión ni resolver disputas. Sí se puede aprobar una entrega, reclamar un reembolso cuyo plazo venció antes de la pausa, abrir una disputa como comprador y retirar el saldo. Los plazos se detienen hasta que el contrato se reanuda.',
           'El propietario no tiene una función para retirar los fondos de órdenes en curso. Los fondos solo pueden moverse según las reglas del contrato.',
         ],
       },
       {
         title: '4. Disputas y arbitraje',
         paragraphs: [
-          'Comprador o vendedor pueden abrir una disputa mientras la orden esté fondeada o entregada. El árbitro designado revisa la información de las partes y decide un reparto de los fondos entre ambos. La decisión se ejecuta en el contrato y es definitiva dentro de la plataforma, sin perjuicio de los derechos que la ley te reconozca frente a la otra parte.',
+          'El comprador puede abrir una disputa mientras la orden esté fondeada o entregada; el vendedor, solo una vez registrada la entrega. El árbitro designado revisa la información de las partes y decide un reparto de los fondos entre ambos. La decisión se ejecuta en el contrato y es definitiva dentro de la plataforma, sin perjuicio de los derechos que la ley te reconozca frente a la otra parte.',
           'En esta etapa inicial, el árbitro es la wallet 0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb, operada por el equipo de Mercadopleis y distinta de la que es propietaria del contrato y recibe la comisión. Decide según la política arbitral pública (https://github.com/castiquark/mercadopleis/blob/main/docs/ARBITRATION_POLICY.md): solo con lo registrado en Mercadopleis, en un plazo de 7 días desde que se abre la disputa, indicando la regla aplicada y sin apelación en esta etapa. Como la comisión solo se cobra sobre la parte que recibe el vendedor y el equipo la recibe, lo indicamos para que lo tengas en cuenta.',
-          'Si vence el plazo y el vendedor no registró la entrega, el comprador puede reclamar el reembolso completo directamente en el contrato. El contrato actual (v2) todavía permite registrar una entrega después del plazo, mientras el comprador no haya reclamado el reembolso, y permite abrir una disputa sobre una orden fondeada; en esos casos el reembolso deja de ser automático y lo decide el árbitro, que según la política trata una entrega fuera de plazo como no entregada. La versión 3 del contrato, en preparación, corrige esto.',
+          'Si el árbitro no decide en 14 días, cualquiera puede cerrar la disputa con el resultado por defecto: si la entrega estaba registrada, el vendedor cobra (menos la comisión); si no, se reembolsa al comprador una vez vencido el plazo de entrega. Si vence el plazo sin entrega y no hay disputa, el comprador reclama el reembolso completo directamente en el contrato.',
         ],
       },
       {
@@ -141,6 +143,8 @@ export const TERMS: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
         paragraphs: [
           `The buyer deposits USDC into the escrow contract (${L.escrowAddress}). Mercadopleis does not hold funds: the contract enforces the rules.`,
           'The seller records the delivery with a SHA-256 hash: of the file, when it is uploaded to the platform, or of the link text, when an external link is delivered. In that case the hash proves which link was delivered, not its content, which the seller could change; review it before approving. The buyer has 5 days from delivery to approve it or open a dispute. If nothing happens, the seller can claim the payout. If the seller does not deliver within the agreed time, the buyer can claim a full refund.',
+          'Payouts are credited, not sent: when an order ends (approval, claim after the review window, refund or dispute settlement), the contract credits each party’s amount, and the fee, to a balance inside the escrow. Each party withdraws it to their wallet whenever they want, even while the contract is paused.',
+          'The contract enforces the deadlines: the seller cannot record a delivery after the delivery deadline unless the buyer extends it. Delivery, review and dispute deadlines stop while the contract is paused and resume afterwards.',
           'Fee: a fixed 3%, deducted from the seller payout, and 0% for the buyer. It is a constant in the contract: nobody can change it, not even its owner. It is charged when the escrow ends on the amount the seller receives (on a normal order, 3% of the total); a full refund to the buyer carries no fee. Each user pays the gas for their own transactions.',
           'Blockchain transactions are irreversible. Check addresses, network and amounts before signing.',
         ],
@@ -148,17 +152,17 @@ export const TERMS: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
       {
         title: '3 bis. Powers of the contract owner',
         paragraphs: [
-          'The contract owner can change the fee recipient, appoint the arbitrator, enable or disable accepted tokens, pause the contract and transfer or renounce ownership. It cannot change the fee.',
-          'While the contract is paused, nobody can create orders, record deliveries, approve them, claim releases or refunds, or open disputes; the arbitrator can still resolve disputes that are already open. Delivery and review deadlines keep running during a pause.',
+          'The contract owner can change the fee recipient, appoint the arbitrator, enable or disable accepted tokens, pause and unpause the contract and transfer ownership. It cannot change the fee or renounce ownership: the contract blocks it, so a paused contract can always be unpaused.',
+          'While the contract is paused, nobody can create orders, record deliveries, extend deadlines, claim a payout after the review window or have disputes resolved. A buyer can still approve a delivery, claim a refund whose deadline passed before the pause and open a dispute, and everyone can withdraw their balance. Timers stop until the contract is unpaused.',
           'The owner has no function to withdraw funds from orders in progress. Funds can only move according to the contract rules.',
         ],
       },
       {
         title: '4. Disputes and arbitration',
         paragraphs: [
-          'Buyer or seller can open a dispute while the order is funded or delivered. The appointed arbitrator reviews the information from both parties and decides how to split the funds between them. The decision is executed in the contract and is final within the platform, without prejudice to any rights the law gives you against the other party.',
+          'The buyer can open a dispute while the order is funded or delivered; the seller only once the delivery is recorded. The appointed arbitrator reviews the information from both parties and decides how to split the funds between them. The decision is executed in the contract and is final within the platform, without prejudice to any rights the law gives you against the other party.',
           'During this early stage, the arbitrator is the wallet 0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb, run by the Mercadopleis team and separate from the wallet that owns the contract and receives the fee. It decides by the public arbitration policy (https://github.com/castiquark/mercadopleis/blob/main/docs/ARBITRATION_POLICY.md): only from what is recorded on Mercadopleis, within 7 days of the dispute being opened, stating the rule applied, with no appeal during this stage. Since the fee is only charged on the part the seller receives and the team receives it, we disclose this so you can take it into account.',
-          'If the deadline passes and the seller has not recorded a delivery, the buyer can claim a full refund directly from the contract. The current contract (v2) still lets a seller record a delivery after the deadline, as long as the buyer has not claimed the refund, and lets a dispute be opened on a funded order; in those cases the refund is no longer automatic and the arbitrator decides it, treating a delivery after the deadline as not delivered under the policy. Version 3 of the contract, in preparation, fixes this.',
+          'If the arbitrator does not decide within 14 days, anyone can close the dispute with the default outcome: if the delivery was recorded, the seller is paid (minus the fee); if not, the buyer is refunded once the delivery deadline has passed. If the deadline passes with no delivery and no dispute, the buyer claims a full refund directly from the contract.',
         ],
       },
       {
@@ -226,6 +230,8 @@ export const TERMS: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
         paragraphs: [
           `O comprador deposita USDC no contrato de escrow (${L.escrowAddress}). A Mercadopleis não custodia fundos: as regras são executadas pelo contrato.`,
           'O vendedor registra a entrega com um hash SHA-256: do arquivo, se for enviado pela plataforma, ou do texto do link, se entregar um link externo. Neste último caso, o hash comprova qual link foi entregue, mas não o seu conteúdo, que o vendedor poderia alterar; confira-o antes de aprovar. O comprador tem 5 dias a partir da entrega para aprová-la ou abrir uma disputa. Se não houver manifestação, o vendedor pode solicitar o recebimento. Se o vendedor não entregar dentro do prazo combinado, o comprador pode solicitar o reembolso total.',
+          'Os pagamentos são creditados, não enviados: quando um pedido termina (aprovação, recebimento após a revisão, reembolso ou resolução de uma disputa), o contrato credita a cada parte o seu valor, e a taxa, em um saldo dentro do escrow. Cada parte saca para a sua carteira quando quiser, mesmo com o contrato pausado.',
+          'O contrato faz cumprir os prazos: o vendedor não pode registrar a entrega depois do prazo de entrega, a menos que o comprador o estenda. Os prazos de entrega, de revisão e de disputa param enquanto o contrato está pausado e são retomados depois.',
           'Taxa: 3% fixo, descontado do valor recebido pelo vendedor, e 0% para o comprador. Trata-se de uma constante no contrato: ninguém pode alterá-la, nem mesmo o proprietário do contrato. A taxa é cobrada ao finalizar o escrow sobre o valor recebido pelo vendedor (em um pedido normal, 3% do total); o reembolso total ao comprador não possui taxa. Cada usuário paga o gas das suas próprias transações.',
           'Transações em blockchain são irreversíveis. Verifique endereços, rede e valores antes de assinar.',
         ],
@@ -233,17 +239,17 @@ export const TERMS: Record<'es' | 'en' | 'pt', LegalDocumentContent> = {
       {
         title: '3 bis. Atribuições do proprietário do contrato',
         paragraphs: [
-          'O proprietário do contrato pode: alterar o destinatário da taxa, nomear o árbitro, habilitar ou desabilitar tokens aceitos, pausar o contrato e transferir ou renunciar à propriedade. Não pode alterar a taxa.',
-          'Enquanto o contrato estiver pausado, não é possível criar pedidos, registrar entregas, aprová-las, solicitar liberações ou reembolsos, nem abrir disputas; o árbitro pode continuar resolvendo disputas já abertas. Os prazos de entrega e de revisão continuam correndo durante a pausa.',
+          'O proprietário do contrato pode: alterar o destinatário da taxa, nomear o árbitro, habilitar ou desabilitar tokens aceitos, pausar e retomar o contrato e transferir a propriedade. Não pode alterar a taxa nem renunciar à propriedade: o contrato impede isso, para que um contrato pausado sempre possa ser retomado.',
+          'Enquanto o contrato estiver pausado, não é possível criar pedidos, registrar entregas, estender prazos, receber após a revisão nem resolver disputas. Ainda é possível aprovar uma entrega, solicitar um reembolso cujo prazo venceu antes da pausa, abrir uma disputa como comprador e sacar o saldo. Os prazos param até o contrato ser retomado.',
           'O proprietário não tem funções para sacar fundos de pedidos em andamento. Os fundos só se movem de acordo com as regras do contrato.',
         ],
       },
       {
         title: '4. Disputas e arbitragem',
         paragraphs: [
-          'Comprador ou vendedor podem abrir uma disputa enquanto o pedido estiver depositado ou entregue. O árbitro designado revisa as informações apresentadas pelas partes e decide a divisão dos fundos entre ambos. A decisão é executada no contrato e é definitiva na plataforma, sem prejuízo dos direitos legais que você possa exercer contra a outra parte.',
+          'O comprador pode abrir uma disputa enquanto o pedido estiver depositado ou entregue; o vendedor, só depois de registrada a entrega. O árbitro designado revisa as informações apresentadas pelas partes e decide a divisão dos fundos entre ambos. A decisão é executada no contrato e é definitiva na plataforma, sem prejuízo dos direitos legais que você possa exercer contra a outra parte.',
           'Nesta fase inicial, o árbitro é a carteira 0x5642984a118D7251A7eE8b31D8cBc60E0bF5e2Bb, operada pela equipe da Mercadopleis e diferente da carteira que é proprietária do contrato e recebe a taxa. Ele decide conforme a política arbitral pública (https://github.com/castiquark/mercadopleis/blob/main/docs/ARBITRATION_POLICY.md): apenas com o que está registrado na Mercadopleis, em até 7 dias após a abertura da disputa, indicando a regra aplicada e sem recurso nesta fase. Como a taxa só incide sobre a parte que o vendedor recebe e a equipe a recebe, destacamos essa informação para que você a leve em consideração.',
-          'Se o prazo vencer e o vendedor não tiver registrado a entrega, o comprador pode solicitar o reembolso total diretamente no contrato. O contrato atual (v2) ainda permite registrar uma entrega após o prazo, enquanto o comprador não tiver solicitado o reembolso, e permite abrir uma disputa sobre um pedido depositado; nesses casos o reembolso deixa de ser automático e é decidido pelo árbitro, que pela política trata uma entrega fora do prazo como não entregue. A versão 3 do contrato, em preparação, corrige isso.',
+          'Se o árbitro não decidir em 14 dias, qualquer pessoa pode encerrar a disputa com o resultado padrão: se a entrega estava registrada, o vendedor recebe (menos a taxa); se não, o comprador é reembolsado depois que o prazo de entrega vencer. Se o prazo vencer sem entrega e sem disputa, o comprador solicita o reembolso total diretamente no contrato.',
         ],
       },
       {
