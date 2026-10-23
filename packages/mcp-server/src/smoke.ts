@@ -35,6 +35,7 @@ assert.deepEqual(tools, [
   'search_services',
   'send_message',
   'send_proposal',
+  'wait_for_order_update',
 ]);
 
 // Signed-in tools must refuse politely without a session.

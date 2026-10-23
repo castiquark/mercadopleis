@@ -30,6 +30,7 @@ import {
 } from './session.js';
 import { API_URL } from './config.js';
 import { VERSION } from './version.js';
+import { orderTiming } from './timing.js';
 import { BUILDER_DATA_SUFFIX, CHAIN_ID, ORDER_STATUS, erc20Abi, escrowAbi, getNetwork } from './config.js';
 
 
@@ -129,6 +130,56 @@ export function createServer({ remote = false }: ServerOptions = {}): McpServer 
       publicClient(chainId).readContract({ address, abi: escrowAbi, functionName, args: [BigInt(orderId)] });
     const [deadline, autoRelease, disputeTimeout] = await Promise.all([read('effectiveDeadline'), read('effectiveAutoReleaseTime'), read('disputeTimeoutAt')]);
     return { deadline, autoRelease, disputeTimeout };
+  }
+
+  // wait_for_order_update: the remote endpoint runs in a Netlify function with a hard time limit, a local process does not.
+  const REMOTE_WAIT = { default: 8, max: 8, every: 3 }; // Netlify cuts synchronous functions at 10 s
+  const LOCAL_WAIT = { default: 120, max: 300, every: 10 };
+
+  /** The order as get_order_status shows it, with when to look again (from the chain's clock, not the local one). */
+  async function orderView(orderId: number, id: number, escrowVersion?: 2 | 3) {
+    let net;
+    let order;
+    try {
+      net = getNetwork(id);
+      order = await readOrder(orderId, id, escrowVersion);
+    } catch (e) {
+      return { error: (e as Error).message };
+    }
+    let [buyer, seller, token, amount, deadline, autoReleaseTime, deliveryHash, status] = order;
+    if (status === 0) return { error: `Order ${orderId} does not exist on chain ${id}${escrowVersion ? ` (escrow v${escrowVersion})` : ''}` };
+    const version = escrowVersion ?? net.version;
+    let disputeTimeout = 0n;
+    const [now, timers] = await Promise.all([blockTime(id), version === 3 ? readTimers(orderId, id) : null]);
+    if (timers) {
+      deadline = timers.deadline;
+      autoReleaseTime = timers.autoRelease;
+      disputeTimeout = timers.disputeTimeout;
+    }
+    const delivered = deliveryHash !== ZERO_HASH;
+    const ts = (n: bigint) => (n > 0n ? new Date(Number(n) * 1000).toISOString() : null);
+    return {
+      view: {
+        orderId,
+        chainId: id,
+        status: ORDER_STATUS[status] as string,
+        buyer,
+        seller,
+        token,
+        // Field name kept for existing integrations; the unit is the network's stablecoin (tokenSymbol).
+        amountUsdc: (Number(amount) / 10 ** net.token.decimals).toFixed(2),
+        tokenSymbol: token.toLowerCase() === net.token.address.toLowerCase() ? net.token.symbol : null,
+        deliveryDeadline: ts(deadline),
+        autoReleaseTime: ts(autoReleaseTime),
+        ...(version === 3 && status === 5 ? { disputeTimeoutAt: ts(disputeTimeout) } : {}),
+        deliveryHash: delivered ? deliveryHash : null,
+        escrowVersion: version,
+        payouts: version === 3 ? 'credited to the receiver, who calls prepare_withdraw to receive them' : 'sent to the receiver on release',
+        checkedAt: ts(now),
+        ...orderTiming({ status, version, now, deadline, autoRelease: autoReleaseTime, disputeTimeout, delivered }),
+        explorer: `${net.explorer}/address/${escrowAddress(id, escrowVersion)}`,
+      },
+    };
   }
 
   async function readOrder(orderId: number, chainId: number, version?: 2 | 3) {
@@ -271,51 +322,53 @@ export function createServer({ remote = false }: ServerOptions = {}): McpServer 
     'get_order_status',
     {
       description:
-        'Read an order directly from the escrow contract: parties, amount, status, deadlines and delivery hash. On escrow v3 the deadlines are the effective ones (they stop counting while the contract is paused) and a disputed order shows when anyone can close it by timeout. Orders from the old v2 escrow are read with escrowVersion 2.',
+        'Read an order directly from the escrow contract: parties, amount, status, deadlines and delivery hash, plus expectedBy (when the next change is due), nextCheckAfter (do not check again before it) and actionRequired (when the next step is yours). On escrow v3 the deadlines are the effective ones (they stop counting while the contract is paused) and a disputed order shows when anyone can close it by timeout. Orders from the old v2 escrow are read with escrowVersion 2.',
       inputSchema: { orderId: z.number().int().positive(), chainId: z.number().int().optional(), escrowVersion: versionArg },
     },
     async ({ orderId, chainId, escrowVersion }) => {
+      const r = await orderView(orderId, chainId ?? CHAIN_ID, escrowVersion);
+      return r.view ? json(r.view) : fail(r.error!);
+    },
+  );
+
+  server.registerTool(
+    'wait_for_order_update',
+    {
+      description: remote
+        ? `Wait until an order's on-chain status changes (or the timeout ends) and return the same view as get_order_status. Use it instead of calling get_order_status in a loop. Over this remote endpoint the wait is short (default ${REMOTE_WAIT.default} s, max ${REMOTE_WAIT.max} s): call it again while changed is false, but not before nextCheckAfter when the status says nothing will happen sooner.`
+        : `Wait until an order's on-chain status changes (or the timeout ends) and return the same view as get_order_status. Use it instead of calling get_order_status in a loop. Default ${LOCAL_WAIT.default} s, max ${LOCAL_WAIT.max} s; call it again while changed is false.`,
+      inputSchema: {
+        orderId: z.number().int().positive(),
+        sinceStatus: z
+          .enum(ORDER_STATUS.slice(1) as unknown as [string, ...string[]])
+          .optional()
+          .describe('The status you last saw. Returns at once if the order is already in another one. Default: its status when the call starts.'),
+        timeoutSeconds: z.number().int().positive().optional(),
+        chainId: z.number().int().optional(),
+        escrowVersion: versionArg,
+      },
+    },
+    async ({ orderId, sinceStatus, timeoutSeconds, chainId, escrowVersion }, extra) => {
       const id = chainId ?? CHAIN_ID;
-      let net;
-      try {
-        net = getNetwork(id);
-      } catch (e) {
-        return fail((e as Error).message);
+      const limits = remote ? REMOTE_WAIT : LOCAL_WAIT;
+      const timeout = Math.min(timeoutSeconds ?? limits.default, limits.max);
+      const started = Date.now(); // only measures how long this call waits; deadlines come from the chain
+      let r = await orderView(orderId, id, escrowVersion);
+      if (!r.view) return fail(r.error!);
+      const from = sinceStatus ?? r.view.status;
+      while (r.view.status === from) {
+        const left = timeout * 1000 - (Date.now() - started);
+        if (left <= 0 || extra.signal.aborted) break;
+        await new Promise((res) => setTimeout(res, Math.min(limits.every * 1000, left)));
+        const next = await orderView(orderId, id, escrowVersion);
+        if (!next.view) return fail(next.error!);
+        r = next;
       }
-      let order;
-      try {
-        order = await readOrder(orderId, id, escrowVersion);
-      } catch (e) {
-        return fail((e as Error).message);
-      }
-      let [buyer, seller, token, amount, deadline, autoReleaseTime, deliveryHash, status] = order;
-      if (status === 0) return fail(`Order ${orderId} does not exist on chain ${id}${escrowVersion ? ` (escrow v${escrowVersion})` : ''}`);
-      const version = escrowVersion ?? net.version;
-      let disputeTimeout = 0n;
-      if (version === 3) {
-        const t = await readTimers(orderId, id);
-        deadline = t.deadline;
-        autoReleaseTime = t.autoRelease;
-        disputeTimeout = t.disputeTimeout;
-      }
-      const ts = (n: bigint) => (n > 0n ? new Date(Number(n) * 1000).toISOString() : null);
       return json({
-        orderId,
-        chainId: id,
-        status: ORDER_STATUS[status],
-        buyer,
-        seller,
-        token,
-        // Field name kept for existing integrations; the unit is the network's stablecoin (tokenSymbol).
-        amountUsdc: (Number(amount) / 10 ** net.token.decimals).toFixed(2),
-        tokenSymbol: token.toLowerCase() === net.token.address.toLowerCase() ? net.token.symbol : null,
-        deliveryDeadline: ts(deadline),
-        autoReleaseTime: ts(autoReleaseTime),
-        ...(version === 3 && status === 5 ? { disputeTimeoutAt: ts(disputeTimeout) } : {}),
-        deliveryHash: deliveryHash === ZERO_HASH ? null : deliveryHash,
-        escrowVersion: version,
-        payouts: version === 3 ? 'credited to the receiver, who calls prepare_withdraw to receive them' : 'sent to the receiver on release',
-        explorer: `${net.explorer}/address/${escrowAddress(id, escrowVersion)}`,
+        changed: r.view.status !== from,
+        previousStatus: from,
+        waitedSeconds: Math.round((Date.now() - started) / 1000),
+        order: r.view,
       });
     },
   );

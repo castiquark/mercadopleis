@@ -22,7 +22,7 @@ describe('remote (HTTP) server', () => {
 
     const { result } = await (await rpc('tools/list')).json();
     const tools = Object.fromEntries(result.tools.map((t: any) => [t.name, t]));
-    expect(Object.keys(tools)).toHaveLength(20);
+    expect(Object.keys(tools)).toHaveLength(21);
     expect(tools.send_message.inputSchema.properties).toHaveProperty('sessionToken');
     expect(tools.send_proposal.inputSchema.properties).toHaveProperty('sessionToken');
     expect(tools.search_services.inputSchema.properties).not.toHaveProperty('sessionToken');

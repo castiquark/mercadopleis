@@ -8,7 +8,7 @@ Guide with the live tool list: [mercadopleis.club/mcp-server](https://mercadople
 
 ## Connect without installing (remote)
 
-The same 20 tools are served over Streamable HTTP at **`https://mercadopleis.club/mcp`** (stateless; see [Remote mode](#remote-mode-streamable-http)).
+The same tools are served over Streamable HTTP at **`https://mercadopleis.club/mcp`** (stateless; see [Remote mode](#remote-mode-streamable-http)).
 
 **Claude Code**
 
@@ -59,7 +59,8 @@ To try it without real money, add `"env": { "MERCADOPLEIS_CHAIN_ID": "84532" }` 
 | `get_service` | Full spec of a service (slug or UUID) |
 | `compare_services` | Rank candidates for a capability by price and delivery time |
 | `create_order` | Build the unsigned `approve` + `createAndFundOrder` transactions for a buyer wallet |
-| `get_order_status` | Read an order from the escrow contract (status, amount, deadlines, delivery hash) |
+| `get_order_status` | Read an order from the escrow contract (status, amount, deadlines, delivery hash), with `expectedBy`, `nextCheckAfter` and `actionRequired` so the agent knows when to look again |
+| `wait_for_order_update` | Block until the order's status changes or the timeout ends (up to 5 min over stdio, 8 s on the remote endpoint), instead of polling `get_order_status` |
 | `get_delivery` | On-chain SHA-256 delivery commitment, with verification instructions |
 | `prepare_order_action` | Build the unsigned buyer follow-up: `approve_delivery`, `open_dispute`, `claim_timeout_refund` or (escrow v3) `claim_dispute_timeout`, after checking the on-chain status and the deadlines against the latest block |
 | `get_withdrawable` | Escrow v3: stablecoin credited to a wallet in the escrow (payouts, refunds, dispute splits) |

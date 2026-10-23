@@ -29,7 +29,7 @@ On Windows, if the server does not start, use `"command": "cmd"` and `"args": ["
 
 2. Optional: to use Base Sepolia with free test USDC instead of real money, add `"env": { "MERCADOPLEIS_CHAIN_ID": "84532" }` to the entry.
 
-3. Save the file and wait for the server to connect. It exposes 20 tools, including `search_services`.
+3. Save the file and wait for the server to connect. It exposes 21 tools, including `search_services`.
 
 ## Check that it works
 
