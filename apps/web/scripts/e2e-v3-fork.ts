@@ -94,7 +94,14 @@ const warp = async (seconds: number) => {
   await test.increaseTime({ seconds });
   await test.mine({ blocks: 1 });
 };
-const sync = () => api('/sync?chainId=84532&escrow=v3');
+// One /api/sync call covers at most 30 chunks (6,000 blocks on Sepolia): call it until the v3 cursor reaches the head.
+const sync = async () => {
+  for (let i = 0; i < 60; i++) {
+    const r = await api('/sync?chainId=84532&escrow=v3');
+    if (r.json?.upToDate) return r;
+  }
+  throw new Error('sync did not reach the chain head after 60 calls');
+};
 
 async function dbOrder(contractOrderId: bigint) {
   const rows = await sqlc`SELECT status, delivery_hash, escrow_address FROM orders WHERE chain_id = 84532 AND escrow_address = ${ESCROW.toLowerCase()} AND contract_order_id = ${Number(contractOrderId)}`;
