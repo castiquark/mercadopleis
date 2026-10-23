@@ -12,11 +12,13 @@ export { MarketplaceEscrowV3Abi } from './MarketplaceEscrowV3Abi';
 export const ESCROW_V3_ADDRESSES: Partial<Record<number, `0x${string}`>> = {
   // Base Sepolia: deployed 22 Oct 2026, verified on BaseScan (tx 0x408bd0a5...287bb)
   [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: '0x41dfDBCE9635f9c50E8da236C30E2ea2F2f96c5e',
-  // Base Mainnet: pending deploy
+  // Base Mainnet: deployed 22 Oct 2026, verified on BaseScan (tx 0xa291e577...91cbe)
+  [CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID]: '0x418faEB1C6EA8fE9C43649F7C6F8116C34743457',
 };
 
 export const ESCROW_V3_DEPLOY_BLOCKS: Partial<Record<number, number>> = {
   [CONTRACT_CONFIG.BASE_SEPOLIA_CHAIN_ID]: 48907528,
+  [CONTRACT_CONFIG.BASE_MAINNET_CHAIN_ID]: 52965265,
 };
 
 /** Escrow v2, legacy once v3 is live on a chain: read-only for history and orders created before the switch. */

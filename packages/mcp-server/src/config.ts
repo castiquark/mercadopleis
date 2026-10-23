@@ -38,6 +38,7 @@ const isAddr = (v: string | undefined): v is `0x${string}` => !!v && /^0x[0-9a-f
 // MERCADOPLEIS_ESCROW_V3_<chainId> overrides them, e.g. to test a fresh deployment.
 const V3_ADDRESSES: Partial<Record<number, `0x${string}`>> = {
   84532: '0x41dfDBCE9635f9c50E8da236C30E2ea2F2f96c5e',
+  8453: '0x418faEB1C6EA8fE9C43649F7C6F8116C34743457',
 };
 const v3For = (chainId: number) => {
   const env = process.env[`MERCADOPLEIS_ESCROW_V3_${chainId}`];
