@@ -26,3 +26,10 @@ describe('sentry scrubbing', () => {
     expect(hit('TypeError: cannot read properties of undefined')).toBe(false);
   });
 });
+
+describe('sentry scrubbing of contexts and tags', () => {
+  it('redacts wallets in contexts, tags and transaction', () => {
+    const e: any = scrubEvent({ type: undefined, contexts: { nextjs: { request_path: `/orders/${W}` } }, tags: { url: `https://x/${W}` }, transaction: `GET /profile/${W}` } as any);
+    expect(JSON.stringify(e)).not.toContain(W);
+  });
+});

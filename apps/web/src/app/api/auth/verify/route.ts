@@ -70,7 +70,10 @@ export async function POST(request: NextRequest) {
     const { isAdminWallet } = await import('@mercadopleis/types');
     // Operator wallets, plus whichever wallet the escrow contract names as arbitrator (it can change on-chain).
     const { isOnchainArbitrator } = await import('@/lib/escrowState');
-    const isFeeCollectorAdmin = isAdminWallet(normalized) || (await isOnchainArbitrator(normalized));
+    const onchainArbitrator = isAdminWallet(normalized) ? true : await isOnchainArbitrator(normalized);
+    const isFeeCollectorAdmin = onchainArbitrator === true;
+    // If the contract could not be read, keep the role the user already has instead of demoting an arbitrator.
+    const roleUnknown = onchainArbitrator === null;
     let userRole = isFeeCollectorAdmin ? 'ADMIN' : 'USER';
     let userId: string;
 
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
           .update(users)
           .set({ role: 'ADMIN', updatedAt: new Date() })
           .where(eq(users.id, existingUser.id));
-      } else if (!isFeeCollectorAdmin && existingUser.role === 'ADMIN') {
+      } else if (!isFeeCollectorAdmin && !roleUnknown && existingUser.role === 'ADMIN') {
         // Demote any non-admin wallet that was incorrectly assigned ADMIN
         userRole = 'USER';
         await db

@@ -37,6 +37,10 @@ export function scrubEvent(event: ErrorEvent, _hint?: EventHint): ErrorEvent | n
     if (b.data) b.data = JSON.parse(redact(JSON.stringify(b.data)));
   }
   if (event.extra) event.extra = JSON.parse(redact(JSON.stringify(event.extra)));
+  // Next.js puts the request path in contexts (e.g. /orders/0x…) and the SDK may tag the URL.
+  if (event.contexts) event.contexts = JSON.parse(redact(JSON.stringify(event.contexts)));
+  if (event.tags) event.tags = JSON.parse(redact(JSON.stringify(event.tags)));
+  if (event.transaction) event.transaction = redact(event.transaction);
   return event;
 }
 

@@ -61,27 +61,30 @@ export async function readEscrowOrder(chainId: number, contractOrderId: number, 
 }
 
 // The arbitrator is read from the contract (arbitrator()), not assumed to be the deployer wallet: it can change
-// with setArbitrator. Cached for 5 minutes per chain; an RPC failure counts as "not the arbitrator".
-const arbitratorCache = new Map<string, { address: string | null; at: number }>();
+// with setArbitrator. Successful reads are cached for 5 minutes per escrow; failures are not cached and return null.
+const arbitratorCache = new Map<string, { address: string; at: number }>();
 
 export async function readArbitrator(chainId: number, escrowAddress?: string | null): Promise<string | null> {
   const key = `${chainId}:${(escrowAddress ?? currentEscrow(chainId)).toLowerCase()}`;
   const hit = arbitratorCache.get(key);
   if (hit && Date.now() - hit.at < 5 * 60_000) return hit.address;
-  let address: string | null = null;
   try {
     const { client, escrow } = escrowClient(chainId, escrowAddress);
-    address = ((await client.readContract({ address: escrow, abi: MarketplaceEscrowAbi, functionName: 'arbitrator' })) as string).toLowerCase();
+    const address = ((await client.readContract({ address: escrow, abi: MarketplaceEscrowAbi, functionName: 'arbitrator' })) as string).toLowerCase();
+    arbitratorCache.set(key, { address, at: Date.now() });
+    return address;
   } catch {
-    address = null;
+    return null;
   }
-  arbitratorCache.set(key, { address, at: Date.now() });
-  return address;
 }
 
-/** True if the wallet is the arbitrator of any escrow the web reads (v3 and v2, Base Mainnet and Sepolia). */
-export async function isOnchainArbitrator(wallet: string): Promise<boolean> {
+/**
+ * Whether the wallet is the arbitrator of any escrow the web reads (v3 and v2, Base Mainnet and Sepolia).
+ * true: it is; false: every read succeeded and it is not; null: not known (some read failed and none matched).
+ */
+export async function isOnchainArbitrator(wallet: string): Promise<boolean | null> {
   const w = wallet.toLowerCase();
   const all = await Promise.all([8453, 84532].flatMap((c) => knownEscrows(c).map((e) => readArbitrator(c, e))));
-  return all.includes(w);
+  if (all.includes(w)) return true;
+  return all.includes(null) ? null : false;
 }

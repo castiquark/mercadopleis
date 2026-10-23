@@ -5,7 +5,7 @@ import Link from '@/components/LocaleLink';
 import { useAccount, usePublicClient, useWriteContract } from 'wagmi';
 // The v3 ABI is a superset of v2 (same functions, getters and events), so it serves orders in either escrow.
 import { MarketplaceEscrowV3Abi as MarketplaceEscrowAbi } from '@mercadopleis/contracts-abi';
-import { currentEscrow, currentEscrowKey, isV3Escrow, orderEscrow } from '@/lib/networks';
+import { currentEscrow, isV3Escrow, orderEscrow } from '@/lib/networks';
 import { WithdrawPanel } from '@/components/WithdrawPanel';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import { useAuth } from '@/lib/authContext';
@@ -290,7 +290,8 @@ export default function OrdersDashboardPage() {
           platformFeeUsdc: Number((p.amountUsdc * 0.03).toFixed(2)),
           status: 'FUNDED',
           chainId: p.chainId,
-          escrowAddress: currentEscrowKey(p.chainId),
+          // Saved by the checkout; pending orders from before v3 have none and live in v2.
+          escrowAddress: p.escrowAddress ?? null,
           txHashFunding: p.txHashFunding,
           deadlineTimestamp: Math.floor(p.createdAt / 1000) + p.deliveryDays * 86400,
           sellerAddress: p.sellerWallet,
@@ -1062,11 +1063,13 @@ export default function OrdersDashboardPage() {
                 {order.status === 'DISPUTED' && isV3(order) && order.dispute?.status !== 'RESOLVED' && order.disputeTimeoutAt && (
                   <div className="flex w-full flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
                     <span>
-                      {nowSeconds >= order.disputeTimeoutAt
+                      {nowSeconds >= order.disputeTimeoutAt && !order.deliveryHash && nowSeconds <= order.deadlineTimestamp
+                        ? L(`El árbitro no resolvió en 14 días. Como no hubo entrega, la disputa se podrá cerrar con reembolso a quien compra cuando venza el plazo de entrega (${formatDate(order.deadlineTimestamp)}).`, `The arbitrator did not rule within 14 days. As there was no delivery, the dispute can be closed with a refund to the buyer once the delivery deadline passes (${formatDate(order.deadlineTimestamp)}).`, `O árbitro não decidiu em 14 dias. Como não houve entrega, a disputa poderá ser encerrada com reembolso a quem compra quando o prazo de entrega vencer (${formatDate(order.deadlineTimestamp)}).`)
+                        : nowSeconds >= order.disputeTimeoutAt
                         ? L('El árbitro no resolvió en 14 días: cualquiera de las partes puede cerrar la disputa con el resultado por defecto.', 'The arbitrator did not rule within 14 days: either party can close the dispute with the default outcome.', 'O árbitro não decidiu em 14 dias: qualquer parte pode encerrar a disputa com o resultado padrão.')
                         : L(`Si el árbitro no resuelve antes del ${formatDate(order.disputeTimeoutAt)}, la disputa se podrá cerrar con el resultado por defecto.`, `If the arbitrator has not ruled by ${formatDate(order.disputeTimeoutAt)}, the dispute can be closed with the default outcome.`, `Se o árbitro não decidir até ${formatDate(order.disputeTimeoutAt)}, a disputa poderá ser encerrada com o resultado padrão.`)}
                     </span>
-                    {nowSeconds >= order.disputeTimeoutAt && (
+                    {nowSeconds >= order.disputeTimeoutAt && (!!order.deliveryHash || nowSeconds > order.deadlineTimestamp) && (
                       <button
                         onClick={() => handleClaimDisputeTimeout(order)}
                         disabled={isProcessing}

@@ -2,26 +2,25 @@ import { NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { db } from '@mercadopleis/database';
 import { ADMIN_WALLET_ADDRESS } from '@mercadopleis/types';
-import { ESCROW_ADDRESSES } from '@mercadopleis/contracts-abi';
-import { currentEscrowKey } from '@/lib/networks';
+import { currentEscrow, knownEscrows } from '@/lib/networks';
 
 export const dynamic = 'force-dynamic';
 
 const MAINNET = 8453;
 const rowsOf = (res: any): any[] => (Array.isArray(res) ? res : res?.rows ?? []);
 
-// Public traction numbers ("Operation 100"): orders on the current Base Mainnet escrow, with the ones the operator
+// Public traction numbers ("Operation 100"): orders on the Base Mainnet escrows (v3 and the v2 history), with the ones the operator
 // funded counted apart so they are never presented as outside demand. Every order is an on-chain event anyone can check.
 export async function GET() {
   try {
-    const escrow = currentEscrowKey(MAINNET);
+    const [e1, e2] = [...knownEscrows(MAINNET).map((a) => a.toLowerCase()), ''];
     const [orderRes, catalogRes] = await Promise.all([
       db.execute(sql`
         WITH o AS (
           SELECT o.status, o.gross_amount_usdc::numeric AS gross,
                  (b.role = 'ADMIN' OR b.wallet_address = ${ADMIN_WALLET_ADDRESS}) AS by_operator
           FROM orders o JOIN users b ON b.id = o.buyer_id
-          WHERE o.chain_id = ${MAINNET} AND lower(o.escrow_address) = ${escrow} AND o.status <> 'CREATED'
+          WHERE o.chain_id = ${MAINNET} AND lower(o.escrow_address) IN (${e1}, ${e2}) AND o.status <> 'CREATED'
         )
         SELECT
           count(*) FILTER (WHERE NOT by_operator) AS funded,
@@ -48,8 +47,8 @@ export async function GET() {
         goal: 100,
         network: 'Base Mainnet',
         chainId: MAINNET,
-        escrowContract: ESCROW_ADDRESSES[MAINNET],
-        verifyUrl: `https://basescan.org/address/${ESCROW_ADDRESSES[MAINNET]}#events`,
+        escrowContract: currentEscrow(MAINNET),
+        verifyUrl: `https://basescan.org/address/${currentEscrow(MAINNET)}#events`,
         orders: { funded: n(o.funded), completed: n(o.completed), refunded: n(o.refunded), volumeUsdc: n(o.volume) },
         operator: { funded: n(o.operator_funded), completed: n(o.operator_completed), volumeUsdc: n(o.operator_volume) },
         catalog: { services: n(c.services), sellers: n(c.sellers), foundingSellers: n(c.founding_sellers) },

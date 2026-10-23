@@ -169,6 +169,7 @@ export function CheckoutModal({ service, onClose, onSuccess }: CheckoutModalProp
           amountUsdc: Number(service.priceUsdc),
           deliveryDays: service.deliveryDays,
           createdAt: Date.now(),
+          escrowAddress: escrowAddress.toLowerCase(),
         });
       }
 

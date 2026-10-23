@@ -13,6 +13,8 @@ export interface PendingOrder {
   amountUsdc: number;
   deliveryDays: number;
   createdAt: number;
+  /** Escrow the order was funded in (lowercase). Missing on orders saved before v3: those live in v2. */
+  escrowAddress?: string;
 }
 
 const KEY = 'mercadopleis_pending_orders';
