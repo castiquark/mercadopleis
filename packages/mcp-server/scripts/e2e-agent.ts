@@ -1,7 +1,9 @@
 /**
  * End-to-end test of the agent flow on Base Sepolia, with every buyer step done through this MCP server:
  * search, create_order, prepare_login/login, register_order, send_message, read_messages,
- * get_deliverable (hash check) and prepare_order_action (approve). The seller side uses the web API.
+ * get_deliverable (hash check), prepare_order_action (approve), get_withdrawable and prepare_withdraw on escrow v3,
+ * plus the timed v3 paths (refund and dispute timeout are checked as refused before their time) and a v2 read.
+ * The seller side uses the web API.
  *
  *   API_URL=http://localhost:3100 pnpm --filter @mercadopleis/mcp-server exec tsx scripts/e2e-agent.ts
  *
@@ -20,8 +22,7 @@ import { generatePrivateKey, privateKeyToAccount, type PrivateKeyAccount } from 
 const env = Object.fromEntries(
   [resolve(import.meta.dirname, '../../../apps/web/.env.local'), process.env.MERCADOPLEIS_WALLETS || resolve(import.meta.dirname, '../../../.wallets.env')]
     .map((f) => readFileSync(f, 'utf8'))
-    .join('
-')
+    .join('\n')
     .split(/\r?\n/)
     .filter((l) => /^[A-Z0-9_]+=/.test(l))
     .map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1).replace(/^"|"$/g, '')])
@@ -30,13 +31,18 @@ const API_URL = process.env.API_URL || 'http://localhost:3100';
 assert.ok(/localhost|127\.0\.0\.1/.test(API_URL), 'Run this against a local test server only');
 const RPC = env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org';
 const USDC = '0x6Fa1279f6c760fA993B7f9aC75de5a141d7D2D8A' as const;
-const ESCROW = '0x41880C194F31b1D9AbAC53513De176f2892315EA' as const;
+const ESCROW = '0x41dfDBCE9635f9c50E8da236C30E2ea2F2f96c5e' as const; // escrow v3
 const escrowAbi = parseAbi([
   'event OrderFunded(uint256 indexed orderId, address indexed buyer, address indexed seller, address token, uint256 amount, uint256 deadline)',
   'function submitDelivery(uint256 orderId, bytes32 deliveryHash)',
   'function orders(uint256) view returns (address,address,address,uint256,uint256,uint256,bytes32,uint8)',
 ]);
-const usdcAbi = parseAbi(['function mint(address to, uint256 amount)', 'function balanceOf(address) view returns (uint256)']);
+const usdcAbi = parseAbi([
+  'function mint(address to, uint256 amount)',
+  'function balanceOf(address) view returns (uint256)',
+  'function approve(address spender, uint256 amount) returns (bool)',
+]);
+const fundAbi = parseAbi(['function createAndFundOrder(address seller, address token, uint256 amount, uint256 deliveryDays) returns (uint256)']);
 
 const pub = createPublicClient({ chain: baseSepolia, transport: http(RPC) });
 const wallet = (account: PrivateKeyAccount) => createWalletClient({ account, chain: baseSepolia, transport: http(RPC) });
@@ -78,12 +84,12 @@ async function main() {
   console.log(`seller ${seller.address}\nbuyer  ${buyer.address} (acts only through MCP)`);
 
   step('Gas for both wallets and test USDC for the buyer');
-  for (const [who, eth] of [[seller, '0.00002'], [buyer, '0.00003']] as const) {
+  for (const [who, eth] of [[seller, '0.00004'], [buyer, '0.00008']] as const) {
     await mined(await wallet(funder).sendTransaction({ to: who.address, value: parseEther(eth) }), `gas to ${who === seller ? 'seller' : 'buyer'}`);
     await until('gas', async () => (await pub.getBalance({ address: who.address })) > 0n);
   }
-  await mined(await wallet(funder).writeContract({ address: USDC, abi: usdcAbi, functionName: 'mint', args: [buyer.address, 5_000_000n] }), 'mint 5 USDC to buyer');
-  await until('buyer USDC', async () => (await pub.readContract({ address: USDC, abi: usdcAbi, functionName: 'balanceOf', args: [buyer.address] })) >= 5_000_000n);
+  await mined(await wallet(funder).writeContract({ address: USDC, abi: usdcAbi, functionName: 'mint', args: [buyer.address, 15_000_000n] }), 'mint 15 USDC to buyer');
+  await until('buyer USDC', async () => (await pub.readContract({ address: USDC, abi: usdcAbi, functionName: 'balanceOf', args: [buyer.address] })) >= 15_000_000n);
 
   step('Seller publishes a 5 USDC service (web API)');
   const sellerToken = await siwe(seller);
@@ -183,7 +189,45 @@ async function main() {
   await until('released order', async () => (await orderStatus(BigInt(orderId))) === 3);
   const final = await tool('get_order_status', { orderId });
   assert.equal(final.status, 'Released');
-  console.log(`  ✓ order #${orderId} Released: seller paid 4.85 USDC, fee 0.15 USDC`);
+  console.log(`  ✓ order #${orderId} Released: 4.85 USDC credited to the seller, fee 0.15 USDC`);
+
+  step('Seller: get_withdrawable and prepare_withdraw (escrow v3 pull payment)');
+  const credit = await tool('get_withdrawable', { walletAddress: seller.address });
+  assert.equal(credit.withdrawable, '4.85');
+  const withdraw = await tool('prepare_withdraw', { walletAddress: seller.address });
+  await mined(await wallet(seller).sendTransaction({ to: withdraw.transaction.to, data: withdraw.transaction.data }), 'withdraw (from MCP calldata)');
+  await until('seller USDC', async () => (await pub.readContract({ address: USDC, abi: usdcAbi, functionName: 'balanceOf', args: [seller.address] })) === 4_850_000n);
+  await assert.rejects(tool('prepare_withdraw', { walletAddress: seller.address }), /nothing to withdraw/);
+  console.log('  ✓ seller received 4.85 USDC; a second withdraw is refused');
+
+  step('Timed v3 paths: an order to refund after its deadline and a disputed order for the 14-day timeout');
+  const fundDirect = async (label: string) => {
+    await mined(await wallet(buyer).writeContract({ address: USDC, abi: usdcAbi, functionName: 'approve', args: [ESCROW, 5_000_000n] }), `approve (${label})`);
+    await new Promise((r) => setTimeout(r, 4000));
+    const r = await mined(
+      await wallet(buyer).writeContract({ address: ESCROW, abi: fundAbi, functionName: 'createAndFundOrder', args: [seller.address, USDC, 5_000_000n, 1n] }),
+      `createAndFundOrder (${label})`
+    );
+    const id = Number(parseEventLogs({ abi: escrowAbi, logs: r.logs, eventName: 'OrderFunded' })[0].args.orderId);
+    await until(`order ${id}`, async () => (await orderStatus(BigInt(id))) === 1);
+    return id;
+  };
+  const refundId = await fundDirect('refund');
+  await assert.rejects(tool('prepare_order_action', { orderId: refundId, action: 'claim_timeout_refund' }), /deadline has not passed/);
+  const disputeId = await fundDirect('dispute');
+  const dispute = await tool('prepare_order_action', { orderId: disputeId, action: 'open_dispute' });
+  await mined(await wallet(buyer).sendTransaction({ to: dispute.transaction.to, data: dispute.transaction.data }), 'openDispute (from MCP calldata)');
+  await until('disputed order', async () => (await orderStatus(BigInt(disputeId))) === 5);
+  const disputed = await tool('get_order_status', { orderId: disputeId });
+  await assert.rejects(tool('prepare_order_action', { orderId: disputeId, action: 'claim_dispute_timeout' }), /dispute timeout has not passed/);
+  const refundStatus = await tool('get_order_status', { orderId: refundId });
+  console.log(`  ✓ #${refundId}: claim_timeout_refund refused until ${refundStatus.deliveryDeadline}`);
+  console.log(`  ✓ #${disputeId}: Disputed; claim_dispute_timeout refused until ${disputed.disputeTimeoutAt}`);
+
+  step('Legacy escrow v2: read an old order with escrowVersion 2');
+  const legacy = await tool('get_order_status', { orderId: 9, escrowVersion: 2 });
+  assert.equal(legacy.escrowVersion, 2);
+  console.log(`  ✓ v2 order #9: ${legacy.status}`);
 
   await mcp.close();
   console.log('\nE2E AGENT FLOW OK');

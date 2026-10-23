@@ -21,8 +21,7 @@ import { generatePrivateKey, privateKeyToAccount, type PrivateKeyAccount } from 
 const env = Object.fromEntries(
   [resolve(import.meta.dirname, '../../../apps/web/.env.local'), process.env.MERCADOPLEIS_WALLETS || resolve(import.meta.dirname, '../../../.wallets.env')]
     .map((f) => readFileSync(f, 'utf8'))
-    .join('
-')
+    .join('\n')
     .split(/\r?\n/)
     .filter((l) => /^[A-Z0-9_]+=/.test(l))
     .map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1).replace(/^"|"$/g, '')])
