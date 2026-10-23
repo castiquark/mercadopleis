@@ -1,5 +1,10 @@
 import { StatsView } from '@/components/StatsView';
+import { getPublicStats, type PublicStats } from '@/lib/publicStats';
 import { pageLang, pageMetadata, tr, type LangParams } from '@/lib/seo';
+
+// The numbers are in the server HTML (crawlers, screen recordings, no JS); the page animates on top of them.
+// Rendered per request and cached at the CDN for 60 s (next.config.ts headers), not ISR behind the rewrite.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(props: LangParams) {
   const lang = await pageLang(props);
@@ -16,6 +21,12 @@ export async function generateMetadata(props: LangParams) {
   });
 }
 
-export default function StatsPage() {
-  return <StatsView />;
+export default async function StatsPage() {
+  let stats: PublicStats | null = null;
+  try {
+    stats = await getPublicStats();
+  } catch (err) {
+    console.error('Stats page:', err);
+  }
+  return <StatsView stats={stats} />;
 }
