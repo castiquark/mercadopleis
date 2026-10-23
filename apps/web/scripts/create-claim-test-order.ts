@@ -17,11 +17,12 @@ import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
 import { ESCROW_ADDRESSES, MarketplaceEscrowAbi, Erc20Abi } from '@mercadopleis/contracts-abi';
 import { CONTRACT_CONFIG } from '@mercadopleis/types';
 
+dotenv.config({ path: process.env.MERCADOPLEIS_WALLETS || path.resolve(__dirname, '../../.wallets.env') });
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
 const SEND = process.argv.includes('--send');
 const DEPLOYER_KEY = process.env.DEPLOYER_PRIVATE_KEY as `0x${string}`;
-if (!DEPLOYER_KEY) throw new Error('DEPLOYER_PRIVATE_KEY missing in apps/web/.env.local');
+if (!DEPLOYER_KEY) throw new Error('DEPLOYER_PRIVATE_KEY missing in .wallets.env');
 
 const rpc = process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org';
 const escrow = ESCROW_ADDRESSES[84532] as `0x${string}`;

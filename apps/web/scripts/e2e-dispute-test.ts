@@ -15,6 +15,7 @@ import { CONTRACT_CONFIG } from '@mercadopleis/types';
 import dotenv from 'dotenv';
 import path from 'path';
 
+dotenv.config({ path: process.env.MERCADOPLEIS_WALLETS || path.resolve(__dirname, '../../.wallets.env') });
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
