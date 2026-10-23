@@ -201,6 +201,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingOrder) {
+      // The stored row belongs to another buyer: it is not this order (stale or foreign data). Hashes alone are not
+      // compared, since smart accounts and relayers can land the same funding under a different transaction hash.
+      if (existingOrder.buyerId !== authUser.id) {
+        return NextResponse.json(
+          { error: 'An order with this escrow id is already registered for a different buyer' },
+          { status: 409 }
+        );
+      }
       if (existingOrder.serviceId !== service.id) {
         await db
           .update(orders)
