@@ -19,11 +19,13 @@ import {
 } from 'lucide-react';
 import { fetchServiceReviews } from '@/lib/api';
 import { useAccount } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 
 /** `initialService` comes from the server render (indexable without a wallet); without it the page loads the service itself. */
 export default function ServiceDetailPage({ initialService = null }: { initialService?: Service | null }) {
   const { language, L, lp } = useLanguage();
-  const { chainId } = useAccount();
+  const { chainId, address, isConnected } = useAccount();
+  const { openConnectModal } = useConnectModal();
   const params = useParams();
   const router = useRouter();
   const slug = params?.slug as string;
@@ -43,6 +45,35 @@ export default function ServiceDetailPage({ initialService = null }: { initialSe
       .finally(() => setLoading(false));
   }, [slug, initialService]);
 
+
+  // ?buy=1 (the checkout link an agent hands to a person, e.g. checkoutUrl from the MCP server) opens the payment
+  // straight away: wallet connection first if needed. Ignored for inactive services and for the seller's own service.
+  const [buyRequested, setBuyRequested] = useState(false);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('buy') === '1') setBuyRequested(true);
+  }, []);
+  const clearBuyParam = () => {
+    setBuyRequested(false);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('buy')) {
+      url.searchParams.delete('buy');
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    }
+  };
+  const isOwnService = !!address && service?.seller?.walletAddress?.toLowerCase() === address.toLowerCase();
+  useEffect(() => {
+    if (!buyRequested || !service) return;
+    if (!service.isActive || isOwnService) {
+      clearBuyParam();
+      return;
+    }
+    if (isConnected) {
+      setIsCheckoutOpen(true);
+    } else {
+      openConnectModal?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buyRequested, service, isConnected, isOwnService, openConnectModal]);
 
   const [reviewsList, setReviewsList] = useState<any[]>([]);
 
@@ -410,9 +441,13 @@ export default function ServiceDetailPage({ initialService = null }: { initialSe
       {isCheckoutOpen && (
         <CheckoutModal
           service={service}
-          onClose={() => setIsCheckoutOpen(false)}
+          onClose={() => {
+            setIsCheckoutOpen(false);
+            clearBuyParam();
+          }}
           onSuccess={() => {
             setIsCheckoutOpen(false);
+            clearBuyParam();
             router.push(lp('/orders'));
           }}
         />
