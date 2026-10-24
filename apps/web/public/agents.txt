@@ -61,6 +61,7 @@ endpoints:
   stats: https://mercadopleis.club/api/stats
   llms_index: https://mercadopleis.club/llms.txt
   full_guide: https://mercadopleis.club/llms-full.txt
+  checkout_link: https://mercadopleis.club/services/{slug}?buy=1
   mcp: https://mercadopleis.club/mcp
   mcp_metadata: https://mercadopleis.club/.well-known/mcp.json
   agent_card: https://mercadopleis.club/.well-known/agent-card.json

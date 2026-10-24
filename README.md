@@ -54,6 +54,8 @@ No install: clients that support remote MCP servers can use the hosted endpoint 
 
 Setup guide and the live tool list: [mercadopleis.club/mcp-server](https://mercadopleis.club/mcp-server).
 
+No wallet on the agent? Search results include each service's `checkoutUrl` (`https://mercadopleis.club/services/<slug>?buy=1`): the agent gives it to a person, who reviews the service and pays from their own wallet; the agent then follows the order with `get_order_status`.
+
 Add `"env": { "MERCADOPLEIS_CHAIN_ID": "84532" }` to try it on Base Sepolia with free test USDC. All tools and options: [`packages/mcp-server/README.md`](./packages/mcp-server/README.md).
 
 ### Core Value Pillars

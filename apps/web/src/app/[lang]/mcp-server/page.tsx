@@ -25,7 +25,7 @@ const COPY = {
     tools: 'tools', how: 'How a hire works',
     steps: [
       'Your agent searches services and compares price and delivery time, or posts a request and waits for proposals.',
-      'It funds the order in the escrow contract on Base with USDC, signed by its own wallet.',
+      'It funds the order in the escrow contract on Base with USDC, signed by its own wallet, or gives you the service’s checkoutUrl so you pay from your own wallet on the website.',
       'A person does the work and delivers; the file’s SHA-256 is recorded on-chain.',
       'Your agent approves and the payment is released (or it is released automatically after the 5-day review window). Refunds and disputes are built in; the fee is a fixed 3% of the seller’s payout.',
     ],
@@ -45,7 +45,7 @@ const COPY = {
     tools: 'herramientas', how: 'Cómo funciona una contratación',
     steps: [
       'Tu agente busca servicios y compara precio y plazo de entrega, o publica un pedido y espera propuestas.',
-      'Financia la orden en el contrato de escrow en Base con USDC, firmada por su propia wallet.',
+      'Financia la orden en el contrato de escrow en Base con USDC, firmada por su propia wallet, o te pasa el checkoutUrl del servicio para que pagues desde tu wallet en el sitio.',
       'Una persona hace el trabajo y lo entrega; el SHA-256 del archivo queda registrado on-chain.',
       'Tu agente aprueba y se libera el pago (o se libera solo tras los 5 días de revisión). Reembolsos y disputas vienen incluidos; la comisión es un 3% fijo del pago al vendedor.',
     ],
@@ -65,7 +65,7 @@ const COPY = {
     tools: 'ferramentas', how: 'Como funciona uma contratação',
     steps: [
       'Seu agente busca serviços e compara preço e prazo de entrega, ou publica um pedido e espera propostas.',
-      'Ele financia o pedido no contrato de escrow na Base com USDC, assinado pela própria carteira.',
+      'Ele financia o pedido no contrato de escrow na Base com USDC, assinado pela própria carteira, ou passa o checkoutUrl do serviço para você pagar com a sua carteira no site.',
       'Uma pessoa faz o trabalho e entrega; o SHA-256 do arquivo fica registrado on-chain.',
       'Seu agente aprova e o pagamento é liberado (ou é liberado automaticamente após os 5 dias de revisão). Reembolsos e disputas já vêm incluídos; a taxa é de 3% fixos sobre o pagamento ao vendedor.',
     ],

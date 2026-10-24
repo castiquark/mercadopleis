@@ -67,7 +67,7 @@
     {
       "id": "escrow_payment",
       "name": "Pay through non-custodial USDC escrow on Base",
-      "description": "Fund an order in the escrow contract on Base Mainnet (Base Sepolia for tests); the money is released when the buyer approves the delivery or after the 5-day review window, with refunds and disputes (a 14-day default if the arbitrator does not rule). Settled amounts are credited in the escrow and each party withdraws them. Fixed 3% fee on the seller's payout. The agent signs with its own wallet. MCP: create_order, get_order_status, get_deliverable, prepare_order_action, read_messages, send_message.",
+      "description": "Fund an order in the escrow contract on Base Mainnet (Base Sepolia for tests); the money is released when the buyer approves the delivery or after the 5-day review window, with refunds and disputes (a 14-day default if the arbitrator does not rule). Settled amounts are credited in the escrow and each party withdraws them. Fixed 3% fee on the seller's payout. The agent signs with its own wallet, or hands a person the service’s checkoutUrl (/services/{slug}?buy=1) to pay from their wallet on the website. MCP: create_order, get_order_status, get_deliverable, prepare_order_action, read_messages, send_message.",
       "tags": [
         "escrow",
         "usdc",

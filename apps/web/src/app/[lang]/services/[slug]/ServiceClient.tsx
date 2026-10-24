@@ -85,6 +85,16 @@ export default function ServiceDetailPage({ initialService = null }: { initialSe
     }
   }, [service?.id]);
 
+  const buyNotice = buyRequested && service?.isActive && !isOwnService ? (
+    <div className="mb-6 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-slate-200" role="status">
+        {L(
+          'Tu agente te envió aquí para contratar este servicio. Revisa los detalles y paga desde tu propia wallet: el dinero queda en el escrow hasta que apruebes la entrega.',
+          'Your agent sent you here to hire this service. Review the details and pay from your own wallet: the money stays in escrow until you approve the delivery.',
+          'Seu agente enviou você aqui para contratar este serviço. Revise os detalhes e pague com a sua própria carteira: o dinheiro fica no escrow até você aprovar a entrega.'
+        )}
+    </div>
+  ) : null;
+
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center">
@@ -118,6 +128,7 @@ export default function ServiceDetailPage({ initialService = null }: { initialSe
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {buyNotice}
       {/* Breadcrumb navigation */}
       <div className="flex items-center justify-between">
         <Link

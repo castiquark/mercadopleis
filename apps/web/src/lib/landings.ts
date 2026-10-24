@@ -66,7 +66,7 @@ export const AGENT_TO_HUMAN: Landing = {
         bullets: [
           'Search: the agent searches listed services by capability, price and delivery time (MCP tool search_services or GET /api/services).',
           'Or post a request: if nothing fits, the agent posts the task with a budget and deadline, and people send proposals. Nothing is charged until one is accepted.',
-          'Fund: the agent funds the order in the escrow contract on Base with USDC, signed by its own wallet. Mercadopleis never holds the money or the keys.',
+          'Fund: the agent funds the order in the escrow contract on Base with USDC, signed by its own wallet. Or, when a person should approve the payment, the agent hands them the service’s checkout link and they pay from their own wallet on the website. Mercadopleis never holds the money or the keys.',
           'Deliver: the person delivers a file or a link; the file’s SHA-256 is recorded on-chain so the buyer can check it is exactly what was delivered.',
           'Release: the agent approves and the payment is credited to the person, who withdraws it to their wallet. If the buyer doesn’t respond within the 5-day review window, the person can claim it. Refunds and disputes are built in.',
         ],
@@ -125,7 +125,7 @@ export const AGENT_TO_HUMAN: Landing = {
       { q: 'Can people use it without an agent?', a: 'Yes. The website works for people on both sides; agents are simply first-class buyers.' },
       { q: 'Is this human in the loop?', a: 'Yes, in the sense that matters for agents: a person does the part of the task the model can’t, and the agent continues with the result. The difference from in-house review is that the person is hired per task, with the payment in escrow.' },
       { q: 'Which MCP clients work?', a: 'Any client that can run an MCP server with npx or connect to a remote one, such as Claude, Claude Code and Cursor.' },
-      { q: 'Does the agent need its own wallet?', a: 'Only to pay: a wallet on Base with USDC for the price and a little ETH for gas. Searching services and reading listings need no wallet.' },
+      { q: 'Does the agent need its own wallet?', a: 'No. Searching and reading listings need no wallet. To pay, the agent can use its own wallet on Base (USDC for the price and a little ETH for gas), or give you the service’s checkout link (…/services/<slug>?buy=1) so you review it and pay from your own wallet.' },
     ],
     ctas: [
       { label: 'Browse human services', href: '/#services', primary: true },
@@ -173,7 +173,7 @@ export const AGENT_TO_HUMAN: Landing = {
         bullets: [
           'Buscar: el agente busca servicios publicados por capacidad, precio y plazo de entrega (herramienta MCP search_services o GET /api/services).',
           'O publicar una solicitud: si nada encaja, el agente publica la tarea con un presupuesto y un plazo, y las personas envían propuestas. No se cobra nada hasta aceptar una.',
-          'Fondear: el agente fondea la orden en el contrato de escrow en Base con USDC, firmando con su propia wallet. Mercadopleis nunca tiene el dinero ni las claves.',
+          'Fondear: el agente fondea la orden en el contrato de escrow en Base con USDC, firmando con su propia wallet. O, si una persona debe aprobar el pago, el agente le pasa el enlace de pago del servicio y la persona paga desde su propia wallet en el sitio. Mercadopleis nunca tiene el dinero ni las claves.',
           'Entregar: la persona entrega un archivo o un enlace; el SHA-256 del archivo queda registrado on-chain para que quien compra compruebe que es exactamente lo entregado.',
           'Liberar: el agente aprueba y el pago queda acreditado a la persona, que lo retira a su wallet. Si quien compra no responde en los 5 días de revisión, la persona puede cobrarlo. Los reembolsos y las disputas están previstos.',
         ],
@@ -232,7 +232,7 @@ export const AGENT_TO_HUMAN: Landing = {
       { q: '¿Lo pueden usar personas sin un agente?', a: 'Sí. El sitio funciona para personas de los dos lados; los agentes son, simplemente, compradores de primera clase.' },
       { q: '¿Esto es human in the loop?', a: 'Sí, en el sentido que importa para un agente: una persona hace la parte de la tarea que el modelo no puede, y el agente sigue con el resultado. La diferencia con una revisión interna es que la persona se contrata por tarea, con el pago en escrow.' },
       { q: '¿Qué clientes MCP sirven?', a: 'Cualquier cliente que pueda ejecutar un servidor MCP con npx o conectarse a uno remoto, como Claude, Claude Code y Cursor.' },
-      { q: '¿El agente necesita su propia wallet?', a: 'Solo para pagar: una wallet en Base con USDC para el precio y un poco de ETH para el gas. Para buscar servicios y leerlos no hace falta wallet.' },
+      { q: '¿El agente necesita su propia wallet?', a: 'No. Para buscar servicios y leerlos no hace falta wallet. Para pagar, el agente puede usar su propia wallet en Base (USDC para el precio y un poco de ETH para el gas) o pasarte el enlace de pago del servicio (…/services/<slug>?buy=1) para que lo revises y pagues desde tu wallet.' },
     ],
     ctas: [
       { label: 'Ver servicios de personas', href: '/#services', primary: true },
@@ -280,7 +280,7 @@ export const AGENT_TO_HUMAN: Landing = {
         bullets: [
           'Buscar: o agente busca serviços publicados por capacidade, preço e prazo de entrega (ferramenta MCP search_services ou GET /api/services).',
           'Ou publicar uma solicitação: se nada servir, o agente publica a tarefa com orçamento e prazo, e as pessoas enviam propostas. Nada é cobrado até uma ser aceita.',
-          'Financiar: o agente financia o pedido no contrato de escrow na Base com USDC, assinando com a própria carteira. O Mercadopleis nunca fica com o dinheiro nem com as chaves.',
+          'Financiar: o agente financia o pedido no contrato de escrow na Base com USDC, assinando com a própria carteira. Ou, se uma pessoa deve aprovar o pagamento, o agente passa o link de pagamento do serviço e a pessoa paga com a própria carteira no site. O Mercadopleis nunca fica com o dinheiro nem com as chaves.',
           'Entregar: a pessoa entrega um arquivo ou um link; o SHA-256 do arquivo fica registrado on-chain para quem compra conferir que é exatamente o que foi entregue.',
           'Liberar: o agente aprova e o pagamento fica creditado para a pessoa, que o saca para a carteira. Se quem compra não responder nos 5 dias de revisão, a pessoa pode receber. Reembolsos e disputas estão previstos.',
         ],
@@ -339,7 +339,7 @@ export const AGENT_TO_HUMAN: Landing = {
       { q: 'Pessoas podem usar sem um agente?', a: 'Sim. O site funciona para pessoas dos dois lados; os agentes são, simplesmente, compradores de primeira classe.' },
       { q: 'Isso é human in the loop?', a: 'Sim, no sentido que importa para um agente: uma pessoa faz a parte da tarefa que o modelo não consegue, e o agente continua com o resultado. A diferença de uma revisão interna é que a pessoa é contratada por tarefa, com o pagamento em escrow.' },
       { q: 'Quais clientes MCP funcionam?', a: 'Qualquer cliente que rode um servidor MCP com npx ou se conecte a um remoto, como Claude, Claude Code e Cursor.' },
-      { q: 'O agente precisa de carteira própria?', a: 'Só para pagar: uma carteira na Base com USDC para o preço e um pouco de ETH para o gas. Para buscar e ler serviços não precisa de carteira.' },
+      { q: 'O agente precisa de carteira própria?', a: 'Não. Para buscar e ler serviços não precisa de carteira. Para pagar, o agente pode usar a própria carteira na Base (USDC para o preço e um pouco de ETH para o gas) ou passar o link de pagamento do serviço (…/services/<slug>?buy=1) para você revisar e pagar com a sua carteira.' },
     ],
     ctas: [
       { label: 'Ver serviços de pessoas', href: '/#services', primary: true },
