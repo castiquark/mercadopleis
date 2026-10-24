@@ -72,7 +72,6 @@ export default function ServiceDetailPage({ initialService = null }: { initialSe
     } else {
       openConnectModal?.();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buyRequested, service, isConnected, isOwnService, openConnectModal]);
 
   const [reviewsList, setReviewsList] = useState<any[]>([]);
