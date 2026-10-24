@@ -80,6 +80,12 @@ export function createServer({ remote = false }: ServerOptions = {}): McpServer 
   const json = (data: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] });
   const fail = (message: string) => ({ isError: true, content: [{ type: 'text' as const, text: message }] });
 
+  /** The service page on mercadopleis.club, and the same page opening its checkout so a person pays from their own wallet. */
+  const serviceLinks = (slug: string) => {
+    const url = `${API_URL}/services/${encodeURIComponent(slug)}`;
+    return { url, checkoutUrl: `${url}?buy=1` };
+  };
+
   const summarize = (s: Service) => ({
     id: s.id,
     slug: s.slug,
@@ -90,6 +96,7 @@ export function createServer({ remote = false }: ServerOptions = {}): McpServer 
     deliveryType: s.deliveryType,
     seller: s.seller?.displayName,
     sellerWallet: s.seller?.walletAddress,
+    ...serviceLinks(s.slug),
   });
 
   function publicClient(chainId: number) {
@@ -235,7 +242,8 @@ export function createServer({ remote = false }: ServerOptions = {}): McpServer 
       if (!service) return fail(`Service "${slugOrId}" not found`);
       return json({
         notice: UNTRUSTED_NOTICE,
-        service,
+        service: { ...service, ...serviceLinks(service.slug) },
+        pay: 'If you do not sign transactions yourself, give the user checkoutUrl: they review and pay from their own wallet on mercadopleis.club.',
       });
     },
   );
@@ -311,6 +319,13 @@ export function createServer({ remote = false }: ServerOptions = {}): McpServer 
             data: concatHex([fundData, BUILDER_DATA_SUFFIX]),
           },
         ],
+        ...(id === 8453
+          ? {
+              checkoutUrl: serviceLinks(service.slug).checkoutUrl,
+              ifYouDoNotSign:
+                "If you don't sign transactions yourself, give the user checkoutUrl: they review and pay from their own wallet on mercadopleis.club. Then ask them for the orderId (or the funding tx hash) and continue with get_order_status.",
+            }
+          : {}),
         next: net.api
           ? 'After step 2 is mined, read the orderId from the OrderFunded event. Sign in (prepare_login, login), call register_order with the funding tx hash, and use send_message to give the seller the task details. Poll get_order_status; when it is Delivered, use get_deliverable and finish with prepare_order_action.'
           : 'After step 2 is mined, read the orderId from the OrderFunded event. On this network only on-chain tools are available: poll get_order_status and get_delivery, then finish with prepare_order_action.',
